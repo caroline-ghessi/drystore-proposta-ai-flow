@@ -46,6 +46,11 @@ const toolsItems = [
   { title: "Notificações", url: "/notificacoes", icon: Bell, badge: "3" },
 ]
 
+const adminItems = [
+  { title: "Dashboard Admin", url: "/admin", icon: Settings },
+  { title: "Gestão de Equipamentos Solar", url: "/equipamentos-solar", icon: Zap },
+]
+
 export function DryStoreSidebar() {
   const { state } = useSidebar()
   const location = useLocation()
@@ -173,6 +178,31 @@ export function DryStoreSidebar() {
                         )}
                       </div>
                     )}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel 
+            className={collapsed ? "sr-only" : "font-semibold text-sm"}
+            style={{ color: 'hsl(var(--sidebar-foreground))' }}
+          >
+            Administração
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {adminItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    onClick={() => handleNavigation(item.url)}
+                    className={getNavCls({ isActive: isActive(item.url) })}
+                    style={getButtonStyles(isActive(item.url))}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {!collapsed && <span style={{ color: 'inherit' }}>{item.title}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

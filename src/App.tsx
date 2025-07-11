@@ -16,6 +16,7 @@ import PropostaCliente from "./pages/PropostaCliente";
 import ProcessamentoProposta from "./pages/ProcessamentoProposta";
 import LoginCliente from "./pages/LoginCliente";
 import Admin from "./pages/Admin";
+import EquipamentosSolar from "./pages/EquipamentosSolar";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/ranking" element={<Ranking />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/equipamentos-solar" element={<EquipamentosSolar />} />
           <Route path="/cliente-portal" element={<ClientePortal />} />
           <Route path="/proposta/:id" element={<PropostaCliente />} />
           <Route path="/processamento" element={<ProcessamentoProposta />} />
