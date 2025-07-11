@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.5';
 
@@ -64,55 +65,164 @@ serve(async (req) => {
 
 async function processarComDify(arquivoUrl: string, tipoProposta: string) {
   const difyApiKey = Deno.env.get('DIFY_API_KEY');
+  const difyAppId = Deno.env.get('DIFY_APP_ID');
   
-  if (!difyApiKey) {
-    console.warn('DIFY_API_KEY não configurada, usando dados simulados');
+  if (!difyApiKey || !difyAppId) {
+    console.warn('DIFY_API_KEY ou DIFY_APP_ID não configurados, usando dados simulados');
     return simularProcessamentoDify(arquivoUrl, tipoProposta);
   }
 
   try {
-    // Para materiais de construção, usar integração real com Dify
-    if (tipoProposta === 'materiais-construcao') {
-      console.log('Processando materiais de construção via Dify API');
-      
-      const response = await fetch('https://api.dify.ai/v1/workflows/run', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${difyApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          inputs: {
-            pdf_url: arquivoUrl
-          },
-          response_mode: 'blocking',
-          user: 'user-' + Date.now()
-        }),
-      });
+    console.log(`Processando documento ${tipoProposta} via Dify API`);
+    
+    // Step 1: Upload file to Dify
+    const fileId = await uploadFileToDify(arquivoUrl, difyApiKey);
+    console.log('Arquivo enviado para Dify:', fileId);
 
-      if (!response.ok) {
-        throw new Error(`Erro na API do Dify: ${response.status}`);
-      }
+    // Step 2: Process with chat messages API
+    const extractedData = await processWithDifyChat(fileId, tipoProposta, difyApiKey, difyAppId);
+    console.log('Dados extraídos pelo Dify:', extractedData);
 
-      const result = await response.json();
-      console.log('Resposta do Dify:', result);
+    return extractedData;
+    
+  } catch (error) {
+    console.error('Erro na integração Dify:', error);
+    console.log('Fallback para dados simulados');
+    return simularProcessamentoDify(arquivoUrl, tipoProposta);
+  }
+}
+
+// Upload file to Dify
+async function uploadFileToDify(arquivoUrl: string, apiKey: string): Promise<string> {
+  console.log('Fazendo upload do arquivo para Dify...');
+  
+  // Download the file first
+  const fileResponse = await fetch(arquivoUrl);
+  if (!fileResponse.ok) {
+    throw new Error(`Erro ao baixar arquivo: ${fileResponse.statusText}`);
+  }
+  
+  const fileBlob = await fileResponse.blob();
+  
+  // Create form data for upload
+  const formData = new FormData();
+  formData.append('file', fileBlob, 'document.pdf');
+  formData.append('user', 'drystore-user');
+
+  const uploadResponse = await fetch('https://api.dify.ai/v1/files/upload', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: formData,
+  });
+
+  if (!uploadResponse.ok) {
+    const errorText = await uploadResponse.text();
+    throw new Error(`Erro no upload: ${uploadResponse.statusText} - ${errorText}`);
+  }
+
+  const uploadResult = await uploadResponse.json();
+  console.log('Resultado do upload:', uploadResult);
+  
+  return uploadResult.id;
+}
+
+// Process with Dify Chat Messages API
+async function processWithDifyChat(fileId: string, tipoProposta: string, apiKey: string, appId: string): Promise<any> {
+  console.log('Processando documento com Dify Chat...');
+  
+  const prompt = getPromptForTipoProposta(tipoProposta);
+  
+  const chatResponse = await fetch('https://api.dify.ai/v1/chat-messages', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      inputs: {
+        app_id: appId
+      },
+      query: prompt,
+      response_mode: "blocking",
+      user: "drystore-user",
+      files: [
+        {
+          type: "document",
+          transfer_method: "local_file",
+          upload_file_id: fileId
+        }
+      ]
+    }),
+  });
+
+  if (!chatResponse.ok) {
+    const errorText = await chatResponse.text();
+    throw new Error(`Erro no processamento: ${chatResponse.statusText} - ${errorText}`);
+  }
+
+  const chatResult = await chatResponse.json();
+  console.log('Resposta do Dify:', chatResult);
+  
+  // Parse the response to extract structured data
+  return parseResponseToDadosExtraidos(chatResult.answer, tipoProposta);
+}
+
+// Get prompt based on proposal type
+function getPromptForTipoProposta(tipoProposta: string): string {
+  switch (tipoProposta) {
+    case 'energia-solar':
+      return `Analise este documento de conta de energia elétrica e extraia os seguintes dados em formato JSON:
+      {
+        "consumo_mensal": número do consumo em kWh,
+        "valor_conta": valor da conta,
+        "tipo_conexao": "monofásica/bifásica/trifásica",
+        "endereco_completo": "endereço completo"
+      }`;
       
-      // Extrair dados do resultado do Dify
-      const dadosExtraidos = result.data?.outputs || result.outputs;
+    case 'materiais-construcao':
+      return `Analise este documento de especificação de materiais de construção e extraia os seguintes dados em formato JSON:
+      {
+        "produtos": [
+          {
+            "codigo": "código do produto",
+            "descricao": "nome do produto",
+            "quantidade": número,
+            "unidade": "unidade de medida",
+            "preco_unitario": valor,
+            "total": valor total
+          }
+        ],
+        "valor_total_proposta": valor total da proposta,
+        "observacoes": "observações adicionais"
+      }`;
       
+    default:
+      return `Analise este documento e extraia informações relevantes em formato JSON estruturado.`;
+  }
+}
+
+// Parse Dify response to structured data
+function parseResponseToDadosExtraidos(response: string, tipoProposta: string): any {
+  try {
+    // Try to extract JSON from the response
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsedData = JSON.parse(jsonMatch[0]);
       return {
-        ...dadosExtraidos,
-        tipo_dados: 'materiais-construcao'
+        ...parsedData,
+        tipo_dados: tipoProposta
       };
     }
     
-    // Para energia solar, manter simulação por enquanto
-    return simularProcessamentoDify(arquivoUrl, tipoProposta);
+    // Fallback to simulated data if parsing fails
+    console.log('Não foi possível extrair JSON da resposta, usando dados simulados');
+    return simularProcessamentoDify('', tipoProposta);
     
   } catch (error) {
-    console.error('Erro ao processar com Dify:', error);
-    // Fallback para dados simulados em caso de erro
-    return simularProcessamentoDify(arquivoUrl, tipoProposta);
+    console.error('Erro ao fazer parse da resposta:', error);
+    return simularProcessamentoDify('', tipoProposta);
   }
 }
 
