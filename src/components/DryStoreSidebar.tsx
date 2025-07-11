@@ -56,7 +56,7 @@ export function DryStoreSidebar() {
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive 
       ? "bg-gradient-primary text-white shadow-elegant font-medium" 
-      : "text-gray-800 hover:bg-gray-100 hover:text-gray-900 transition-all duration-300 hover:shadow-card"
+      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300"
 
   return (
     <Sidebar
@@ -86,7 +86,7 @@ export function DryStoreSidebar() {
 
       <SidebarContent className="p-2">
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : "text-gray-900 font-semibold text-sm"}>
+          <SidebarGroupLabel className={collapsed ? "sr-only" : "text-sidebar-foreground font-semibold text-sm"}>
             Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -106,7 +106,7 @@ export function DryStoreSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : "text-gray-900 font-semibold text-sm"}>
+          <SidebarGroupLabel className={collapsed ? "sr-only" : "text-sidebar-foreground font-semibold text-sm"}>
             Produtos
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -126,7 +126,7 @@ export function DryStoreSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : "text-gray-900 font-semibold text-sm"}>
+          <SidebarGroupLabel className={collapsed ? "sr-only" : "text-sidebar-foreground font-semibold text-sm"}>
             Ferramentas
           </SidebarGroupLabel>
           <SidebarGroupContent>
