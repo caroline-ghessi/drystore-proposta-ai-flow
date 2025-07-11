@@ -193,7 +193,7 @@ export const DebugConsole = () => {
       } else {
         // Verificar se os dados vieram realmente do Dify
         const fonteDados = response.data?.dados_extraidos?.fonte_dados || 'não_identificada';
-        const isRealDify = fonteDados === 'dify_real';
+        const isRealDify = fonteDados === 'dify_real' || fonteDados === 'dify_workflow';
         
         addTestResult(
           'Processamento Completo', 
