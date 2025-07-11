@@ -77,8 +77,8 @@ async function processarComDify(arquivoUrl: string, tipoProposta: string, modoDe
     tipoProposta 
   });
   
-  if (!difyApiKey || !difyAppId) {
-    const erro = 'DIFY_API_KEY ou DIFY_APP_ID não configurados';
+  if (!difyApiKey) {
+    const erro = 'DIFY_API_KEY não configurado';
     console.error('=== ERRO DE CONFIGURAÇÃO ===', erro);
     
     if (modoDebug) {
@@ -90,23 +90,28 @@ async function processarComDify(arquivoUrl: string, tipoProposta: string, modoDe
   }
 
   try {
-    // Step 1: Testar conectividade
-    console.log('=== TESTANDO CONECTIVIDADE DIFY ===');
-    await testarConectividadeDify(difyApiKey);
-    console.log('✓ Conectividade Dify OK');
-    
-    // Step 2: Upload file to Dify
-    console.log('=== FAZENDO UPLOAD PARA DIFY ===');
-    const fileId = await uploadFileToDify(arquivoUrl, difyApiKey);
-    console.log('✓ Upload concluído. File ID:', fileId);
+    // Estratégia A: Upload local + file_id
+    console.log('=== TENTATIVA A: UPLOAD LOCAL + FILE_ID ===');
+    try {
+      const fileId = await uploadFileToDify(arquivoUrl, difyApiKey);
+      console.log('✓ Upload concluído. File ID:', fileId);
 
-    // Step 3: Process with chat messages API
-    console.log('=== PROCESSANDO COM DIFY CHAT ===');
-    const extractedData = await processWithDifyChat(fileId, tipoProposta, difyApiKey, difyAppId, modoDebug);
-    console.log('✓ Processamento Dify concluído');
-    console.log('=== DADOS EXTRAÍDOS PELO DIFY ===', JSON.stringify(extractedData, null, 2));
+      const extractedData = await processWithDifyChat(fileId, tipoProposta, difyApiKey, difyAppId, modoDebug, 'local_file');
+      console.log('✓ Processamento Dify (estratégia A) concluído');
+      console.log('=== DADOS EXTRAÍDOS PELO DIFY ===', JSON.stringify(extractedData, null, 2));
 
-    return extractedData;
+      return extractedData;
+    } catch (uploadError) {
+      console.warn('✗ Estratégia A falhou:', uploadError.message);
+      
+      // Estratégia B: URL remota
+      console.log('=== TENTATIVA B: URL REMOTA ===');
+      const extractedData = await processWithDifyChat(null, tipoProposta, difyApiKey, difyAppId, modoDebug, 'remote_url', arquivoUrl);
+      console.log('✓ Processamento Dify (estratégia B) concluído');
+      console.log('=== DADOS EXTRAÍDOS PELO DIFY ===', JSON.stringify(extractedData, null, 2));
+
+      return extractedData;
+    }
     
   } catch (error) {
     console.error('=== ERRO NO PROCESSAMENTO DIFY ===');
@@ -122,47 +127,37 @@ async function processarComDify(arquivoUrl: string, tipoProposta: string, modoDe
   }
 }
 
-// Testar conectividade Dify
-async function testarConectividadeDify(apiKey: string): Promise<void> {
-  try {
-    const testResponse = await fetch('https://api.dify.ai/v1/info', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-      },
-    });
-
-    if (!testResponse.ok) {
-      throw new Error(`Teste de conectividade falhou: ${testResponse.statusText}`);
-    }
-    
-    console.log('✓ Conectividade Dify confirmada');
-  } catch (error) {
-    console.error('✗ Falha na conectividade Dify:', error);
-    throw error;
-  }
-}
+// Função removida: testarConectividadeDify
+// A validação das credenciais ocorre naturalmente no primeiro request
 
 // Upload file to Dify
 async function uploadFileToDify(arquivoUrl: string, apiKey: string): Promise<string> {
-  console.log('Baixando arquivo original...');
-  console.log('URL do arquivo:', arquivoUrl);
+  console.log('[UPLOAD] Baixando arquivo original...');
+  console.log('[UPLOAD] URL do arquivo:', arquivoUrl);
   
   // Download the file first
   const fileResponse = await fetch(arquivoUrl);
   if (!fileResponse.ok) {
-    throw new Error(`Erro ao baixar arquivo: ${fileResponse.statusText}`);
+    throw new Error(`Erro ao baixar arquivo: ${fileResponse.status} ${fileResponse.statusText}`);
   }
   
   const fileBlob = await fileResponse.blob();
-  console.log('Arquivo baixado. Tamanho:', fileBlob.size, 'bytes');
+  console.log('[UPLOAD] Arquivo baixado. Tamanho:', fileBlob.size, 'bytes, Tipo:', fileBlob.type);
   
-  // Create form data for upload
+  // Create form data for upload conforme documentação Dify
   const formData = new FormData();
-  formData.append('file', fileBlob, 'document.pdf');
+  
+  // Determinar tipo do arquivo baseado na URL ou blob
+  const isImage = fileBlob.type.startsWith('image/') || arquivoUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+  const fileExtension = isImage ? 'png' : 'pdf';
+  const mimeType = isImage ? fileBlob.type || 'image/png' : 'application/pdf';
+  
+  console.log('[UPLOAD] Tipo detectado:', { isImage, fileExtension, mimeType });
+  
+  formData.append('file', new File([fileBlob], `document.${fileExtension}`, { type: mimeType }));
   formData.append('user', 'drystore-user');
 
-  console.log('Enviando arquivo para Dify...');
+  console.log('[UPLOAD] Enviando arquivo para Dify API...');
   const uploadResponse = await fetch('https://api.dify.ai/v1/files/upload', {
     method: 'POST',
     headers: {
@@ -171,47 +166,76 @@ async function uploadFileToDify(arquivoUrl: string, apiKey: string): Promise<str
     body: formData,
   });
 
-  console.log('Status do upload:', uploadResponse.status, uploadResponse.statusText);
+  console.log('[UPLOAD] Status:', uploadResponse.status, uploadResponse.statusText);
+  console.log('[UPLOAD] Headers resposta:', Object.fromEntries(uploadResponse.headers.entries()));
 
   if (!uploadResponse.ok) {
     const errorText = await uploadResponse.text();
-    console.error('Erro detalhado do upload:', errorText);
-    throw new Error(`Erro no upload: ${uploadResponse.statusText} - ${errorText}`);
+    console.error('[UPLOAD] Erro detalhado:', errorText);
+    console.error('[UPLOAD] Headers request enviado: Authorization: Bearer [HIDDEN]');
+    throw new Error(`Upload falhou: ${uploadResponse.status} ${uploadResponse.statusText} - ${errorText}`);
   }
 
   const uploadResult = await uploadResponse.json();
-  console.log('✓ Upload concluído com sucesso');
-  console.log('Resultado completo do upload:', JSON.stringify(uploadResult, null, 2));
+  console.log('[UPLOAD] ✓ Upload concluído com sucesso');
+  console.log('[UPLOAD] Resultado completo:', JSON.stringify(uploadResult, null, 2));
+  
+  if (!uploadResult.id) {
+    throw new Error('Upload bem-sucedido mas ID do arquivo não retornado');
+  }
   
   return uploadResult.id;
 }
 
 // Process with Dify Chat Messages API
-async function processWithDifyChat(fileId: string, tipoProposta: string, apiKey: string, appId: string, modoDebug: boolean = false): Promise<any> {
-  console.log('Construindo prompt para tipo:', tipoProposta);
+async function processWithDifyChat(
+  fileId: string | null, 
+  tipoProposta: string, 
+  apiKey: string, 
+  appId: string, 
+  modoDebug: boolean = false,
+  transferMethod: 'local_file' | 'remote_url' = 'local_file',
+  remoteUrl?: string
+): Promise<any> {
+  console.log('[CHAT] Construindo prompt para tipo:', tipoProposta);
+  console.log('[CHAT] Método de transferência:', transferMethod);
   
   const prompt = getPromptForTipoProposta(tipoProposta);
-  console.log('Prompt construído:', prompt.substring(0, 200) + '...');
+  console.log('[CHAT] Prompt construído:', prompt.substring(0, 200) + '...');
   
-  const requestBody = {
-    inputs: {
-      app_id: appId
-    },
-    query: prompt,
-    response_mode: "blocking",
-    user: "drystore-user",
-    files: [
+  // Construir estrutura de arquivos baseada no método
+  let files: any[] = [];
+  
+  if (transferMethod === 'local_file' && fileId) {
+    files = [
       {
-        type: "document",
+        type: "image", // Conforme documentação, usar "image" mesmo para PDFs
         transfer_method: "local_file",
         upload_file_id: fileId
       }
-    ]
+    ];
+  } else if (transferMethod === 'remote_url' && remoteUrl) {
+    files = [
+      {
+        type: "image", // Conforme documentação
+        transfer_method: "remote_url", 
+        url: remoteUrl
+      }
+    ];
+  }
+  
+  const requestBody = {
+    inputs: {}, // Removido app_id dos inputs conforme documentação
+    query: prompt,
+    response_mode: "blocking",
+    user: "drystore-user",
+    files: files
   };
   
-  console.log('Enviando request para Dify Chat...');
-  console.log('Request body:', JSON.stringify(requestBody, null, 2));
+  console.log('[CHAT] Enviando request para Dify Chat API...');
+  console.log('[CHAT] Request body:', JSON.stringify(requestBody, null, 2));
   
+  const startTime = Date.now();
   const chatResponse = await fetch('https://api.dify.ai/v1/chat-messages', {
     method: 'POST',
     headers: {
@@ -220,21 +244,41 @@ async function processWithDifyChat(fileId: string, tipoProposta: string, apiKey:
     },
     body: JSON.stringify(requestBody),
   });
-
-  console.log('Status da resposta Dify:', chatResponse.status, chatResponse.statusText);
+  
+  const responseTime = Date.now() - startTime;
+  console.log('[CHAT] Status:', chatResponse.status, chatResponse.statusText);
+  console.log('[CHAT] Tempo resposta:', responseTime + 'ms');
+  console.log('[CHAT] Headers resposta:', Object.fromEntries(chatResponse.headers.entries()));
 
   if (!chatResponse.ok) {
     const errorText = await chatResponse.text();
-    console.error('Erro detalhado do processamento:', errorText);
-    throw new Error(`Erro no processamento: ${chatResponse.statusText} - ${errorText}`);
+    console.error('[CHAT] Erro detalhado:', errorText);
+    console.error('[CHAT] Request que falhou:', JSON.stringify(requestBody, null, 2));
+    
+    // Se modo debug, mostrar erro completo sem fallback
+    if (modoDebug) {
+      throw new Error(`Chat Dify falhou: ${chatResponse.status} ${chatResponse.statusText} - ${errorText}`);
+    }
+    
+    throw new Error(`Chat Dify falhou: ${chatResponse.status} ${chatResponse.statusText}`);
   }
 
   const chatResult = await chatResponse.json();
-  console.log('=== RESPOSTA COMPLETA DO DIFY ===');
-  console.log(JSON.stringify(chatResult, null, 2));
+  console.log('[CHAT] ✓ Resposta recebida com sucesso');
+  console.log('[CHAT] Estrutura da resposta:', Object.keys(chatResult));
+  console.log('[CHAT] Resposta completa:', JSON.stringify(chatResult, null, 2));
+  
+  // Verificar se resposta tem estrutura esperada
+  if (!chatResult.answer && !chatResult.data && !chatResult.message) {
+    console.warn('[CHAT] Resposta não tem campos esperados (answer/data/message)');
+    if (modoDebug) {
+      throw new Error('Resposta Dify sem campo answer/data/message');
+    }
+  }
   
   // Parse the response to extract structured data
-  return parseResponseToDadosExtraidos(chatResult.answer, tipoProposta, modoDebug);
+  const answerText = chatResult.answer || chatResult.data || chatResult.message || JSON.stringify(chatResult);
+  return parseResponseToDadosExtraidos(answerText, tipoProposta, modoDebug);
 }
 
 // Get prompt based on proposal type
