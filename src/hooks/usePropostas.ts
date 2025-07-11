@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export type StatusProposta = 'processando' | 'enviada' | 'visualizada' | 'aceita' | 'expirada';
-export type TipoProposta = 'energia-solar' | 'telhas' | 'divisorias' | 'pisos' | 'forros';
+export type TipoProposta = 'energia-solar' | 'telhas' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao';
 
 export interface Proposta {
   id: string;
