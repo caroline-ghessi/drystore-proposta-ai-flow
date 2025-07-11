@@ -13,6 +13,8 @@ import Ranking from "./pages/Ranking";
 import Configuracoes from "./pages/Configuracoes";
 import ClientePortal from "./pages/ClientePortal";
 import PropostaCliente from "./pages/PropostaCliente";
+import ProcessamentoProposta from "./pages/ProcessamentoProposta";
+import LoginCliente from "./pages/LoginCliente";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,8 @@ const App = () => (
           <Route path="/configuracoes" element={<Configuracoes />} />
           <Route path="/cliente-portal" element={<ClientePortal />} />
           <Route path="/proposta/:id" element={<PropostaCliente />} />
+          <Route path="/processamento" element={<ProcessamentoProposta />} />
+          <Route path="/login-cliente" element={<LoginCliente />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

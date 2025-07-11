@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import FluxoPagamento from "@/components/FluxoPagamento"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -20,6 +21,7 @@ import {
 const PropostaClientePage = () => {
   const [showRecomendacoes, setShowRecomendacoes] = useState(false);
   const [propostaAceita, setPropostaAceita] = useState(false);
+  const [visualizacaoRegistrada, setVisualizacaoRegistrada] = useState(false);
 
   const proposta = {
     cliente: "João Silva",
@@ -55,7 +57,18 @@ const PropostaClientePage = () => {
     }
   ];
 
-  const handleAceitarProposta = () => {
+  useEffect(() => {
+    // Simular registro de visualização
+    if (!visualizacaoRegistrada) {
+      setTimeout(() => {
+        console.log("Visualização da proposta registrada - vendedor será notificado");
+        setVisualizacaoRegistrada(true);
+      }, 2000);
+    }
+  }, [visualizacaoRegistrada]);
+
+  const handleAceitarProposta = (formaPagamento: string) => {
+    console.log("Proposta aceita com pagamento:", formaPagamento);
     setPropostaAceita(true);
     setShowRecomendacoes(true);
   };
@@ -320,10 +333,14 @@ const PropostaClientePage = () => {
               <div className="space-y-4">
                 {!propostaAceita ? (
                   <>
-                    <Button onClick={handleAceitarProposta} size="lg" className="w-full">
-                      <CheckCircle className="h-5 w-5 mr-2" />
-                      Aceitar Proposta
-                    </Button>
+                    <FluxoPagamento 
+                      proposta={{
+                        valor: 45000,
+                        produtos: ["Sistema Solar 5kWp", "Instalação"],
+                        cliente: proposta.cliente
+                      }}
+                      onAceitar={handleAceitarProposta}
+                    />
                     <Button variant="outline" size="lg" className="w-full">
                       <MessageCircle className="h-5 w-5 mr-2" />
                       Falar com Consultor
