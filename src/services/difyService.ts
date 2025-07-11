@@ -1,18 +1,25 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export interface DadosExtraidos {
+  // Energia Solar
   consumo_mensal?: number;
   valor_conta?: number;
   endereco_completo?: string;
   tipo_instalacao?: string;
   area_disponivel?: number;
-  area_cobertura?: number;
-  area_total?: number;
   orientacao?: string;
+  
+  // Telhas
+  area_cobertura?: number;
   tipo_telhado?: string;
   inclinacao?: string;
+  
+  // Divisórias  
+  area_total?: number;
   altura_pe_direito?: number;
   tipo_acabamento?: string;
+  
+  // Itens gerais
   itens_necessarios?: Array<{
     item: string;
     quantidade: number;
@@ -31,8 +38,9 @@ export interface DadosMateriaisConstrucao {
     preco_unitario: number;
     total: number;
   }>;
-  valor_frete: number;
+  valor_frete?: number;
   valor_total_proposta: number;
+  observacoes?: string;
 }
 
 export interface ProcessamentoResult {

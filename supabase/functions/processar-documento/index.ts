@@ -173,51 +173,129 @@ async function processWithDifyChat(fileId: string, tipoProposta: string, apiKey:
 function getPromptForTipoProposta(tipoProposta: string): string {
   switch (tipoProposta) {
     case 'energia-solar':
-      return `Analise este documento de conta de energia elétrica e extraia os seguintes dados em formato JSON:
-      {
-        "consumo_mensal": número do consumo em kWh,
-        "valor_conta": valor da conta,
-        "tipo_conexao": "monofásica/bifásica/trifásica",
-        "endereco_completo": "endereço completo"
-      }`;
+      return `EXTRAIA OS DADOS DESTA CONTA DE ENERGIA ELÉTRICA E RETORNE EM JSON.
+
+Analise o documento anexado e extraia os seguintes dados em formato JSON:
+{
+  "consumo_mensal": número do consumo em kWh,
+  "valor_conta": valor da conta,
+  "tipo_conexao": "monofásica/bifásica/trifásica",
+  "endereco_completo": "endereço completo"
+}
+
+IMPORTANTE: Retorne APENAS o JSON válido, sem texto adicional.`;
       
     case 'materiais-construcao':
-      return `Analise este documento de especificação de materiais de construção e extraia os seguintes dados em formato JSON:
-      {
-        "produtos": [
-          {
-            "codigo": "código do produto",
-            "descricao": "nome do produto",
-            "quantidade": número,
-            "unidade": "unidade de medida",
-            "preco_unitario": valor,
-            "total": valor total
-          }
-        ],
-        "valor_total_proposta": valor total da proposta,
-        "observacoes": "observações adicionais"
-      }`;
+      return `EXTRAIA OS DADOS DESTE DOCUMENTO DE MATERIAIS E RETORNE EM JSON.
+
+Analise este documento de orçamento/lista de materiais de construção e extraia TODOS os produtos com suas informações. Retorne APENAS um JSON válido com esta estrutura exata:
+
+{
+  "numero_proposta": "número ou código da proposta/orçamento",
+  "nome_do_cliente": "nome do cliente encontrado no documento",
+  "telefone_do_cliente": "telefone do cliente",
+  "produtos": [
+    {
+      "codigo": "código do produto",
+      "descricao": "descrição completa do produto/material",
+      "quantidade": número,
+      "unidade": "unidade de medida (un, m², kg, etc)",
+      "preco_unitario": valor numérico,
+      "total": valor total do item
+    }
+  ],
+  "valor_frete": valor do frete se especificado,
+  "valor_total_proposta": valor total da proposta,
+  "observacoes": "observações adicionais se houver"
+}
+
+IMPORTANTE: 
+- Retorne APENAS o JSON válido, sem texto adicional
+- Se não encontrar algum campo, use null ou string vazia
+- Valores numéricos devem ser números, não strings
+- Extraia TODOS os produtos listados no documento`;
+      
+    case 'telhas':
+      return `EXTRAIA OS DADOS DESTE DOCUMENTO DE TELHAS E RETORNE EM JSON.
+
+Analise este documento e extraia informações sobre telhas:
+{
+  "area_cobertura": área em m²,
+  "tipo_telhado": "tipo de telhado",
+  "inclinacao": "inclinação",
+  "itens_necessarios": [
+    {"item": "nome do item", "quantidade": número}
+  ]
+}
+
+IMPORTANTE: Retorne APENAS o JSON válido, sem texto adicional.`;
+
+    case 'divisorias':
+      return `EXTRAIA OS DADOS DESTE DOCUMENTO DE DIVISÓRIAS E RETORNE EM JSON.
+
+Analise este documento e extraia informações sobre divisórias:
+{
+  "area_total": área em m²,
+  "altura_pe_direito": altura em metros,
+  "tipo_acabamento": "tipo de acabamento",
+  "itens_necessarios": [
+    {"item": "nome do item", "quantidade": número}
+  ]
+}
+
+IMPORTANTE: Retorne APENAS o JSON válido, sem texto adicional.`;
       
     default:
-      return `Analise este documento e extraia informações relevantes em formato JSON estruturado.`;
+      return `EXTRAIA OS DADOS DESTE DOCUMENTO E RETORNE EM JSON. Analise este documento e extraia informações relevantes em formato JSON estruturado. IMPORTANTE: Retorne APENAS o JSON válido, sem texto adicional.`;
   }
 }
 
 // Parse Dify response to structured data
 function parseResponseToDadosExtraidos(response: string, tipoProposta: string): any {
   try {
-    // Try to extract JSON from the response
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    console.log('Resposta bruta do Dify:', response);
+    
+    // Primeira tentativa: JSON completo
+    let jsonMatch = response.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      const parsedData = JSON.parse(jsonMatch[0]);
-      return {
-        ...parsedData,
-        tipo_dados: tipoProposta
-      };
+      try {
+        const parsedData = JSON.parse(jsonMatch[0]);
+        console.log('JSON extraído com sucesso:', parsedData);
+        return {
+          ...parsedData,
+          tipo_dados: tipoProposta
+        };
+      } catch (parseError) {
+        console.log('Erro no parse do JSON extraído, tentando limpeza...');
+      }
     }
     
-    // Fallback to simulated data if parsing fails
+    // Segunda tentativa: buscar por padrões específicos
+    const cleanedResponse = response
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .replace(/^\s*[\w\s:]*?(?=\{)/g, '') // Remove texto antes do JSON
+      .replace(/\}[\s\S]*$/g, '}') // Remove texto depois do JSON
+      .trim();
+    
+    console.log('Resposta limpa:', cleanedResponse);
+    
+    if (cleanedResponse.startsWith('{') && cleanedResponse.endsWith('}')) {
+      try {
+        const parsedData = JSON.parse(cleanedResponse);
+        console.log('JSON limpo extraído com sucesso:', parsedData);
+        return {
+          ...parsedData,
+          tipo_dados: tipoProposta
+        };
+      } catch (parseError) {
+        console.log('Erro no parse do JSON limpo');
+      }
+    }
+    
+    // Fallback para dados simulados
     console.log('Não foi possível extrair JSON da resposta, usando dados simulados');
+    console.log('Resposta original para debug:', response);
     return simularProcessamentoDify('', tipoProposta);
     
   } catch (error) {
@@ -232,37 +310,54 @@ async function simularProcessamentoDify(arquivoUrl: string, tipoProposta: string
 
   if (tipoProposta === 'materiais-construcao') {
     return {
-      numero_proposta: 'PROP-' + Math.floor(Math.random() * 10000),
-      nome_do_cliente: 'Cliente Simulado',
-      telefone_do_cliente: '(11) 99999-9999',
+      numero_proposta: 'PROP-MAT-' + Math.floor(Math.random() * 10000),
+      nome_do_cliente: 'João Silva Santos',
+      telefone_do_cliente: '(11) 98765-4321',
       produtos: [
         {
-          codigo: 'MAT001',
-          descricao: 'Cimento CP II 50kg',
-          quantidade: 10,
-          unidade: 'saco',
-          preco_unitario: 32.50,
-          total: 325.00
+          codigo: 'CIM001',
+          descricao: 'Cimento Portland CP II-E-32 50kg',
+          quantidade: 20,
+          unidade: 'sc',
+          preco_unitario: 28.90,
+          total: 578.00
         },
         {
-          codigo: 'MAT002', 
-          descricao: 'Areia média m³',
-          quantidade: 5,
-          unidade: 'm³',
-          preco_unitario: 45.00,
-          total: 225.00
+          codigo: 'ARG001', 
+          descricao: 'Argamassa AC-I para revestimento interno 20kg',
+          quantidade: 15,
+          unidade: 'sc',
+          preco_unitario: 18.50,
+          total: 277.50
         },
         {
-          codigo: 'MAT003',
-          descricao: 'Brita 1 m³',
-          quantidade: 3,
-          unidade: 'm³',
-          preco_unitario: 55.00,
-          total: 165.00
+          codigo: 'CER001',
+          descricao: 'Cerâmica esmaltada 45x45cm PEI 3',
+          quantidade: 85,
+          unidade: 'm²',
+          preco_unitario: 24.90,
+          total: 2116.50
+        },
+        {
+          codigo: 'REJ001',
+          descricao: 'Rejunte flexível branco 1kg',
+          quantidade: 8,
+          unidade: 'kg',
+          preco_unitario: 12.80,
+          total: 102.40
+        },
+        {
+          codigo: 'FER001',
+          descricao: 'Vergalhão CA-50 Ø 8mm barra 12m',
+          quantidade: 25,
+          unidade: 'pc',
+          preco_unitario: 45.20,
+          total: 1130.00
         }
       ],
-      valor_frete: 150.00,
-      valor_total_proposta: 865.00,
+      valor_frete: 280.00,
+      valor_total_proposta: 4484.40,
+      observacoes: 'Entrega em até 5 dias úteis. Descarga por conta do cliente.',
       tipo_dados: 'materiais-construcao'
     };
   }
