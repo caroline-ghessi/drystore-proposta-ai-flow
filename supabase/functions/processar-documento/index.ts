@@ -17,6 +17,7 @@ interface ProcessarDocumentoRequest {
   tipo_proposta: string;
   cliente_nome: string;
   cliente_email: string;
+  modo_debug?: boolean;
 }
 
 serve(async (req) => {
@@ -25,12 +26,13 @@ serve(async (req) => {
   }
 
   try {
-    const { arquivo_url, tipo_proposta, cliente_nome, cliente_email }: ProcessarDocumentoRequest = await req.json();
+    const { arquivo_url, tipo_proposta, cliente_nome, cliente_email, modo_debug = false }: ProcessarDocumentoRequest = await req.json();
     
-    console.log('Processando documento:', { arquivo_url, tipo_proposta, cliente_nome });
+    console.log('=== INICIANDO PROCESSAMENTO DOCUMENTO ===');
+    console.log('Parâmetros:', { arquivo_url, tipo_proposta, cliente_nome, modo_debug });
 
     // Processar com Dify API ou simulação
-    const dadosExtraidos = await processarComDify(arquivo_url, tipo_proposta);
+    const dadosExtraidos = await processarComDify(arquivo_url, tipo_proposta, modo_debug);
     
     // Calcular valores baseado nos dados extraídos
     const valorTotal = calcularValorTotal(dadosExtraidos, tipo_proposta);
@@ -63,38 +65,88 @@ serve(async (req) => {
   }
 });
 
-async function processarComDify(arquivoUrl: string, tipoProposta: string) {
+async function processarComDify(arquivoUrl: string, tipoProposta: string, modoDebug: boolean = false) {
   const difyApiKey = Deno.env.get('DIFY_API_KEY');
   const difyAppId = Deno.env.get('DIFY_APP_ID');
   
+  console.log('=== INICIANDO PROCESSAMENTO DIFY ===');
+  console.log('Configuração:', { 
+    temApiKey: !!difyApiKey, 
+    temAppId: !!difyAppId, 
+    modoDebug,
+    tipoProposta 
+  });
+  
   if (!difyApiKey || !difyAppId) {
-    console.warn('DIFY_API_KEY ou DIFY_APP_ID não configurados, usando dados simulados');
+    const erro = 'DIFY_API_KEY ou DIFY_APP_ID não configurados';
+    console.error('=== ERRO DE CONFIGURAÇÃO ===', erro);
+    
+    if (modoDebug) {
+      throw new Error(erro);
+    }
+    
+    console.warn('Usando dados simulados (credenciais ausentes)');
     return simularProcessamentoDify(arquivoUrl, tipoProposta);
   }
 
   try {
-    console.log(`Processando documento ${tipoProposta} via Dify API`);
+    // Step 1: Testar conectividade
+    console.log('=== TESTANDO CONECTIVIDADE DIFY ===');
+    await testarConectividadeDify(difyApiKey);
+    console.log('✓ Conectividade Dify OK');
     
-    // Step 1: Upload file to Dify
+    // Step 2: Upload file to Dify
+    console.log('=== FAZENDO UPLOAD PARA DIFY ===');
     const fileId = await uploadFileToDify(arquivoUrl, difyApiKey);
-    console.log('Arquivo enviado para Dify:', fileId);
+    console.log('✓ Upload concluído. File ID:', fileId);
 
-    // Step 2: Process with chat messages API
-    const extractedData = await processWithDifyChat(fileId, tipoProposta, difyApiKey, difyAppId);
-    console.log('Dados extraídos pelo Dify:', extractedData);
+    // Step 3: Process with chat messages API
+    console.log('=== PROCESSANDO COM DIFY CHAT ===');
+    const extractedData = await processWithDifyChat(fileId, tipoProposta, difyApiKey, difyAppId, modoDebug);
+    console.log('✓ Processamento Dify concluído');
+    console.log('=== DADOS EXTRAÍDOS PELO DIFY ===', JSON.stringify(extractedData, null, 2));
 
     return extractedData;
     
   } catch (error) {
-    console.error('Erro na integração Dify:', error);
-    console.log('Fallback para dados simulados');
+    console.error('=== ERRO NO PROCESSAMENTO DIFY ===');
+    console.error('Erro detalhado:', error);
+    console.error('Stack trace:', error.stack);
+    
+    if (modoDebug) {
+      throw error; // No modo debug, não usar fallback
+    }
+    
+    console.log('=== USANDO FALLBACK (DADOS SIMULADOS) ===');
     return simularProcessamentoDify(arquivoUrl, tipoProposta);
+  }
+}
+
+// Testar conectividade Dify
+async function testarConectividadeDify(apiKey: string): Promise<void> {
+  try {
+    const testResponse = await fetch('https://api.dify.ai/v1/info', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+    });
+
+    if (!testResponse.ok) {
+      throw new Error(`Teste de conectividade falhou: ${testResponse.statusText}`);
+    }
+    
+    console.log('✓ Conectividade Dify confirmada');
+  } catch (error) {
+    console.error('✗ Falha na conectividade Dify:', error);
+    throw error;
   }
 }
 
 // Upload file to Dify
 async function uploadFileToDify(arquivoUrl: string, apiKey: string): Promise<string> {
-  console.log('Fazendo upload do arquivo para Dify...');
+  console.log('Baixando arquivo original...');
+  console.log('URL do arquivo:', arquivoUrl);
   
   // Download the file first
   const fileResponse = await fetch(arquivoUrl);
@@ -103,12 +155,14 @@ async function uploadFileToDify(arquivoUrl: string, apiKey: string): Promise<str
   }
   
   const fileBlob = await fileResponse.blob();
+  console.log('Arquivo baixado. Tamanho:', fileBlob.size, 'bytes');
   
   // Create form data for upload
   const formData = new FormData();
   formData.append('file', fileBlob, 'document.pdf');
   formData.append('user', 'drystore-user');
 
+  console.log('Enviando arquivo para Dify...');
   const uploadResponse = await fetch('https://api.dify.ai/v1/files/upload', {
     method: 'POST',
     headers: {
@@ -117,22 +171,46 @@ async function uploadFileToDify(arquivoUrl: string, apiKey: string): Promise<str
     body: formData,
   });
 
+  console.log('Status do upload:', uploadResponse.status, uploadResponse.statusText);
+
   if (!uploadResponse.ok) {
     const errorText = await uploadResponse.text();
+    console.error('Erro detalhado do upload:', errorText);
     throw new Error(`Erro no upload: ${uploadResponse.statusText} - ${errorText}`);
   }
 
   const uploadResult = await uploadResponse.json();
-  console.log('Resultado do upload:', uploadResult);
+  console.log('✓ Upload concluído com sucesso');
+  console.log('Resultado completo do upload:', JSON.stringify(uploadResult, null, 2));
   
   return uploadResult.id;
 }
 
 // Process with Dify Chat Messages API
-async function processWithDifyChat(fileId: string, tipoProposta: string, apiKey: string, appId: string): Promise<any> {
-  console.log('Processando documento com Dify Chat...');
+async function processWithDifyChat(fileId: string, tipoProposta: string, apiKey: string, appId: string, modoDebug: boolean = false): Promise<any> {
+  console.log('Construindo prompt para tipo:', tipoProposta);
   
   const prompt = getPromptForTipoProposta(tipoProposta);
+  console.log('Prompt construído:', prompt.substring(0, 200) + '...');
+  
+  const requestBody = {
+    inputs: {
+      app_id: appId
+    },
+    query: prompt,
+    response_mode: "blocking",
+    user: "drystore-user",
+    files: [
+      {
+        type: "document",
+        transfer_method: "local_file",
+        upload_file_id: fileId
+      }
+    ]
+  };
+  
+  console.log('Enviando request para Dify Chat...');
+  console.log('Request body:', JSON.stringify(requestBody, null, 2));
   
   const chatResponse = await fetch('https://api.dify.ai/v1/chat-messages', {
     method: 'POST',
@@ -140,33 +218,23 @@ async function processWithDifyChat(fileId: string, tipoProposta: string, apiKey:
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      inputs: {
-        app_id: appId
-      },
-      query: prompt,
-      response_mode: "blocking",
-      user: "drystore-user",
-      files: [
-        {
-          type: "document",
-          transfer_method: "local_file",
-          upload_file_id: fileId
-        }
-      ]
-    }),
+    body: JSON.stringify(requestBody),
   });
+
+  console.log('Status da resposta Dify:', chatResponse.status, chatResponse.statusText);
 
   if (!chatResponse.ok) {
     const errorText = await chatResponse.text();
+    console.error('Erro detalhado do processamento:', errorText);
     throw new Error(`Erro no processamento: ${chatResponse.statusText} - ${errorText}`);
   }
 
   const chatResult = await chatResponse.json();
-  console.log('Resposta do Dify:', chatResult);
+  console.log('=== RESPOSTA COMPLETA DO DIFY ===');
+  console.log(JSON.stringify(chatResult, null, 2));
   
   // Parse the response to extract structured data
-  return parseResponseToDadosExtraidos(chatResult.answer, tipoProposta);
+  return parseResponseToDadosExtraidos(chatResult.answer, tipoProposta, modoDebug);
 }
 
 // Get prompt based on proposal type
@@ -251,56 +319,105 @@ IMPORTANTE: Retorne APENAS o JSON válido, sem texto adicional.`;
 }
 
 // Parse Dify response to structured data
-function parseResponseToDadosExtraidos(response: string, tipoProposta: string): any {
+function parseResponseToDadosExtraidos(response: string, tipoProposta: string, modoDebug: boolean = false): any {
+  console.log('=== INICIANDO PARSE DA RESPOSTA DIFY ===');
+  console.log('Resposta bruta (primeiros 500 chars):', response.substring(0, 500));
+  console.log('Tamanho total da resposta:', response.length);
+  console.log('Tipo de proposta:', tipoProposta);
+  console.log('Modo debug:', modoDebug);
+  
   try {
-    console.log('Resposta bruta do Dify:', response);
-    
-    // Primeira tentativa: JSON completo
-    let jsonMatch = response.match(/\{[\s\S]*\}/);
+    // Estratégia 1: Procurar por blocos JSON com ```json
+    let jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
     if (jsonMatch) {
+      console.log('Encontrado bloco JSON com marcadores ```json');
       try {
-        const parsedData = JSON.parse(jsonMatch[0]);
-        console.log('JSON extraído com sucesso:', parsedData);
+        const parsedData = JSON.parse(jsonMatch[1]);
+        console.log('✓ JSON extraído de bloco marcado:', parsedData);
         return {
           ...parsedData,
-          tipo_dados: tipoProposta
+          tipo_dados: tipoProposta,
+          fonte_dados: 'dify_real'
         };
       } catch (parseError) {
-        console.log('Erro no parse do JSON extraído, tentando limpeza...');
+        console.log('✗ Erro no parse do JSON do bloco marcado:', parseError);
       }
     }
     
-    // Segunda tentativa: buscar por padrões específicos
+    // Estratégia 2: Procurar por JSON sem marcadores
+    jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      console.log('Encontrado possível JSON sem marcadores');
+      console.log('JSON candidato:', jsonMatch[0]);
+      try {
+        const parsedData = JSON.parse(jsonMatch[0]);
+        console.log('✓ JSON extraído sem marcadores:', parsedData);
+        return {
+          ...parsedData,
+          tipo_dados: tipoProposta,
+          fonte_dados: 'dify_real'
+        };
+      } catch (parseError) {
+        console.log('✗ Erro no parse do JSON sem marcadores:', parseError);
+      }
+    }
+    
+    // Estratégia 3: Limpeza avançada
+    console.log('Tentando limpeza avançada da resposta...');
     const cleanedResponse = response
       .replace(/```json/g, '')
       .replace(/```/g, '')
-      .replace(/^\s*[\w\s:]*?(?=\{)/g, '') // Remove texto antes do JSON
-      .replace(/\}[\s\S]*$/g, '}') // Remove texto depois do JSON
+      .replace(/^[^{]*(?=\{)/g, '') // Remove tudo antes do primeiro {
+      .replace(/\}[^}]*$/g, '}') // Remove tudo depois do último }
       .trim();
     
-    console.log('Resposta limpa:', cleanedResponse);
+    console.log('Resposta após limpeza:', cleanedResponse);
     
     if (cleanedResponse.startsWith('{') && cleanedResponse.endsWith('}')) {
       try {
         const parsedData = JSON.parse(cleanedResponse);
-        console.log('JSON limpo extraído com sucesso:', parsedData);
+        console.log('✓ JSON extraído após limpeza:', parsedData);
         return {
           ...parsedData,
-          tipo_dados: tipoProposta
+          tipo_dados: tipoProposta,
+          fonte_dados: 'dify_real'
         };
       } catch (parseError) {
-        console.log('Erro no parse do JSON limpo');
+        console.log('✗ Erro no parse do JSON limpo:', parseError);
       }
     }
     
-    // Fallback para dados simulados
-    console.log('Não foi possível extrair JSON da resposta, usando dados simulados');
-    console.log('Resposta original para debug:', response);
-    return simularProcessamentoDify('', tipoProposta);
+    // Se chegou até aqui, nenhuma estratégia funcionou
+    console.log('=== FALHA NO PARSE: NENHUMA ESTRATÉGIA FUNCIONOU ===');
+    console.log('Resposta original completa para análise:');
+    console.log(response);
+    
+    if (modoDebug) {
+      throw new Error(`Falha ao extrair JSON da resposta Dify. Resposta recebida: ${response.substring(0, 1000)}...`);
+    }
+    
+    console.log('=== USANDO FALLBACK DADOS SIMULADOS ===');
+    return {
+      ...simularProcessamentoDify('', tipoProposta),
+      fonte_dados: 'simulado_fallback',
+      resposta_original_dify: response
+    };
     
   } catch (error) {
-    console.error('Erro ao fazer parse da resposta:', error);
-    return simularProcessamentoDify('', tipoProposta);
+    console.error('=== ERRO CRÍTICO NO PARSE ===');
+    console.error('Erro:', error);
+    console.error('Stack:', error.stack);
+    
+    if (modoDebug) {
+      throw error;
+    }
+    
+    return {
+      ...simularProcessamentoDify('', tipoProposta),
+      fonte_dados: 'simulado_erro',
+      erro_parse: error.message,
+      resposta_original_dify: response
+    };
   }
 }
 

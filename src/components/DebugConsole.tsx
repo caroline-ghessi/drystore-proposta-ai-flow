@@ -180,7 +180,8 @@ export const DebugConsole = () => {
           arquivo_url: testFileUrl,
           tipo_proposta: selectedPromptType,
           cliente_nome: 'Cliente Teste Debug',
-          cliente_email: 'debug@teste.com'
+          cliente_email: 'debug@teste.com',
+          modo_debug: true // Força uso apenas do Dify, sem fallback
         }
       });
 
@@ -190,8 +191,23 @@ export const DebugConsole = () => {
         addTestResult('Processamento Completo', 'error', `Falha no processamento: ${response.error.message}`, response.error, duration);
         addLog('ERROR', 'Full Processing Test', 'Falha no processamento completo', response.error);
       } else {
-        addTestResult('Processamento Completo', 'success', 'Processamento concluído com sucesso', response.data, duration);
-        addLog('INFO', 'Full Processing Test', 'Processamento completo bem-sucedido', response.data);
+        // Verificar se os dados vieram realmente do Dify
+        const fonteDados = response.data?.dados_extraidos?.fonte_dados || 'não_identificada';
+        const isRealDify = fonteDados === 'dify_real';
+        
+        addTestResult(
+          'Processamento Completo', 
+          isRealDify ? 'success' : 'warning', 
+          isRealDify ? 'Dados reais do Dify extraídos' : `Fonte dos dados: ${fonteDados}`,
+          { ...response.data, fonte_detectada: fonteDados }, 
+          duration
+        );
+        
+        addLog('INFO', 'Full Processing Test', `Fonte: ${fonteDados}`, response.data);
+        
+        if (!isRealDify) {
+          addLog('WARN', 'Full Processing Test', 'ATENÇÃO: Dados não vieram do Dify real - verificar integração');
+        }
       }
     } catch (error: any) {
       const duration = Date.now() - startTime;
