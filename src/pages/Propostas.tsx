@@ -17,6 +17,7 @@ import {
 import { DryStoreSidebar } from "@/components/DryStoreSidebar"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import NotificacaoRealTime from "@/components/NotificacaoRealTime"
+import PropostasTable from "@/components/PropostasTable"
 import { usePropostas, type StatusProposta, type TipoProposta } from "@/hooks/usePropostas"
 import { PropostaWizard, type PropostaData } from "@/components/PropostaWizard"
 
@@ -138,83 +139,24 @@ export function Propostas() {
               </Button>
             </div>
 
-            <div className="grid gap-4">
-              {loading ? (
-                <div className="text-center py-8">
-                  <p>Carregando propostas...</p>
-                </div>
-              ) : filteredPropostas.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">
-                    {searchTerm ? "Nenhuma proposta encontrada." : "Nenhuma proposta criada ainda."}
-                  </p>
-                </div>
-              ) : (
-                filteredPropostas.map((proposta) => (
-                  <Card key={proposta.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-base font-medium">
-                        {proposta.cliente_nome}
-                      </CardTitle>
-                      <div className="flex items-center space-x-2">
-                        {proposta.data_visualizacao && (
-                          <Badge variant="outline" className="text-xs">
-                            <Eye className="h-3 w-3 mr-1" />
-                            Visualizada
-                          </Badge>
-                        )}
-                        <Badge variant={getStatusColor(proposta.status)}>
-                          {getStatusText(proposta.status)}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium">{formatTipoProposta(proposta.tipo_proposta)}</p>
-                          <p className="text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3 inline mr-1" />
-                            Criada em {new Date(proposta.created_at).toLocaleDateString('pt-BR')}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {proposta.cliente_email}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-primary flex items-center">
-                            <DollarSign className="h-4 w-4 mr-1" />
-                            {proposta.valor_total 
-                              ? proposta.valor_total.toLocaleString('pt-BR', { 
-                                  style: 'currency', 
-                                  currency: 'BRL' 
-                                })
-                              : 'Calculando...'
-                            }
-                          </p>
-                          <div className="flex gap-2 mt-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => navigate(`/proposta/${proposta.url_unica}`)}
-                            >
-                              <Eye className="h-3 w-3 mr-1" />
-                              Ver
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                            >
-                              <Send className="h-3 w-3 mr-1" />
-                              Enviar
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
+            {loading ? (
+              <div className="text-center py-8">
+                <p>Carregando propostas...</p>
+              </div>
+            ) : (
+              <PropostasTable 
+                propostas={filteredPropostas.map(p => ({
+                  id: p.id,
+                  cliente: p.cliente_nome,
+                  valor: p.valor_total 
+                    ? p.valor_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                    : 'Calculando...',
+                  status: p.status,
+                  tipo: formatTipoProposta(p.tipo_proposta),
+                  data: new Date(p.created_at).toLocaleDateString('pt-BR')
+                }))}
+              />
+            )}
           </main>
 
           {/* Wizard de Nova Proposta */}
