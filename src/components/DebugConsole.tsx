@@ -719,23 +719,91 @@ export const DebugConsole = () => {
           </div>
         </TabsContent>
 
-        {/* Aba de Ferramentas */}
+        {/* Aba de Ferramentas de Desenvolvimento */}
         <TabsContent value="tools" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ferramentas de Desenvolvimento</CardTitle>
-              <CardDescription>Utilitários para debug e desenvolvimento</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Alert>
-                <Clock className="h-4 w-4" />
-                <AlertDescription>
-                  Ferramentas adicionais serão implementadas conforme necessidade.
-                  Sugestões: gerador de dados mock, simulador de falhas, configurador de ambiente.
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gerenciamento de Arquivos Debug</CardTitle>
+                <CardDescription>Controle de arquivos de teste e limpeza</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">
+                    {debugFiles.length} arquivo(s) de debug
+                  </span>
+                  <Button variant="outline" onClick={cleanupDebugFiles}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Limpar Arquivos Antigos
+                  </Button>
+                </div>
+
+                <ScrollArea className="h-48">
+                  <div className="space-y-2">
+                    {debugFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 border rounded">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{file.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(file.size / 1024 / 1024).toFixed(2)} MB • {file.type} • 
+                            {new Date(file.uploadedAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await uploadService.deleteDocumento(file.path);
+                              setDebugFiles(prev => prev.filter((_, i) => i !== index));
+                              addLog('INFO', 'File Management', `Arquivo removido: ${file.name}`);
+                            } catch (error: any) {
+                              addLog('ERROR', 'File Management', `Erro ao remover arquivo: ${error.message}`);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    {debugFiles.length === 0 && (
+                      <div className="text-center text-muted-foreground py-4">
+                        Nenhum arquivo de debug encontrado
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Configurações de Debug</CardTitle>
+                <CardDescription>Ajustes e configurações do sistema de debug</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Alert>
+                  <Clock className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Limpeza Automática:</strong> Arquivos de debug podem ser removidos 
+                    manualmente através do botão "Limpar Arquivos Antigos". Para automatizar, 
+                    configure um cron job no Supabase para executar a função cleanup-debug-files.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Storage usado (debug):</span>
+                    <span>{(debugFiles.reduce((acc, f) => acc + f.size, 0) / 1024 / 1024).toFixed(2)} MB</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Arquivos de debug:</span>
+                    <span>{debugFiles.length}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
