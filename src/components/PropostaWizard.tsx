@@ -5,6 +5,7 @@ import { StepSelector } from "./wizard/StepSelector"
 import { StepUpload } from "./wizard/StepUpload"
 import { StepProcessing } from "./wizard/StepProcessing"
 import { StepReview } from "./wizard/StepReview"
+import { StepGenerate } from "./wizard/StepGenerate"
 
 export type TipoProposta = 'energia-solar' | 'telhas' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao'
 
@@ -28,10 +29,11 @@ interface PropostaWizardProps {
 }
 
 const STEPS = [
-  { title: "Tipo de Proposta", description: "Selecione o grupo de produtos" },
-  { title: "Documento", description: "Faça upload do documento" },
-  { title: "Processamento", description: "Extraindo informações" },
-  { title: "Revisão", description: "Confirme os dados" }
+  { title: "Tipo de Proposta", description: "Selecione o tipo de proposta" },
+  { title: "Upload de PDF", description: "Envie o documento" },
+  { title: "Extração de Dados", description: "Processamento automático" },
+  { title: "Validar Dados", description: "Revisar e completar informações" },
+  { title: "Gerar Proposta", description: "Confirmar e criar proposta" }
 ]
 
 export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizardProps) {
@@ -134,8 +136,6 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
           {currentStep === 1 && (
             <StepUpload
               tipoProposta={propostaData.tipoProposta}
-              clienteNome={propostaData.clienteNome}
-              clienteEmail={propostaData.clienteEmail}
               onDataChange={handleStepData}
               onNext={handleNext}
               onBack={handleBack}
@@ -158,6 +158,14 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             <StepReview
               propostaData={propostaData}
               onDataChange={handleStepData}
+              onBack={handleBack}
+              onComplete={handleNext}
+            />
+          )}
+
+          {currentStep === 4 && (
+            <StepGenerate
+              propostaData={propostaData}
               onBack={handleBack}
               onComplete={handleComplete}
             />

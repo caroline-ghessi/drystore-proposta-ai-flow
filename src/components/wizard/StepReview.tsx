@@ -72,9 +72,9 @@ export function StepReview({
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h3 className="text-lg font-semibold mb-2">Revisar Proposta</h3>
+        <h3 className="text-lg font-semibold mb-2">Validar e Completar Dados</h3>
         <p className="text-muted-foreground">
-          Confirme os dados extraídos e complete as informações necessárias
+          Revise os dados extraídos automaticamente e complete as informações do cliente
         </p>
       </div>
 
@@ -274,7 +274,7 @@ export function StepReview({
           disabled={!propostaData.clienteNome || !propostaData.clienteEmail}
           className="bg-primary hover:bg-primary/90"
         >
-          Criar Proposta
+          Prosseguir
         </Button>
       </div>
     </div>

@@ -9,8 +9,6 @@ import { uploadService } from "@/services/uploadService"
 
 interface StepUploadProps {
   tipoProposta: TipoProposta;
-  clienteNome: string;
-  clienteEmail: string;
   onDataChange: (data: Partial<PropostaData>) => void;
   onNext: () => void;
   onBack: () => void;
@@ -59,8 +57,6 @@ const DOCUMENTO_INFO = {
 
 export function StepUpload({ 
   tipoProposta, 
-  clienteNome, 
-  clienteEmail, 
   onDataChange, 
   onNext, 
   onBack 
@@ -91,7 +87,7 @@ export function StepUpload({
   }
 
   const handleNext = async () => {
-    if (!arquivo || !clienteNome || !clienteEmail) {
+    if (!arquivo) {
       return
     }
 
@@ -108,29 +104,29 @@ export function StepUpload({
     }
   }
 
-  const isValid = arquivo && clienteNome && clienteEmail
+  const isValid = arquivo
 
   return (
     <div className="space-y-6">
       <div className="text-center">
         <h3 className="text-lg font-semibold mb-2">
-          Upload de Documento - {TIPO_LABELS[tipoProposta]}
+          Upload de PDF - {TIPO_LABELS[tipoProposta]}
         </h3>
         <p className="text-muted-foreground">
-          {info.descricao}
+          {info.descricao}. Os dados do cliente serão extraídos automaticamente do documento.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="flex justify-center">
         {/* Upload de Arquivo */}
-        <Card>
+        <Card className="w-full max-w-lg">
           <CardHeader>
-            <CardTitle className="text-base">{info.titulo}</CardTitle>
+            <CardTitle className="text-base text-center">{info.titulo}</CardTitle>
           </CardHeader>
           <CardContent>
             <div
               className={`
-                border-2 border-dashed rounded-lg p-6 text-center transition-colors
+                border-2 border-dashed rounded-lg p-8 text-center transition-colors
                 ${dragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'}
                 ${arquivo ? 'border-green-500 bg-green-50' : ''}
               `}
@@ -145,9 +141,9 @@ export function StepUpload({
                 <div className="space-y-3">
                   <div className="flex items-center justify-center">
                     {arquivo.type.includes('image') ? (
-                      <Image className="h-8 w-8 text-green-600" />
+                      <Image className="h-12 w-12 text-green-600" />
                     ) : (
-                      <FileText className="h-8 w-8 text-green-600" />
+                      <FileText className="h-12 w-12 text-green-600" />
                     )}
                   </div>
                   <div>
@@ -169,13 +165,13 @@ export function StepUpload({
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                <div className="space-y-4">
+                  <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
                   <div>
-                    <p className="font-medium">
+                    <p className="font-medium text-lg">
                       Arraste o arquivo aqui ou clique para selecionar
                     </p>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-sm text-muted-foreground mt-2">
                       Formatos aceitos: {info.formatos}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -193,59 +189,12 @@ export function StepUpload({
                     id="file-upload"
                   />
                   <Label htmlFor="file-upload" className="cursor-pointer">
-                    <Button variant="outline" asChild>
+                    <Button variant="outline" size="lg" asChild>
                       <span>Selecionar Arquivo</span>
                     </Button>
                   </Label>
                 </div>
               )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Dados do Cliente */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Dados do Cliente</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="cliente-nome">Nome Completo *</Label>
-              <Input
-                id="cliente-nome"
-                value={clienteNome}
-                onChange={(e) => onDataChange({ clienteNome: e.target.value })}
-                placeholder="Nome do cliente"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="cliente-email">Email *</Label>
-              <Input
-                id="cliente-email"
-                type="email"
-                value={clienteEmail}
-                onChange={(e) => onDataChange({ clienteEmail: e.target.value })}
-                placeholder="email@exemplo.com"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="cliente-whatsapp">WhatsApp</Label>
-              <Input
-                id="cliente-whatsapp"
-                onChange={(e) => onDataChange({ clienteWhatsapp: e.target.value })}
-                placeholder="(11) 99999-9999"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="cliente-endereco">Endereço</Label>
-              <Input
-                id="cliente-endereco"
-                onChange={(e) => onDataChange({ clienteEndereco: e.target.value })}
-                placeholder="Endereço completo"
-              />
             </div>
           </CardContent>
         </Card>
@@ -259,7 +208,7 @@ export function StepUpload({
           onClick={handleNext} 
           disabled={!isValid || uploading}
         >
-          {uploading ? 'Enviando...' : 'Processar Documento'}
+          {uploading ? 'Enviando...' : 'Extrair Dados'}
         </Button>
       </div>
     </div>
