@@ -256,12 +256,14 @@ async function processWithDifyWorkflow(
     console.log(`[WORKFLOW] Configurando pdf_file com URL remota: ${remoteUrl}`);
     inputs.pdf_file = {
       transfer_method: "remote_url",
+      type: "document",
       url: remoteUrl
     };
   } else if (fileId) {
     console.log(`[WORKFLOW] Configurando pdf_file com upload_file_id: ${fileId}`);
     inputs.pdf_file = {
       transfer_method: "local_file",
+      type: "document",
       upload_file_id: fileId
     };
   } else {
