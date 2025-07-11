@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { NavLink, useLocation } from "react-router-dom"
+import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { 
   Home, 
   FileText, 
@@ -49,14 +49,25 @@ const toolsItems = [
 export function DryStoreSidebar() {
   const { state } = useSidebar()
   const location = useLocation()
+  const navigate = useNavigate()
   const currentPath = location.pathname
   const collapsed = state === "collapsed"
 
   const isActive = (path: string) => currentPath === path
+  const handleNavigation = (url: string) => {
+    navigate(url);
+  };
+
+  const getButtonStyles = (isActive: boolean) => ({
+    backgroundColor: isActive ? 'hsl(var(--gradient-primary))' : 'transparent',
+    color: isActive ? 'white' : 'hsl(var(--sidebar-foreground))',
+    fontWeight: isActive ? '600' : '400'
+  });
+
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive 
       ? "bg-gradient-primary text-white shadow-elegant font-medium" 
-      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300"
+      : "hover:bg-sidebar-accent transition-all duration-300"
 
   return (
     <Sidebar
@@ -86,18 +97,23 @@ export function DryStoreSidebar() {
 
       <SidebarContent className="p-2">
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : "text-sidebar-foreground font-semibold text-sm"}>
+          <SidebarGroupLabel 
+            className={collapsed ? "sr-only" : "font-semibold text-sm"}
+            style={{ color: 'hsl(var(--sidebar-foreground))' }}
+          >
             Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavCls}>
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
+                  <SidebarMenuButton 
+                    onClick={() => handleNavigation(item.url)}
+                    className={getNavCls({ isActive: isActive(item.url) })}
+                    style={getButtonStyles(isActive(item.url))}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {!collapsed && <span style={{ color: 'inherit' }}>{item.title}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -106,18 +122,23 @@ export function DryStoreSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : "text-sidebar-foreground font-semibold text-sm"}>
+          <SidebarGroupLabel 
+            className={collapsed ? "sr-only" : "font-semibold text-sm"}
+            style={{ color: 'hsl(var(--sidebar-foreground))' }}
+          >
             Produtos
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {productsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavCls}>
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
+                  <SidebarMenuButton 
+                    onClick={() => handleNavigation(item.url)}
+                    className={getNavCls({ isActive: isActive(item.url) })}
+                    style={getButtonStyles(isActive(item.url))}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {!collapsed && <span style={{ color: 'inherit' }}>{item.title}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -126,27 +147,32 @@ export function DryStoreSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : "text-sidebar-foreground font-semibold text-sm"}>
+          <SidebarGroupLabel 
+            className={collapsed ? "sr-only" : "font-semibold text-sm"}
+            style={{ color: 'hsl(var(--sidebar-foreground))' }}
+          >
             Ferramentas
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {toolsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavCls}>
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && (
-                        <div className="flex items-center justify-between w-full">
-                          <span>{item.title}</span>
-                          {item.badge && (
-                            <Badge variant="secondary" className="ml-auto">
-                              {item.badge}
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-                    </NavLink>
+                  <SidebarMenuButton 
+                    onClick={() => handleNavigation(item.url)}
+                    className={getNavCls({ isActive: isActive(item.url) })}
+                    style={getButtonStyles(isActive(item.url))}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {!collapsed && (
+                      <div className="flex items-center justify-between w-full">
+                        <span style={{ color: 'inherit' }}>{item.title}</span>
+                        {item.badge && (
+                          <Badge variant="secondary" className="ml-auto">
+                            {item.badge}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
