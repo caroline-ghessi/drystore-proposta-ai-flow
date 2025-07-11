@@ -254,10 +254,18 @@ async function processWithDifyWorkflow(
   
   if (remoteUrl) {
     console.log(`[WORKFLOW] Configurando pdf_file com URL remota: ${remoteUrl}`);
-    inputs.pdf_file = remoteUrl; // Usar pdf_file diretamente como string
+    inputs.pdf_file = {
+      transfer_method: "remote_url",
+      url: remoteUrl
+    };
   } else if (fileId) {
-    console.log(`[WORKFLOW] Configurando pdf_file com file_id: ${fileId}`);
-    inputs.pdf_file = fileId; // Alternativamente usar file_id
+    console.log(`[WORKFLOW] Configurando pdf_file com upload_file_id: ${fileId}`);
+    inputs.pdf_file = {
+      transfer_method: "local_file",
+      upload_file_id: fileId
+    };
+  } else {
+    throw new Error('Nem fileId nem remoteUrl fornecidos para o workflow');
   }
 
   const body = {
