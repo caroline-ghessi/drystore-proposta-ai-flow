@@ -1,165 +1,108 @@
-import { Calendar, FileText, Plus, Search, Users, Upload, Zap } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { DryStoreSidebar } from "@/components/DryStoreSidebar";
-import NotificacaoRealTime from "@/components/NotificacaoRealTime";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { usePropostas, type TipoProposta, type StatusProposta } from "@/hooks/usePropostas";
-import { uploadService } from "@/services/uploadService";
-import { difyService } from "@/services/difyService";
-import { toast } from "sonner";
+import { useState, useEffect } from "react"
+import { useNavigate, useLocation } from "react-router-dom"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { 
+  Plus, 
+  Search, 
+  Calendar, 
+  DollarSign,
+  Eye,
+  Download,
+  Send,
+  MoreHorizontal
+} from "lucide-react"
+import { DryStoreSidebar } from "@/components/DryStoreSidebar"
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import NotificacaoRealTime from "@/components/NotificacaoRealTime"
+import { usePropostas, type StatusProposta, type TipoProposta } from "@/hooks/usePropostas"
+import { PropostaWizard, type PropostaData } from "@/components/PropostaWizard"
 
-const Propostas = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [mostrarModal, setMostrarModal] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const navigate = useNavigate();
-  
-  const { propostas, loading, criarProposta, fetchPropostas } = usePropostas();
+export function Propostas() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [searchTerm, setSearchTerm] = useState("")
+  const [mostrarWizard, setMostrarWizard] = useState(false)
 
-  const [formData, setFormData] = useState({
-    clienteNome: "",
-    clienteEmail: "",
-    clienteWhatsapp: "",
-    clienteEndereco: "",
-    tipo: "" as TipoProposta | "",
-    observacoes: "",
-    arquivo: null as File | null,
-  });
+  const { propostas, loading, criarProposta, fetchPropostas } = usePropostas()
 
   useEffect(() => {
-    fetchPropostas();
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    fetchPropostas()
     
-    if (!formData.arquivo) {
-      toast.error("Por favor, selecione um arquivo");
-      return;
+    // Verificar se deve abrir o wizard automaticamente
+    const searchParams = new URLSearchParams(location.search)
+    if (searchParams.get('action') === 'nova') {
+      setMostrarWizard(true)
+      // Limpar o parâmetro da URL
+      const newUrl = location.pathname
+      window.history.replaceState({}, '', newUrl)
     }
+  }, [location])
 
-    if (!formData.tipo) {
-      toast.error("Por favor, selecione o tipo de proposta");
-      return;
-    }
-
-    if (!formData.clienteNome || !formData.clienteEmail) {
-      toast.error("Nome e email do cliente são obrigatórios");
-      return;
-    }
-
+  const handleCriarProposta = async (data: PropostaData) => {
     try {
-      setUploading(true);
-      
-      // 1. Validar arquivo
-      const validation = uploadService.validateFile(formData.arquivo);
-      if (!validation.valid) {
-        toast.error(validation.error);
-        return;
-      }
-
-      // 2. Upload do arquivo
-      const uploadResult = await uploadService.uploadDocumento(formData.arquivo);
-      toast.success("Arquivo enviado com sucesso!");
-      
-      setProcessing(true);
-      
-      // 3. Processar documento com IA
-      const processResult = await difyService.processarDocumento(
-        uploadResult.url,
-        formData.tipo,
-        formData.clienteNome,
-        formData.clienteEmail
-      );
-      
-      // 4. Criar proposta
       const novaProposta = await criarProposta({
-        cliente_nome: formData.clienteNome,
-        cliente_email: formData.clienteEmail,
-        cliente_whatsapp: formData.clienteWhatsapp,
-        cliente_endereco: formData.clienteEndereco,
-        tipo_proposta: formData.tipo,
-        dados_extraidos: processResult.dados_extraidos,
-        valor_total: processResult.valor_total,
-        observacoes: formData.observacoes,
-        arquivo_original: uploadResult.url
-      });
+        cliente_nome: data.clienteNome,
+        cliente_email: data.clienteEmail,
+        cliente_whatsapp: data.clienteWhatsapp,
+        cliente_endereco: data.clienteEndereco,
+        tipo_proposta: data.tipoProposta,
+        arquivo_original: data.arquivoUrl,
+        dados_extraidos: data.dadosExtraidos,
+        valor_total: data.valorTotal,
+        observacoes: data.observacoes
+      })
 
       if (novaProposta) {
-        toast.success("Proposta criada com sucesso!");
-        
-        // Fechar modal e limpar form
-        setMostrarModal(false);
-        setFormData({
-          clienteNome: "",
-          clienteEmail: "",
-          clienteWhatsapp: "",
-          clienteEndereco: "",
-          tipo: "" as TipoProposta | "",
-          observacoes: "",
-          arquivo: null,
-        });
-        
-        // Navegar para visualização da proposta
-        navigate(`/proposta/${novaProposta.url_unica}`);
+        console.log('Proposta criada:', novaProposta)
+        await fetchPropostas()
+        navigate(`/proposta/${novaProposta.url_unica}`)
       }
-      
-    } catch (error: any) {
-      console.error('Erro ao criar proposta:', error);
-      toast.error(`Erro ao criar proposta: ${error.message}`);
-    } finally {
-      setUploading(false);
-      setProcessing(false);
+    } catch (error) {
+      console.error('Erro ao criar proposta:', error)
+      throw new Error('Erro ao criar proposta. Tente novamente.')
     }
-  };
+  }
 
   const getStatusColor = (status: StatusProposta) => {
     switch (status) {
-      case "enviada": return "default";
-      case "visualizada": return "secondary";
-      case "aceita": return "default";
-      case "processando": return "outline";
-      case "expirada": return "destructive";
-      default: return "outline";
+      case "enviada": return "default"
+      case "visualizada": return "secondary"
+      case "aceita": return "default"
+      case "processando": return "outline"
+      case "expirada": return "destructive"
+      default: return "outline"
     }
-  };
+  }
 
   const getStatusText = (status: StatusProposta) => {
     switch (status) {
-      case "processando": return "Processando";
-      case "enviada": return "Enviada";
-      case "visualizada": return "Visualizada";
-      case "aceita": return "Aceita";
-      case "expirada": return "Expirada";
-      default: return status;
+      case "processando": return "Processando"
+      case "enviada": return "Enviada"
+      case "visualizada": return "Visualizada"
+      case "aceita": return "Aceita"
+      case "expirada": return "Expirada"
+      default: return status
     }
-  };
+  }
 
   const formatTipoProposta = (tipo: TipoProposta) => {
     switch (tipo) {
-      case "energia-solar": return "Energia Solar";
-      case "telhas": return "Telhas";
-      case "divisorias": return "Divisórias";
-      case "pisos": return "Pisos";
-      case "forros": return "Forros";
-      default: return tipo;
+      case "energia-solar": return "Energia Solar"
+      case "telhas": return "Telhas"
+      case "divisorias": return "Divisórias"
+      case "pisos": return "Pisos"
+      case "forros": return "Forros"
+      default: return tipo
     }
-  };
+  }
 
   const filteredPropostas = propostas.filter(proposta =>
     proposta.cliente_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     formatTipoProposta(proposta.tipo_proposta).toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  )
 
   return (
     <SidebarProvider>
@@ -189,174 +132,10 @@ const Propostas = () => {
                 />
               </div>
               <NotificacaoRealTime />
-              <Dialog open={mostrarModal} onOpenChange={setMostrarModal}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nova Proposta
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Nova Proposta</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="clienteNome">Nome do Cliente *</Label>
-                        <Input
-                          id="clienteNome"
-                          value={formData.clienteNome}
-                          onChange={(e) => setFormData(prev => ({ ...prev, clienteNome: e.target.value }))}
-                          placeholder="Nome completo"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="clienteEmail">Email *</Label>
-                        <Input
-                          id="clienteEmail"
-                          type="email"
-                          value={formData.clienteEmail}
-                          onChange={(e) => setFormData(prev => ({ ...prev, clienteEmail: e.target.value }))}
-                          placeholder="email@exemplo.com"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="clienteWhatsapp">WhatsApp</Label>
-                        <Input
-                          id="clienteWhatsapp"
-                          value={formData.clienteWhatsapp}
-                          onChange={(e) => setFormData(prev => ({ ...prev, clienteWhatsapp: e.target.value }))}
-                          placeholder="(11) 99999-9999"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="tipo">Tipo de Proposta *</Label>
-                        <Select value={formData.tipo} onValueChange={(value: TipoProposta) => setFormData(prev => ({ ...prev, tipo: value }))}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tipo" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="energia-solar">
-                              <div className="flex items-center space-x-2">
-                                <Zap className="w-4 h-4" />
-                                <span>Energia Solar</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="telhas">
-                              <div className="flex items-center space-x-2">
-                                <FileText className="w-4 h-4" />
-                                <span>Telhas</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="divisorias">
-                              <div className="flex items-center space-x-2">
-                                <FileText className="w-4 h-4" />
-                                <span>Divisórias</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="pisos">
-                              <div className="flex items-center space-x-2">
-                                <FileText className="w-4 h-4" />
-                                <span>Pisos</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="forros">
-                              <div className="flex items-center space-x-2">
-                                <FileText className="w-4 h-4" />
-                                <span>Forros</span>
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="clienteEndereco">Endereço</Label>
-                      <Input
-                        id="clienteEndereco"
-                        value={formData.clienteEndereco}
-                        onChange={(e) => setFormData(prev => ({ ...prev, clienteEndereco: e.target.value }))}
-                        placeholder="Endereço completo"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="observacoes">Observações</Label>
-                      <Textarea
-                        id="observacoes"
-                        value={formData.observacoes}
-                        onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
-                        placeholder="Observações adicionais..."
-                        rows={3}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label>Documento *</Label>
-                      <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
-                        <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                          {formData.tipo === "energia-solar" 
-                            ? "Envie a foto/PDF da conta de luz" 
-                            : "Envie o PDF do projeto ou documentação"
-                          }
-                        </p>
-                        {formData.arquivo && (
-                          <p className="text-sm font-medium mt-2 text-primary">
-                            {formData.arquivo.name}
-                          </p>
-                        )}
-                        <input 
-                          type="file" 
-                          className="hidden" 
-                          id="arquivo"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              setFormData(prev => ({ ...prev, arquivo: file }));
-                            }
-                          }}
-                        />
-                        <Button 
-                          type="button"
-                          variant="outline" 
-                          className="mt-2"
-                          onClick={() => document.getElementById('arquivo')?.click()}
-                        >
-                          {formData.arquivo ? 'Trocar Arquivo' : 'Selecionar Arquivo'}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-2">
-                      <Button 
-                        type="button"
-                        variant="outline" 
-                        className="flex-1"
-                        onClick={() => setMostrarModal(false)}
-                        disabled={uploading || processing}
-                      >
-                        Cancelar
-                      </Button>
-                      <Button 
-                        type="submit"
-                        className="flex-1"
-                        disabled={!formData.tipo || !formData.arquivo || !formData.clienteNome || !formData.clienteEmail || uploading || processing}
-                      >
-                        {uploading ? "Enviando..." : processing ? "Processando..." : "Criar Proposta"}
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
+              <Button onClick={() => setMostrarWizard(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Proposta
+              </Button>
             </div>
 
             <div className="grid gap-4">
@@ -380,6 +159,7 @@ const Propostas = () => {
                       <div className="flex items-center space-x-2">
                         {proposta.data_visualizacao && (
                           <Badge variant="outline" className="text-xs">
+                            <Eye className="h-3 w-3 mr-1" />
                             Visualizada
                           </Badge>
                         )}
@@ -393,6 +173,7 @@ const Propostas = () => {
                         <div className="space-y-1">
                           <p className="text-sm font-medium">{formatTipoProposta(proposta.tipo_proposta)}</p>
                           <p className="text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3 inline mr-1" />
                             Criada em {new Date(proposta.created_at).toLocaleDateString('pt-BR')}
                           </p>
                           <p className="text-xs text-muted-foreground">
@@ -400,17 +181,33 @@ const Propostas = () => {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-primary">
-                            {proposta.valor_total ? `R$ ${proposta.valor_total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Calculando...'}
+                          <p className="text-lg font-bold text-primary flex items-center">
+                            <DollarSign className="h-4 w-4 mr-1" />
+                            {proposta.valor_total 
+                              ? proposta.valor_total.toLocaleString('pt-BR', { 
+                                  style: 'currency', 
+                                  currency: 'BRL' 
+                                })
+                              : 'Calculando...'
+                            }
                           </p>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="mt-2"
-                            onClick={() => navigate(`/proposta/${proposta.url_unica}`)}
-                          >
-                            Ver Detalhes
-                          </Button>
+                          <div className="flex gap-2 mt-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => navigate(`/proposta/${proposta.url_unica}`)}
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              Ver
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                            >
+                              <Send className="h-3 w-3 mr-1" />
+                              Enviar
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -419,10 +216,17 @@ const Propostas = () => {
               )}
             </div>
           </main>
+
+          {/* Wizard de Nova Proposta */}
+          <PropostaWizard
+            open={mostrarWizard}
+            onOpenChange={setMostrarWizard}
+            onComplete={handleCriarProposta}
+          />
         </div>
       </div>
     </SidebarProvider>
-  );
-};
+  )
+}
 
-export default Propostas;
+export default Propostas

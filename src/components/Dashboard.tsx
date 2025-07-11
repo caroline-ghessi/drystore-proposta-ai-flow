@@ -157,6 +157,10 @@ function MetasVendas() {
 
 export function Dashboard() {
   const navigate = useNavigate()
+
+  const handleNovaPropostaClick = () => {
+    navigate('/propostas?action=nova')
+  }
   
   const metrics = [
     {
@@ -239,7 +243,7 @@ export function Dashboard() {
             <Calendar className="h-4 w-4 mr-2" />
             Este mês
           </Button>
-          <Button variant="premium" size="sm" onClick={() => navigate('/propostas')}>
+          <Button variant="premium" size="sm" onClick={handleNovaPropostaClick}>
             <Plus className="h-4 w-4 mr-2" />
             Nova Proposta
           </Button>
@@ -271,7 +275,7 @@ export function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex-col gap-2" onClick={() => navigate('/propostas')}>
+            <Button variant="outline" className="h-20 flex-col gap-2" onClick={handleNovaPropostaClick}>
               <FileText className="h-6 w-6" />
               <span>Nova Proposta</span>
             </Button>
