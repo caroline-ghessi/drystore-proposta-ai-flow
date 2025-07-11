@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.notificar-email]
 verify_jwt = false
+
+[functions.cleanup-debug-files]
+verify_jwt = false

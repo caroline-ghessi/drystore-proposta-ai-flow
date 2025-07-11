@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadService } from "@/services/uploadService";
 
 interface LogEntry {
   id: string;
@@ -55,6 +56,9 @@ export const DebugConsole = () => {
   const [selectedPromptType, setSelectedPromptType] = useState("energia-solar");
   const [customPrompt, setCustomPrompt] = useState("");
   const [testFileUrl, setTestFileUrl] = useState("");
+  const [testFile, setTestFile] = useState<File | null>(null);
+  const [debugFiles, setDebugFiles] = useState<any[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const addLog = (level: LogEntry['level'], component: string, message: string, context?: any) => {
     const newLog: LogEntry = {
@@ -111,12 +115,57 @@ export const DebugConsole = () => {
     }
   };
 
+  // Upload de arquivo de teste
+  const handleFileUpload = async (file: File) => {
+    setIsUploading(true);
+    addLog('INFO', 'File Upload', `Iniciando upload do arquivo: ${file.name}`);
+    
+    try {
+      const validation = uploadService.validateFile(file);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
+
+      // Usar nome específico para arquivos de debug
+      const debugId = `debug_${Date.now()}_${selectedPromptType}`;
+      const result = await uploadService.uploadDocumento(file, debugId);
+      
+      setTestFileUrl(result.url);
+      setTestFile(file);
+      
+      // Adicionar à lista de arquivos debug
+      setDebugFiles(prev => [...prev, {
+        name: file.name,
+        path: result.path,
+        url: result.url,
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+        type: selectedPromptType
+      }]);
+
+      addLog('INFO', 'File Upload', `Upload concluído: ${result.path}`);
+      toast({
+        title: "Upload realizado",
+        description: `Arquivo ${file.name} carregado com sucesso.`,
+      });
+    } catch (error: any) {
+      addLog('ERROR', 'File Upload', `Erro no upload: ${error.message}`, error);
+      toast({
+        title: "Erro no upload",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   // Teste de processamento completo
   const testFullProcessing = async () => {
-    if (!testFileUrl) {
+    if (!testFileUrl && !testFile) {
       toast({
-        title: "URL do arquivo necessária",
-        description: "Insira uma URL de arquivo para testar o processamento completo.",
+        title: "Arquivo necessário",
+        description: "Faça upload de um arquivo ou insira uma URL para testar o processamento completo.",
         variant: "destructive"
       });
       return;
@@ -130,8 +179,8 @@ export const DebugConsole = () => {
         body: {
           arquivo_url: testFileUrl,
           tipo_proposta: selectedPromptType,
-          cliente_nome: 'Cliente Teste',
-          cliente_email: 'teste@exemplo.com'
+          cliente_nome: 'Cliente Teste Debug',
+          cliente_email: 'debug@teste.com'
         }
       });
 
@@ -148,6 +197,38 @@ export const DebugConsole = () => {
       const duration = Date.now() - startTime;
       addTestResult('Processamento Completo', 'error', `Erro: ${error.message}`, error, duration);
       addLog('ERROR', 'Full Processing Test', 'Erro no teste de processamento completo', error);
+    }
+  };
+
+  // Limpar arquivos de debug
+  const cleanupDebugFiles = async () => {
+    addLog('INFO', 'Cleanup', 'Iniciando limpeza de arquivos debug...');
+    
+    try {
+      const response = await supabase.functions.invoke('cleanup-debug-files');
+      
+      if (response.error) {
+        addLog('ERROR', 'Cleanup', 'Erro na limpeza automática', response.error);
+        toast({
+          title: "Erro na limpeza",
+          description: response.error.message,
+          variant: "destructive"
+        });
+      } else {
+        addLog('INFO', 'Cleanup', `Limpeza concluída: ${response.data?.deletedCount || 0} arquivos removidos`);
+        setDebugFiles([]);
+        toast({
+          title: "Limpeza concluída",
+          description: `${response.data?.deletedCount || 0} arquivos de debug foram removidos.`,
+        });
+      }
+    } catch (error: any) {
+      addLog('ERROR', 'Cleanup', 'Erro na limpeza de arquivos', error);
+      toast({
+        title: "Erro na limpeza",
+        description: "Erro ao executar limpeza de arquivos debug.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -314,17 +395,98 @@ export const DebugConsole = () => {
                   Testar Conectividade Dify
                 </Button>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="testFileUrl">URL do Arquivo para Teste</Label>
-                  <Input
-                    id="testFileUrl"
-                    value={testFileUrl}
-                    onChange={(e) => setTestFileUrl(e.target.value)}
-                    placeholder="https://exemplo.com/arquivo.pdf"
-                  />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fileUpload">Upload de Arquivo PDF</Label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="fileUpload"
+                        type="file"
+                        accept=".pdf"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleFileUpload(file);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => document.getElementById('fileUpload')?.click()}
+                        disabled={isUploading}
+                        className="flex-1"
+                      >
+                        {isUploading ? (
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <FileText className="h-4 w-4 mr-2" />
+                        )}
+                        {testFile ? testFile.name : 'Escolher Arquivo PDF'}
+                      </Button>
+                      {testFile && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setTestFile(null);
+                            setTestFileUrl('');
+                          }}
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    {testFile && (
+                      <p className="text-xs text-muted-foreground">
+                        {(testFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">ou</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="testFileUrl">URL do Arquivo</Label>
+                    <Input
+                      id="testFileUrl"
+                      value={testFileUrl}
+                      onChange={(e) => setTestFileUrl(e.target.value)}
+                      placeholder="https://exemplo.com/arquivo.pdf"
+                      disabled={!!testFile}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="promptType">Tipo de Proposta</Label>
+                    <Select value={selectedPromptType} onValueChange={setSelectedPromptType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="energia-solar">Energia Solar</SelectItem>
+                        <SelectItem value="materiais-construcao">Materiais de Construção</SelectItem>
+                        <SelectItem value="telhas">Telhas</SelectItem>
+                        <SelectItem value="divisorias">Divisórias</SelectItem>
+                        <SelectItem value="pisos">Pisos</SelectItem>
+                        <SelectItem value="forros">Forros</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 
-                <Button onClick={testFullProcessing} className="w-full" disabled={!testFileUrl}>
+                <Button 
+                  onClick={testFullProcessing} 
+                  className="w-full" 
+                  disabled={!testFileUrl && !testFile}
+                >
                   <Activity className="h-4 w-4 mr-2" />
                   Testar Processamento Completo
                 </Button>
