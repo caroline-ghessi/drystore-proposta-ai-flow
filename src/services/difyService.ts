@@ -1,29 +1,30 @@
 import { supabase } from "@/integrations/supabase/client";
 
+// Interface unificada baseada nos dados reais do Dify
 export interface DadosExtraidos {
-  // Energia Solar
-  consumo_mensal?: number;
-  valor_conta?: number;
-  endereco_completo?: string;
-  tipo_instalacao?: string;
-  area_disponivel?: number;
-  orientacao?: string;
+  // Dados do cliente (extraídos do PDF)
+  nome_do_cliente?: string;
+  telefone_do_cliente?: string;
   
-  // Telhas
-  area_cobertura?: number;
-  tipo_telhado?: string;
-  inclinacao?: string;
-  
-  // Divisórias  
-  area_total?: number;
-  altura_pe_direito?: number;
-  tipo_acabamento?: string;
-  
-  // Itens gerais
-  itens_necessarios?: Array<{
-    item: string;
+  // Produtos (estrutura comum para todos os tipos)
+  produtos?: Array<{
+    codigo?: string;
+    descricao: string;
     quantidade: number;
+    unidade?: string;
+    preco_unitario?: number;
+    total?: number;
   }>;
+  
+  // Valores
+  valor_frete?: number;
+  valor_total_proposta?: number;
+  numero_proposta?: string | number;
+  
+  // Metadados
+  tipo_dados?: string;
+  fonte_dados?: string;
+  observacoes?: string;
 }
 
 export interface DadosMateriaisConstrucao {
@@ -120,53 +121,28 @@ export class DifyService {
   validarDadosExtraidos(dados: DadosExtraidos | DadosMateriaisConstrucao, tipoProposta: string): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
+    // Para materiais de construção, usar interface específica
     if (tipoProposta === 'materiais-construcao') {
       const dadosMateriais = dados as DadosMateriaisConstrucao;
       if (!dadosMateriais.nome_do_cliente) {
         errors.push('Nome do cliente é obrigatório');
       }
-      if (!dadosMateriais.telefone_do_cliente) {
-        errors.push('Telefone do cliente é obrigatório');
-      }
       if (!dadosMateriais.produtos || dadosMateriais.produtos.length === 0) {
         errors.push('Lista de produtos não pode estar vazia');
-      }
-      if (dadosMateriais.valor_total_proposta <= 0) {
-        errors.push('Valor total da proposta deve ser maior que zero');
       }
       return { valid: errors.length === 0, errors };
     }
 
-    const dadosLegacy = dados as DadosExtraidos;
+    // Para outros tipos, usar interface unificada baseada nos dados reais do Dify
+    const dadosUnificados = dados as DadosExtraidos;
     
-    switch (tipoProposta) {
-      case 'energia-solar':
-        if (!dadosLegacy.consumo_mensal || dadosLegacy.consumo_mensal <= 0) {
-          errors.push('Consumo mensal é obrigatório e deve ser maior que zero');
-        }
-        if (!dadosLegacy.valor_conta || dadosLegacy.valor_conta <= 0) {
-          errors.push('Valor da conta é obrigatório e deve ser maior que zero');
-        }
-        if (!dadosLegacy.endereco_completo) {
-          errors.push('Endereço completo é obrigatório');
-        }
-        break;
-
-      case 'telhas':
-        if (!dadosLegacy.area_cobertura || dadosLegacy.area_cobertura <= 0) {
-          errors.push('Área de cobertura é obrigatória e deve ser maior que zero');
-        }
-        break;
-
-      case 'divisorias':
-        if (!dadosLegacy.area_total || dadosLegacy.area_total <= 0) {
-          errors.push('Área total é obrigatória e deve ser maior que zero');
-        }
-        break;
+    // Validação mínima: cliente e produtos
+    if (!dadosUnificados.nome_do_cliente) {
+      errors.push('Nome do cliente é obrigatório');
     }
-
-    if (!dadosLegacy.itens_necessarios || dadosLegacy.itens_necessarios.length === 0) {
-      errors.push('Lista de itens necessários não pode estar vazia');
+    
+    if (!dadosUnificados.produtos || dadosUnificados.produtos.length === 0) {
+      errors.push('Lista de produtos não pode estar vazia');
     }
 
     return { valid: errors.length === 0, errors };
@@ -175,6 +151,7 @@ export class DifyService {
   formatarDadosParaExibicao(dados: DadosExtraidos | DadosMateriaisConstrucao, tipoProposta: string): Record<string, any> {
     const formatado: Record<string, any> = {};
 
+    // Para materiais de construção, usar interface específica
     if (tipoProposta === 'materiais-construcao') {
       const dadosMateriais = dados as DadosMateriaisConstrucao;
       formatado['Número da Proposta'] = dadosMateriais.numero_proposta;
@@ -186,35 +163,30 @@ export class DifyService {
       return formatado;
     }
 
-    const dadosLegacy = dados as DadosExtraidos;
+    // Para outros tipos, usar interface unificada baseada nos dados reais do Dify
+    const dadosUnificados = dados as DadosExtraidos;
     
-    switch (tipoProposta) {
-      case 'energia-solar':
-        formatado['Consumo Mensal'] = `${dadosLegacy.consumo_mensal} kWh`;
-        formatado['Valor da Conta'] = `R$ ${dadosLegacy.valor_conta?.toFixed(2)}`;
-        formatado['Endereço'] = dadosLegacy.endereco_completo;
-        formatado['Tipo de Instalação'] = dadosLegacy.tipo_instalacao;
-        formatado['Área Disponível'] = `${dadosLegacy.area_disponivel} m²`;
-        formatado['Orientação'] = dadosLegacy.orientacao;
-        break;
-
-      case 'telhas':
-        formatado['Área de Cobertura'] = `${dadosLegacy.area_cobertura} m²`;
-        formatado['Tipo de Telhado'] = dadosLegacy.tipo_telhado;
-        formatado['Inclinação'] = dadosLegacy.inclinacao;
-        break;
-
-      case 'divisorias':
-        formatado['Área Total'] = `${dadosLegacy.area_total} m²`;
-        formatado['Altura Pé-Direito'] = `${dadosLegacy.altura_pe_direito}m`;
-        formatado['Tipo de Acabamento'] = dadosLegacy.tipo_acabamento;
-        break;
+    formatado['Cliente'] = dadosUnificados.nome_do_cliente || 'Não encontrado';
+    formatado['Telefone'] = dadosUnificados.telefone_do_cliente || 'Não encontrado';
+    
+    if (dadosUnificados.numero_proposta) {
+      formatado['Número da Proposta'] = dadosUnificados.numero_proposta;
     }
-
-    if (dadosLegacy.itens_necessarios) {
-      formatado['Itens Necessários'] = dadosLegacy.itens_necessarios.map(item => 
-        `${item.quantidade}x ${item.item}`
-      ).join(', ');
+    
+    if (dadosUnificados.valor_frete !== undefined) {
+      formatado['Valor do Frete'] = `R$ ${dadosUnificados.valor_frete?.toFixed(2) || '0,00'}`;
+    }
+    
+    if (dadosUnificados.valor_total_proposta) {
+      formatado['Valor Total'] = `R$ ${dadosUnificados.valor_total_proposta?.toFixed(2) || '0,00'}`;
+    }
+    
+    if (dadosUnificados.produtos && dadosUnificados.produtos.length > 0) {
+      formatado['Produtos'] = dadosUnificados.produtos;
+    }
+    
+    if (dadosUnificados.observacoes) {
+      formatado['Observações'] = dadosUnificados.observacoes;
     }
 
     return formatado;

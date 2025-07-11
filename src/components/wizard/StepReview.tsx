@@ -42,6 +42,7 @@ export function StepReview({
 
   const isMateriaisConstrucao = propostaData.tipoProposta === 'materiais-construcao';
   const dadosMateriais = isMateriaisConstrucao ? propostaData.dadosExtraidos as DadosMateriaisConstrucao : null;
+  const dadosUnificados = !isMateriaisConstrucao ? propostaData.dadosExtraidos as any : null;
 
   const handleValorChange = (novoValor: string) => {
     const valor = parseFloat(novoValor.replace(/[^\d.,]/g, '').replace(',', '.'))
@@ -128,7 +129,7 @@ export function StepReview({
               <Label htmlFor="review-nome">Nome Completo</Label>
               <Input
                 id="review-nome"
-                value={propostaData.clienteNome || dadosMateriais?.nome_do_cliente || ''}
+                value={propostaData.clienteNome || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente || ''}
                 onChange={(e) => onDataChange({ clienteNome: e.target.value })}
                 disabled={!editandoCliente}
               />
@@ -148,7 +149,7 @@ export function StepReview({
               <Label htmlFor="review-whatsapp">WhatsApp</Label>
               <Input
                 id="review-whatsapp"
-                value={propostaData.clienteWhatsapp || dadosMateriais?.telefone_do_cliente || ''}
+                value={propostaData.clienteWhatsapp || dadosMateriais?.telefone_do_cliente || dadosUnificados?.telefone_do_cliente || ''}
                 onChange={(e) => onDataChange({ clienteWhatsapp: e.target.value })}
                 disabled={!editandoCliente}
                 placeholder="(11) 99999-9999"
@@ -241,7 +242,7 @@ export function StepReview({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">Cliente:</span>
-                <p className="font-medium">{propostaData.clienteNome || dadosMateriais?.nome_do_cliente || 'Não informado'}</p>
+                <p className="font-medium">{propostaData.clienteNome || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente || 'Não informado'}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Tipo:</span>
