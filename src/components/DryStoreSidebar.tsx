@@ -12,7 +12,8 @@ import {
   PlusCircle,
   ChevronRight,
   Zap,
-  Shield
+  Shield,
+  Trophy
 } from "lucide-react"
 import {
   Sidebar,
@@ -32,7 +33,7 @@ const mainItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Propostas", url: "/propostas", icon: FileText },
   { title: "Clientes", url: "/clientes", icon: Users },
-  { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
+  { title: "Ranking", url: "/ranking", icon: Trophy },
 ]
 
 const productsItems = [
