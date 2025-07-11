@@ -8,7 +8,8 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, Edit3, Calculator } from "lucide-react"
 import { PropostaData } from "../PropostaWizard"
-import { difyService } from "@/services/difyService"
+import { difyService, DadosMateriaisConstrucao } from "@/services/difyService"
+import { ProdutosTable } from "@/components/ProdutosTable"
 
 interface StepReviewProps {
   propostaData: PropostaData;
@@ -22,7 +23,8 @@ const TIPO_LABELS = {
   'telhas': 'Telhas Shingle',
   'divisorias': 'Divisórias',
   'pisos': 'Pisos',
-  'forros': 'Forros'
+  'forros': 'Forros',
+  'materiais-construcao': 'Materiais de Construção'
 }
 
 export function StepReview({ 
@@ -38,12 +40,34 @@ export function StepReview({
     ? difyService.formatarDadosParaExibicao(propostaData.dadosExtraidos, propostaData.tipoProposta)
     : {}
 
+  const isMateriaisConstrucao = propostaData.tipoProposta === 'materiais-construcao';
+  const dadosMateriais = isMateriaisConstrucao ? propostaData.dadosExtraidos as DadosMateriaisConstrucao : null;
+
   const handleValorChange = (novoValor: string) => {
     const valor = parseFloat(novoValor.replace(/[^\d.,]/g, '').replace(',', '.'))
     if (!isNaN(valor)) {
       onDataChange({ valorTotal: valor })
     }
   }
+
+  const handleProdutosChange = (produtos: any[]) => {
+    if (dadosMateriais) {
+      const novosDados = { ...dadosMateriais, produtos };
+      onDataChange({ dadosExtraidos: novosDados });
+    }
+  };
+
+  const handleFreteChange = (valorFrete: number) => {
+    if (dadosMateriais) {
+      const novosDados = { ...dadosMateriais, valor_frete: valorFrete };
+      const novoTotal = novosDados.produtos.reduce((acc, p) => acc + p.total, 0) + valorFrete;
+      novosDados.valor_total_proposta = novoTotal;
+      onDataChange({ 
+        dadosExtraidos: novosDados,
+        valorTotal: novoTotal
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -55,30 +79,32 @@ export function StepReview({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Dados Extraídos */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              Dados Extraídos
-              <Badge variant="secondary">{TIPO_LABELS[propostaData.tipoProposta]}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Object.entries(dadosFormatados).map(([chave, valor]) => (
-                <div key={chave} className="flex justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {chave}:
-                  </span>
-                  <span className="text-sm font-medium text-right">
-                    {valor || 'N/A'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Dados Extraídos - Só para não-materiais */}
+        {!isMateriaisConstrucao && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                Dados Extraídos
+                <Badge variant="secondary">{TIPO_LABELS[propostaData.tipoProposta as keyof typeof TIPO_LABELS]}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {Object.entries(dadosFormatados).map(([chave, valor]) => (
+                  <div key={chave} className="flex justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {chave}:
+                    </span>
+                    <span className="text-sm font-medium text-right">
+                      {valor || 'N/A'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Dados do Cliente */}
         <Card>
@@ -102,7 +128,7 @@ export function StepReview({
               <Label htmlFor="review-nome">Nome Completo</Label>
               <Input
                 id="review-nome"
-                value={propostaData.clienteNome}
+                value={propostaData.clienteNome || dadosMateriais?.nome_do_cliente || ''}
                 onChange={(e) => onDataChange({ clienteNome: e.target.value })}
                 disabled={!editandoCliente}
               />
@@ -122,7 +148,7 @@ export function StepReview({
               <Label htmlFor="review-whatsapp">WhatsApp</Label>
               <Input
                 id="review-whatsapp"
-                value={propostaData.clienteWhatsapp || ''}
+                value={propostaData.clienteWhatsapp || dadosMateriais?.telefone_do_cliente || ''}
                 onChange={(e) => onDataChange({ clienteWhatsapp: e.target.value })}
                 disabled={!editandoCliente}
                 placeholder="(11) 99999-9999"
@@ -153,28 +179,30 @@ export function StepReview({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="valor-total">Valor Total</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="valor-total"
-                  value={propostaData.valorTotal?.toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL'
-                  }) || ''}
-                  onChange={(e) => handleValorChange(e.target.value)}
-                  disabled={!editandoValor}
-                  placeholder="R$ 0,00"
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEditandoValor(!editandoValor)}
-                >
-                  {editandoValor ? 'OK' : 'Editar'}
-                </Button>
+            {!isMateriaisConstrucao && (
+              <div>
+                <Label htmlFor="valor-total">Valor Total</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="valor-total"
+                    value={propostaData.valorTotal?.toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL'
+                    }) || ''}
+                    onChange={(e) => handleValorChange(e.target.value)}
+                    disabled={!editandoValor}
+                    placeholder="R$ 0,00"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditandoValor(!editandoValor)}
+                  >
+                    {editandoValor ? 'OK' : 'Editar'}
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div>
@@ -190,6 +218,19 @@ export function StepReview({
         </CardContent>
       </Card>
 
+      {/* Tabela de Produtos para Materiais de Construção */}
+      {isMateriaisConstrucao && dadosMateriais?.produtos && (
+        <div className="mt-6">
+          <ProdutosTable
+            produtos={dadosMateriais.produtos}
+            valorFrete={dadosMateriais.valor_frete || 0}
+            valorTotal={dadosMateriais.valor_total_proposta || 0}
+            onProdutosChange={handleProdutosChange}
+            onFreteChange={handleFreteChange}
+          />
+        </div>
+      )}
+
       <Separator />
 
       {/* Resumo Final */}
@@ -200,16 +241,16 @@ export function StepReview({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">Cliente:</span>
-                <p className="font-medium">{propostaData.clienteNome}</p>
+                <p className="font-medium">{propostaData.clienteNome || dadosMateriais?.nome_do_cliente || 'Não informado'}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Tipo:</span>
-                <p className="font-medium">{TIPO_LABELS[propostaData.tipoProposta]}</p>
+                <p className="font-medium">{TIPO_LABELS[propostaData.tipoProposta as keyof typeof TIPO_LABELS]}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Valor:</span>
                 <p className="font-medium text-lg text-primary">
-                  {propostaData.valorTotal?.toLocaleString('pt-BR', {
+                  {(isMateriaisConstrucao ? dadosMateriais?.valor_total_proposta : propostaData.valorTotal)?.toLocaleString('pt-BR', {
                     style: 'currency',
                     currency: 'BRL'
                   }) || 'A calcular'}

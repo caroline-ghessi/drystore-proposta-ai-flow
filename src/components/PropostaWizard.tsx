@@ -6,7 +6,7 @@ import { StepUpload } from "./wizard/StepUpload"
 import { StepProcessing } from "./wizard/StepProcessing"
 import { StepReview } from "./wizard/StepReview"
 
-export type TipoProposta = 'energia-solar' | 'telhas' | 'divisorias' | 'pisos' | 'forros'
+export type TipoProposta = 'energia-solar' | 'telhas' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao'
 
 export interface PropostaData {
   tipoProposta: TipoProposta;

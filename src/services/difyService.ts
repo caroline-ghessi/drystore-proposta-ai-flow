@@ -19,11 +19,28 @@ export interface DadosExtraidos {
   }>;
 }
 
+export interface DadosMateriaisConstrucao {
+  numero_proposta: string | number;
+  nome_do_cliente: string;
+  telefone_do_cliente: string;
+  produtos: Array<{
+    codigo: string;
+    descricao: string;
+    quantidade: number;
+    unidade: string;
+    preco_unitario: number;
+    total: number;
+  }>;
+  valor_frete: number;
+  valor_total_proposta: number;
+}
+
 export interface ProcessamentoResult {
-  dados_extraidos: DadosExtraidos;
+  dados_extraidos: DadosExtraidos | DadosMateriaisConstrucao;
   valor_total: number;
   status: string;
   timestamp: string;
+  tipo_dados?: 'energia-solar' | 'materiais-construcao';
 }
 
 export class DifyService {
@@ -92,75 +109,115 @@ export class DifyService {
     }
   }
 
-  validarDadosExtraidos(dados: DadosExtraidos, tipoProposta: string): { valid: boolean; errors: string[] } {
+  validarDadosExtraidos(dados: DadosExtraidos | DadosMateriaisConstrucao, tipoProposta: string): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
+    if (tipoProposta === 'materiais-construcao') {
+      const dadosMateriais = dados as DadosMateriaisConstrucao;
+      if (!dadosMateriais.nome_do_cliente) {
+        errors.push('Nome do cliente é obrigatório');
+      }
+      if (!dadosMateriais.telefone_do_cliente) {
+        errors.push('Telefone do cliente é obrigatório');
+      }
+      if (!dadosMateriais.produtos || dadosMateriais.produtos.length === 0) {
+        errors.push('Lista de produtos não pode estar vazia');
+      }
+      if (dadosMateriais.valor_total_proposta <= 0) {
+        errors.push('Valor total da proposta deve ser maior que zero');
+      }
+      return { valid: errors.length === 0, errors };
+    }
+
+    const dadosLegacy = dados as DadosExtraidos;
+    
     switch (tipoProposta) {
       case 'energia-solar':
-        if (!dados.consumo_mensal || dados.consumo_mensal <= 0) {
+        if (!dadosLegacy.consumo_mensal || dadosLegacy.consumo_mensal <= 0) {
           errors.push('Consumo mensal é obrigatório e deve ser maior que zero');
         }
-        if (!dados.valor_conta || dados.valor_conta <= 0) {
+        if (!dadosLegacy.valor_conta || dadosLegacy.valor_conta <= 0) {
           errors.push('Valor da conta é obrigatório e deve ser maior que zero');
         }
-        if (!dados.endereco_completo) {
+        if (!dadosLegacy.endereco_completo) {
           errors.push('Endereço completo é obrigatório');
         }
         break;
 
       case 'telhas':
-        if (!dados.area_cobertura || dados.area_cobertura <= 0) {
+        if (!dadosLegacy.area_cobertura || dadosLegacy.area_cobertura <= 0) {
           errors.push('Área de cobertura é obrigatória e deve ser maior que zero');
         }
         break;
 
       case 'divisorias':
-        if (!dados.area_total || dados.area_total <= 0) {
+        if (!dadosLegacy.area_total || dadosLegacy.area_total <= 0) {
           errors.push('Área total é obrigatória e deve ser maior que zero');
         }
         break;
     }
 
-    if (!dados.itens_necessarios || dados.itens_necessarios.length === 0) {
+    if (!dadosLegacy.itens_necessarios || dadosLegacy.itens_necessarios.length === 0) {
       errors.push('Lista de itens necessários não pode estar vazia');
     }
 
     return { valid: errors.length === 0, errors };
   }
 
-  formatarDadosParaExibicao(dados: DadosExtraidos, tipoProposta: string): Record<string, any> {
+  formatarDadosParaExibicao(dados: DadosExtraidos | DadosMateriaisConstrucao, tipoProposta: string): Record<string, any> {
     const formatado: Record<string, any> = {};
 
+    if (tipoProposta === 'materiais-construcao') {
+      const dadosMateriais = dados as DadosMateriaisConstrucao;
+      formatado['Número da Proposta'] = dadosMateriais.numero_proposta;
+      formatado['Cliente'] = dadosMateriais.nome_do_cliente;
+      formatado['Telefone'] = dadosMateriais.telefone_do_cliente;
+      formatado['Valor do Frete'] = `R$ ${dadosMateriais.valor_frete?.toFixed(2) || '0,00'}`;
+      formatado['Valor Total'] = `R$ ${dadosMateriais.valor_total_proposta?.toFixed(2) || '0,00'}`;
+      formatado['Produtos'] = dadosMateriais.produtos || [];
+      return formatado;
+    }
+
+    const dadosLegacy = dados as DadosExtraidos;
+    
     switch (tipoProposta) {
       case 'energia-solar':
-        formatado['Consumo Mensal'] = `${dados.consumo_mensal} kWh`;
-        formatado['Valor da Conta'] = `R$ ${dados.valor_conta?.toFixed(2)}`;
-        formatado['Endereço'] = dados.endereco_completo;
-        formatado['Tipo de Instalação'] = dados.tipo_instalacao;
-        formatado['Área Disponível'] = `${dados.area_disponivel} m²`;
-        formatado['Orientação'] = dados.orientacao;
+        formatado['Consumo Mensal'] = `${dadosLegacy.consumo_mensal} kWh`;
+        formatado['Valor da Conta'] = `R$ ${dadosLegacy.valor_conta?.toFixed(2)}`;
+        formatado['Endereço'] = dadosLegacy.endereco_completo;
+        formatado['Tipo de Instalação'] = dadosLegacy.tipo_instalacao;
+        formatado['Área Disponível'] = `${dadosLegacy.area_disponivel} m²`;
+        formatado['Orientação'] = dadosLegacy.orientacao;
         break;
 
       case 'telhas':
-        formatado['Área de Cobertura'] = `${dados.area_cobertura} m²`;
-        formatado['Tipo de Telhado'] = dados.tipo_telhado;
-        formatado['Inclinação'] = dados.inclinacao;
+        formatado['Área de Cobertura'] = `${dadosLegacy.area_cobertura} m²`;
+        formatado['Tipo de Telhado'] = dadosLegacy.tipo_telhado;
+        formatado['Inclinação'] = dadosLegacy.inclinacao;
         break;
 
       case 'divisorias':
-        formatado['Área Total'] = `${dados.area_total} m²`;
-        formatado['Altura Pé-Direito'] = `${dados.altura_pe_direito}m`;
-        formatado['Tipo de Acabamento'] = dados.tipo_acabamento;
+        formatado['Área Total'] = `${dadosLegacy.area_total} m²`;
+        formatado['Altura Pé-Direito'] = `${dadosLegacy.altura_pe_direito}m`;
+        formatado['Tipo de Acabamento'] = dadosLegacy.tipo_acabamento;
         break;
     }
 
-    if (dados.itens_necessarios) {
-      formatado['Itens Necessários'] = dados.itens_necessarios.map(item => 
+    if (dadosLegacy.itens_necessarios) {
+      formatado['Itens Necessários'] = dadosLegacy.itens_necessarios.map(item => 
         `${item.quantidade}x ${item.item}`
       ).join(', ');
     }
 
     return formatado;
+  }
+
+  async processarMateriais(
+    arquivoUrl: string,
+    clienteNome: string,
+    clienteEmail: string
+  ): Promise<ProcessamentoResult> {
+    return this.processarDocumento(arquivoUrl, 'materiais-construcao', clienteNome, clienteEmail);
   }
 }
 

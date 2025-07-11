@@ -28,8 +28,8 @@ serve(async (req) => {
     
     console.log('Processando documento:', { arquivo_url, tipo_proposta, cliente_nome });
 
-    // Simular processamento com Dify API (substituir pela integração real)
-    const dadosExtraidos = await simularProcessamentoDify(arquivo_url, tipo_proposta);
+    // Processar com Dify API ou simulação
+    const dadosExtraidos = await processarComDify(arquivo_url, tipo_proposta);
     
     // Calcular valores baseado nos dados extraídos
     const valorTotal = calcularValorTotal(dadosExtraidos, tipo_proposta);
@@ -62,9 +62,100 @@ serve(async (req) => {
   }
 });
 
+async function processarComDify(arquivoUrl: string, tipoProposta: string) {
+  const difyApiKey = Deno.env.get('DIFY_API_KEY');
+  
+  if (!difyApiKey) {
+    console.warn('DIFY_API_KEY não configurada, usando dados simulados');
+    return simularProcessamentoDify(arquivoUrl, tipoProposta);
+  }
+
+  try {
+    // Para materiais de construção, usar integração real com Dify
+    if (tipoProposta === 'materiais-construcao') {
+      console.log('Processando materiais de construção via Dify API');
+      
+      const response = await fetch('https://api.dify.ai/v1/workflows/run', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${difyApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          inputs: {
+            pdf_url: arquivoUrl
+          },
+          response_mode: 'blocking',
+          user: 'user-' + Date.now()
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro na API do Dify: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Resposta do Dify:', result);
+      
+      // Extrair dados do resultado do Dify
+      const dadosExtraidos = result.data?.outputs || result.outputs;
+      
+      return {
+        ...dadosExtraidos,
+        tipo_dados: 'materiais-construcao'
+      };
+    }
+    
+    // Para energia solar, manter simulação por enquanto
+    return simularProcessamentoDify(arquivoUrl, tipoProposta);
+    
+  } catch (error) {
+    console.error('Erro ao processar com Dify:', error);
+    // Fallback para dados simulados em caso de erro
+    return simularProcessamentoDify(arquivoUrl, tipoProposta);
+  }
+}
+
 async function simularProcessamentoDify(arquivoUrl: string, tipoProposta: string) {
   // Simular delay de processamento
   await new Promise(resolve => setTimeout(resolve, 2000));
+
+  if (tipoProposta === 'materiais-construcao') {
+    return {
+      numero_proposta: 'PROP-' + Math.floor(Math.random() * 10000),
+      nome_do_cliente: 'Cliente Simulado',
+      telefone_do_cliente: '(11) 99999-9999',
+      produtos: [
+        {
+          codigo: 'MAT001',
+          descricao: 'Cimento CP II 50kg',
+          quantidade: 10,
+          unidade: 'saco',
+          preco_unitario: 32.50,
+          total: 325.00
+        },
+        {
+          codigo: 'MAT002', 
+          descricao: 'Areia média m³',
+          quantidade: 5,
+          unidade: 'm³',
+          preco_unitario: 45.00,
+          total: 225.00
+        },
+        {
+          codigo: 'MAT003',
+          descricao: 'Brita 1 m³',
+          quantidade: 3,
+          unidade: 'm³',
+          preco_unitario: 55.00,
+          total: 165.00
+        }
+      ],
+      valor_frete: 150.00,
+      valor_total_proposta: 865.00,
+      tipo_dados: 'materiais-construcao'
+    };
+  }
 
   // Dados simulados baseados no tipo de proposta
   const dadosBase = {
@@ -104,6 +195,11 @@ async function simularProcessamentoDify(arquivoUrl: string, tipoProposta: string
 }
 
 function calcularValorTotal(dadosExtraidos: any, tipoProposta: string): number {
+  // Para materiais de construção, usar valor já calculado pelo Dify
+  if (tipoProposta === 'materiais-construcao' && dadosExtraidos.valor_total_proposta) {
+    return dadosExtraidos.valor_total_proposta;
+  }
+
   if (!dadosExtraidos.itens_necessarios) return 0;
 
   // Preços base por tipo (simulados)
