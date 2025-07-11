@@ -78,8 +78,8 @@ async function processarComDify(arquivoUrl: string, tipoProposta: string, modoDe
     arquivoUrl: arquivoUrl.substring(0, 100) + '...'
   });
   
-  if (!difyApiKey) {
-    const erro = 'DIFY_API_KEY não configurado';
+  if (!difyApiKey || !difyAppId) {
+    const erro = 'DIFY_API_KEY ou DIFY_APP_ID não configurado';
     console.error('=== ERRO DE CONFIGURAÇÃO ===', erro);
     
     if (modoDebug) {
@@ -104,25 +104,43 @@ async function processarComDify(arquivoUrl: string, tipoProposta: string, modoDe
   }
 
   try {
-    // Usar apenas estratégia de URL remota (mais confiável)
-    console.log('=== PROCESSAMENTO VIA URL REMOTA ===');
-    const extractedData = await processWithDifyChat(null, tipoProposta, difyApiKey, difyAppId, modoDebug, 'remote_url', arquivoUrl);
-    console.log('✓ Processamento Dify concluído');
-    console.log('=== DADOS EXTRAÍDOS PELO DIFY ===', JSON.stringify(extractedData, null, 2));
-
-    return extractedData;
+    console.log('=== ESTRATÉGIA 1: UPLOAD + WORKFLOW ===');
     
-  } catch (error) {
-    console.error('=== ERRO NO PROCESSAMENTO DIFY ===');
-    console.error('Erro detalhado:', error);
-    console.error('Stack trace:', error.stack);
+    // Tentar upload do arquivo para Dify primeiro
+    const fileId = await uploadFileToDify(arquivoUrl, difyApiKey, modoDebug);
     
-    if (modoDebug) {
-      throw error; // No modo debug, não usar fallback
+    if (fileId) {
+      console.log(`✓ Upload bem-sucedido, file_id: ${fileId}`);
+      console.log('=== PROCESSAMENTO VIA WORKFLOW API ===');
+      
+      const extractedData = await processWithDifyWorkflow(fileId, tipoProposta, difyApiKey, difyAppId, modoDebug);
+      console.log('✓ Processamento Workflow concluído');
+      console.log('=== DADOS EXTRAÍDOS PELO WORKFLOW ===', JSON.stringify(extractedData, null, 2));
+      return extractedData;
     }
     
-    console.log('=== USANDO FALLBACK (DADOS SIMULADOS) ===');
-    return simularProcessamentoDify(arquivoUrl, tipoProposta);
+    throw new Error('Upload falhou');
+    
+  } catch (uploadError) {
+    console.error('=== FALHA NA ESTRATÉGIA 1 ===', uploadError.message);
+    
+    console.log('=== ESTRATÉGIA 2: WORKFLOW COM URL REMOTA ===');
+    try {
+      const extractedData = await processWithDifyWorkflow(null, tipoProposta, difyApiKey, difyAppId, modoDebug, arquivoUrl);
+      console.log('✓ Processamento Workflow (URL remota) concluído');
+      console.log('=== DADOS EXTRAÍDOS PELO WORKFLOW ===', JSON.stringify(extractedData, null, 2));
+      return extractedData;
+      
+    } catch (workflowError) {
+      console.error('=== FALHA NA ESTRATÉGIA 2 ===', workflowError.message);
+      
+      if (modoDebug) {
+        throw new Error(`Ambas estratégias falharam: Upload: ${uploadError.message}, Workflow: ${workflowError.message}`);
+      }
+      
+      console.log('=== USANDO FALLBACK (DADOS SIMULADOS) ===');
+      return simularProcessamentoDify(arquivoUrl, tipoProposta);
+    }
   }
 }
 
@@ -158,8 +176,8 @@ async function validarUrlPublica(url: string): Promise<void> {
   }
 }
 
-// Upload file to Dify (REMOVIDO - usando apenas remote_url)
-async function uploadFileToDify(arquivoUrl: string, apiKey: string): Promise<string> {
+// Upload file to Dify for workflow processing
+async function uploadFileToDify(arquivoUrl: string, apiKey: string, modoDebug: boolean = false): Promise<string | null> {
   console.log('[UPLOAD] Baixando arquivo original...');
   console.log('[UPLOAD] URL do arquivo:', arquivoUrl);
   
@@ -213,6 +231,137 @@ async function uploadFileToDify(arquivoUrl: string, apiKey: string): Promise<str
   }
   
   return uploadResult.id;
+}
+
+// Process with Dify Workflow API
+async function processWithDifyWorkflow(
+  fileId: string | null,
+  tipoProposta: string,
+  apiKey: string,
+  appId: string,
+  modoDebug: boolean = false,
+  remoteUrl?: string
+): Promise<any> {
+  const endpoint = 'https://api.dify.ai/v1/workflows/run';
+  
+  console.log(`[WORKFLOW] Iniciando processamento workflow - fileId: ${fileId}, tipo: ${tipoProposta}`);
+  
+  // Preparar inputs do workflow baseado no tipo de proposta
+  let inputs: any = {
+    query: getPromptForTipoProposta(tipoProposta)
+  };
+
+  // Se temos fileId, adicionar aos inputs
+  if (fileId) {
+    inputs.files = [{
+      "dify_model_identity": "__dify__file__",
+      "type": "document",
+      "transfer_method": "local_file",
+      "upload_file_id": fileId
+    }];
+  } else if (remoteUrl) {
+    inputs.files = [{
+      "dify_model_identity": "__dify__file__", 
+      "type": "document",
+      "transfer_method": "remote_url",
+      "url": remoteUrl
+    }];
+  }
+
+  const body = {
+    inputs: inputs,
+    response_mode: "blocking",
+    user: "drystore-user"
+  };
+
+  if (modoDebug) {
+    console.log(`[WORKFLOW] Request body:`, JSON.stringify(body, null, 2));
+  }
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`[WORKFLOW] Dify Workflow API error: ${response.status} - ${errorText}`);
+    throw new Error(`Dify Workflow API error: ${response.status} - ${errorText}`);
+  }
+
+  const responseData = await response.json();
+  
+  if (modoDebug) {
+    console.log(`[WORKFLOW] Response:`, JSON.stringify(responseData, null, 2));
+  }
+
+  // Processar resposta do workflow
+  let extractedData = null;
+  
+  // Verificar se há structured_output nos dados do workflow
+  if (responseData.data && responseData.data.outputs) {
+    const outputs = responseData.data.outputs;
+    
+    // Procurar por structured_output nos outputs
+    for (const [key, value] of Object.entries(outputs)) {
+      if (value && typeof value === 'object' && (value as any).structured_output) {
+        console.log(`[WORKFLOW] Encontrado structured_output em: ${key}`);
+        extractedData = (value as any).structured_output;
+        break;
+      }
+      
+      // Fallback: procurar por texto JSON válido
+      if (value && typeof value === 'object' && (value as any).text) {
+        try {
+          const parsed = JSON.parse((value as any).text);
+          if (parsed && typeof parsed === 'object') {
+            console.log(`[WORKFLOW] JSON válido encontrado em text de: ${key}`);
+            extractedData = parsed;
+            break;
+          }
+        } catch (e) {
+          // Não é JSON válido, continuar procurando
+        }
+      }
+    }
+  }
+  
+  if (extractedData) {
+    console.log(`[WORKFLOW] Dados estruturados extraídos com sucesso`);
+    return formatWorkflowDataToExpectedStructure(extractedData, tipoProposta);
+  } else {
+    console.log(`[WORKFLOW] Structured output não encontrado, tentando parsing tradicional`);
+    const textContent = JSON.stringify(responseData);
+    return parseResponseToDadosExtraidos(textContent, tipoProposta, modoDebug);
+  }
+}
+
+function formatWorkflowDataToExpectedStructure(data: any, tipoProposta: string): any {
+  // Para materiais de construção, o Dify retorna estrutura específica
+  if (tipoProposta === 'materiais-construcao') {
+    return {
+      numeroPropostaCliente: data.numero_proposta || 'Não encontrado',
+      nomeCliente: data.nome_do_cliente || 'Não encontrado',
+      telefoneCliente: data.telefone_do_cliente || 'Não encontrado',
+      produtos: data.produtos || [],
+      valorFrete: data.valor_frete || 0,
+      valorTotalProposta: data.valor_total_proposta || 0,
+      observacoes: data.observacoes || '',
+      tipo_dados: tipoProposta,
+      fonte_dados: 'dify_workflow'
+    };
+  }
+  
+  // Para outros tipos, manter estrutura original com metadados
+  return {
+    ...data,
+    tipo_dados: tipoProposta,
+    fonte_dados: 'dify_workflow'
+  };
 }
 
 // Process with Dify Chat Messages API
