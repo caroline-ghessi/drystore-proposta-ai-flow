@@ -2,7 +2,7 @@ import { Calendar, FileText, Plus, Search, Users, Upload, Zap } from "lucide-rea
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DryStoreSidebar } from "@/components/DryStoreSidebar";
-import { Dashboard } from "@/components/Dashboard";
+// Dashboard removido - não necessário na página de propostas
 import NotificacaoRealTime from "@/components/NotificacaoRealTime";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -228,7 +228,7 @@ const Propostas = () => {
               ))}
             </div>
 
-            <Dashboard />
+            {/* Dashboard removido da página de propostas */}
           </main>
         </div>
       </div>
