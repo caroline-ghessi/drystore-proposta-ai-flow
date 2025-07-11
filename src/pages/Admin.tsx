@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { DryStoreSidebar } from "@/components/DryStoreSidebar";
+import { DebugConsole } from "@/components/DebugConsole";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { TrendingUp, Users, AlertTriangle, DollarSign, Package, ShoppingCart, Settings, FileText, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -347,28 +348,7 @@ const Admin = () => {
               </TabsContent>
 
               <TabsContent value="debug" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Logs do Sistema</CardTitle>
-                    <CardDescription>Monitore atividades e erros do sistema</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 font-mono text-sm">
-                      <div className="p-2 bg-muted rounded">
-                        <span className="text-green-600">[SUCCESS]</span> 2024-01-11 14:30:15 - Proposta #123 criada com sucesso
-                      </div>
-                      <div className="p-2 bg-muted rounded">
-                        <span className="text-blue-600">[INFO]</span> 2024-01-11 14:25:03 - Usuário carlos@drystore.com fez login
-                      </div>
-                      <div className="p-2 bg-muted rounded">
-                        <span className="text-yellow-600">[WARNING]</span> 2024-01-11 14:20:45 - Tentativa de upload de arquivo inválido
-                      </div>
-                      <div className="p-2 bg-muted rounded">
-                        <span className="text-red-600">[ERROR]</span> 2024-01-11 14:15:22 - Falha na integração com API Dify
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <DebugConsole />
               </TabsContent>
 
               <TabsContent value="ranking" className="space-y-6">
