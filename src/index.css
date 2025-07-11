@@ -68,15 +68,15 @@
 
     --sidebar-background: 0 0% 98%;
 
-    --sidebar-foreground: 0 0% 15%; /* Texto mais escuro para melhor contraste */
+    --sidebar-foreground: 0 0% 10%; /* Texto muito mais escuro */
 
     --sidebar-primary: 240 5.9% 10%;
 
     --sidebar-primary-foreground: 0 0% 98%;
 
-    --sidebar-accent: 213 69% 95%; /* Usando cor do accent principal */
+    --sidebar-accent: 0 0% 93%; /* Fundo hover mais sutil */
 
-    --sidebar-accent-foreground: 213 100% 24.5%; /* Cor primária do DryStore */
+    --sidebar-accent-foreground: 0 0% 5%; /* Texto ainda mais escuro no hover */
 
     --sidebar-border: 220 13% 91%;
 
