@@ -159,7 +159,7 @@ export class DifyService {
       formatado['Telefone'] = dadosMateriais.telefone_do_cliente;
       formatado['Valor do Frete'] = `R$ ${dadosMateriais.valor_frete?.toFixed(2) || '0,00'}`;
       formatado['Valor Total'] = `R$ ${dadosMateriais.valor_total_proposta?.toFixed(2) || '0,00'}`;
-      formatado['Produtos'] = dadosMateriais.produtos || [];
+      // Produtos não são incluídos aqui pois há tabela específica para isso
       return formatado;
     }
 
@@ -181,9 +181,10 @@ export class DifyService {
       formatado['Valor Total'] = `R$ ${dadosUnificados.valor_total_proposta?.toFixed(2) || '0,00'}`;
     }
     
-    if (dadosUnificados.produtos && dadosUnificados.produtos.length > 0) {
-      formatado['Produtos'] = dadosUnificados.produtos;
-    }
+    // Não incluir produtos nos dados formatados pois há tabela específica para isso
+    // if (dadosUnificados.produtos && dadosUnificados.produtos.length > 0) {
+    //   formatado['Produtos'] = dadosUnificados.produtos;
+    // }
     
     if (dadosUnificados.observacoes) {
       formatado['Observações'] = dadosUnificados.observacoes;
