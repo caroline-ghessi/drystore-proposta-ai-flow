@@ -43,6 +43,10 @@ export function StepReview({
   const isMateriaisConstrucao = propostaData.tipoProposta === 'materiais-construcao';
   const dadosMateriais = isMateriaisConstrucao ? propostaData.dadosExtraidos as DadosMateriaisConstrucao : null;
   const dadosUnificados = !isMateriaisConstrucao ? propostaData.dadosExtraidos as any : null;
+  
+  // Verificar se há produtos em qualquer tipo de proposta
+  const temProdutos = dadosMateriais?.produtos?.length > 0 || dadosUnificados?.produtos?.length > 0;
+  const produtosList = dadosMateriais?.produtos || dadosUnificados?.produtos || [];
 
   const handleValorChange = (novoValor: string) => {
     const valor = parseFloat(novoValor.replace(/[^\d.,]/g, '').replace(',', '.'))
@@ -55,12 +59,23 @@ export function StepReview({
     if (dadosMateriais) {
       const novosDados = { ...dadosMateriais, produtos };
       onDataChange({ dadosExtraidos: novosDados });
+    } else if (dadosUnificados) {
+      const novosDados = { ...dadosUnificados, produtos };
+      onDataChange({ dadosExtraidos: novosDados });
     }
   };
 
   const handleFreteChange = (valorFrete: number) => {
     if (dadosMateriais) {
       const novosDados = { ...dadosMateriais, valor_frete: valorFrete };
+      const novoTotal = novosDados.produtos.reduce((acc, p) => acc + p.total, 0) + valorFrete;
+      novosDados.valor_total_proposta = novoTotal;
+      onDataChange({ 
+        dadosExtraidos: novosDados,
+        valorTotal: novoTotal
+      });
+    } else if (dadosUnificados) {
+      const novosDados = { ...dadosUnificados, valor_frete: valorFrete };
       const novoTotal = novosDados.produtos.reduce((acc, p) => acc + p.total, 0) + valorFrete;
       novosDados.valor_total_proposta = novoTotal;
       onDataChange({ 
@@ -180,7 +195,7 @@ export function StepReview({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {!isMateriaisConstrucao && (
+            {!temProdutos && (
               <div>
                 <Label htmlFor="valor-total">Valor Total</Label>
                 <div className="flex items-center gap-2">
@@ -204,6 +219,17 @@ export function StepReview({
                 </div>
               </div>
             )}
+            {temProdutos && (
+              <div>
+                <Label>Valor Total (calculado automaticamente)</Label>
+                <p className="text-lg font-semibold text-primary">
+                  {(dadosMateriais?.valor_total_proposta || dadosUnificados?.valor_total_proposta || 0).toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                  })}
+                </p>
+              </div>
+            )}
           </div>
 
           <div>
@@ -219,13 +245,13 @@ export function StepReview({
         </CardContent>
       </Card>
 
-      {/* Tabela de Produtos para Materiais de Construção */}
-      {isMateriaisConstrucao && dadosMateriais?.produtos && (
+      {/* Tabela de Produtos - para qualquer tipo de proposta que tenha produtos */}
+      {temProdutos && (
         <div className="mt-6">
           <ProdutosTable
-            produtos={dadosMateriais.produtos}
-            valorFrete={dadosMateriais.valor_frete || 0}
-            valorTotal={dadosMateriais.valor_total_proposta || 0}
+            produtos={produtosList}
+            valorFrete={(dadosMateriais?.valor_frete || dadosUnificados?.valor_frete || 0)}
+            valorTotal={(dadosMateriais?.valor_total_proposta || dadosUnificados?.valor_total_proposta || 0)}
             onProdutosChange={handleProdutosChange}
             onFreteChange={handleFreteChange}
           />
@@ -251,7 +277,10 @@ export function StepReview({
               <div>
                 <span className="text-muted-foreground">Valor:</span>
                 <p className="font-medium text-lg text-primary">
-                  {(isMateriaisConstrucao ? dadosMateriais?.valor_total_proposta : propostaData.valorTotal)?.toLocaleString('pt-BR', {
+                  {(temProdutos 
+                    ? (dadosMateriais?.valor_total_proposta || dadosUnificados?.valor_total_proposta) 
+                    : propostaData.valorTotal
+                  )?.toLocaleString('pt-BR', {
                     style: 'currency',
                     currency: 'BRL'
                   }) || 'A calcular'}
