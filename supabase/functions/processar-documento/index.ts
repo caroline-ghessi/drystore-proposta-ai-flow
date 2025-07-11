@@ -246,37 +246,28 @@ async function processWithDifyWorkflow(
   
   console.log(`[WORKFLOW] Iniciando processamento workflow - fileId: ${fileId}, tipo: ${tipoProposta}`);
   
-  // Preparar inputs do workflow baseado no tipo de proposta
-  let inputs: any = {
-    query: getPromptForTipoProposta(tipoProposta)
-  };
-
-  // Se temos fileId, adicionar aos inputs
-  if (fileId) {
-    inputs.files = [{
-      "dify_model_identity": "__dify__file__",
-      "type": "document",
-      "transfer_method": "local_file",
-      "upload_file_id": fileId
-    }];
-  } else if (remoteUrl) {
-    inputs.files = [{
-      "dify_model_identity": "__dify__file__", 
-      "type": "document",
-      "transfer_method": "remote_url",
-      "url": remoteUrl
-    }];
+  // Configurar estrutura de requisição correta conforme documentação
+  const query = "faça a extração de dados desse arquivo"; // Query fora dos inputs
+  
+  // Preparar inputs do workflow usando pdf_file conforme placeholder
+  let inputs: any = {};
+  
+  if (remoteUrl) {
+    console.log(`[WORKFLOW] Configurando pdf_file com URL remota: ${remoteUrl}`);
+    inputs.pdf_file = remoteUrl; // Usar pdf_file diretamente como string
+  } else if (fileId) {
+    console.log(`[WORKFLOW] Configurando pdf_file com file_id: ${fileId}`);
+    inputs.pdf_file = fileId; // Alternativamente usar file_id
   }
 
   const body = {
     inputs: inputs,
+    query: query, // Query fora dos inputs
     response_mode: "blocking",
     user: "drystore-user"
   };
 
-  if (modoDebug) {
-    console.log(`[WORKFLOW] Request body:`, JSON.stringify(body, null, 2));
-  }
+  console.log(`[WORKFLOW] Request body:`, JSON.stringify(body, null, 2));
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -287,6 +278,8 @@ async function processWithDifyWorkflow(
     body: JSON.stringify(body)
   });
 
+  console.log(`[WORKFLOW] Status da resposta: ${response.status}`);
+
   if (!response.ok) {
     const errorText = await response.text();
     console.error(`[WORKFLOW] Dify Workflow API error: ${response.status} - ${errorText}`);
@@ -295,43 +288,38 @@ async function processWithDifyWorkflow(
 
   const responseData = await response.json();
   
-  if (modoDebug) {
-    console.log(`[WORKFLOW] Response:`, JSON.stringify(responseData, null, 2));
-  }
+  console.log(`[WORKFLOW] Resposta completa:`, JSON.stringify(responseData, null, 2));
 
-  // Processar resposta do workflow
+  // Processar resposta priorizando structured_output
   let extractedData = null;
   
-  // Verificar se há structured_output nos dados do workflow
-  if (responseData.data && responseData.data.outputs) {
-    const outputs = responseData.data.outputs;
-    
-    // Procurar por structured_output nos outputs
-    for (const [key, value] of Object.entries(outputs)) {
-      if (value && typeof value === 'object' && (value as any).structured_output) {
-        console.log(`[WORKFLOW] Encontrado structured_output em: ${key}`);
-        extractedData = (value as any).structured_output;
-        break;
+  // Procurar structured_output em diferentes locais da resposta
+  if (responseData.data?.outputs?.structured_output) {
+    console.log(`[WORKFLOW] Usando structured_output do outputs`);
+    extractedData = responseData.data.outputs.structured_output;
+  } else if (responseData.structured_output) {
+    console.log(`[WORKFLOW] Usando structured_output raiz`);
+    extractedData = responseData.structured_output;
+  } else if (responseData.data?.outputs?.text) {
+    console.log(`[WORKFLOW] Tentando extrair JSON do campo text`);
+    try {
+      const textOutput = responseData.data.outputs.text;
+      if (typeof textOutput === 'string') {
+        extractedData = JSON.parse(textOutput.replace(/```json\n?/g, '').replace(/```/g, ''));
+      } else {
+        extractedData = textOutput;
       }
-      
-      // Fallback: procurar por texto JSON válido
-      if (value && typeof value === 'object' && (value as any).text) {
-        try {
-          const parsed = JSON.parse((value as any).text);
-          if (parsed && typeof parsed === 'object') {
-            console.log(`[WORKFLOW] JSON válido encontrado em text de: ${key}`);
-            extractedData = parsed;
-            break;
-          }
-        } catch (e) {
-          // Não é JSON válido, continuar procurando
-        }
-      }
+    } catch (parseError) {
+      console.error(`[WORKFLOW] Erro ao parsear text como JSON:`, parseError);
+      throw new Error('Não foi possível extrair dados estruturados da resposta do Dify');
     }
+  } else {
+    console.error(`[WORKFLOW] Estrutura de resposta inesperada, usando fallback`);
+    throw new Error('Resposta do Dify não contém dados estruturados válidos');
   }
   
   if (extractedData) {
-    console.log(`[WORKFLOW] Dados estruturados extraídos com sucesso`);
+    console.log(`[WORKFLOW] Dados estruturados extraídos com sucesso:`, extractedData);
     return formatWorkflowDataToExpectedStructure(extractedData, tipoProposta);
   } else {
     console.log(`[WORKFLOW] Structured output não encontrado, tentando parsing tradicional`);
