@@ -74,7 +74,8 @@ async function processarComDify(arquivoUrl: string, tipoProposta: string, modoDe
     temApiKey: !!difyApiKey, 
     temAppId: !!difyAppId, 
     modoDebug,
-    tipoProposta 
+    tipoProposta,
+    arquivoUrl: arquivoUrl.substring(0, 100) + '...'
   });
   
   if (!difyApiKey) {
@@ -89,29 +90,27 @@ async function processarComDify(arquivoUrl: string, tipoProposta: string, modoDe
     return simularProcessamentoDify(arquivoUrl, tipoProposta);
   }
 
+  // Validar se URL é acessível
+  console.log('=== VALIDANDO ACESSO À URL ===');
   try {
-    // Estratégia A: Upload local + file_id
-    console.log('=== TENTATIVA A: UPLOAD LOCAL + FILE_ID ===');
-    try {
-      const fileId = await uploadFileToDify(arquivoUrl, difyApiKey);
-      console.log('✓ Upload concluído. File ID:', fileId);
-
-      const extractedData = await processWithDifyChat(fileId, tipoProposta, difyApiKey, difyAppId, modoDebug, 'local_file');
-      console.log('✓ Processamento Dify (estratégia A) concluído');
-      console.log('=== DADOS EXTRAÍDOS PELO DIFY ===', JSON.stringify(extractedData, null, 2));
-
-      return extractedData;
-    } catch (uploadError) {
-      console.warn('✗ Estratégia A falhou:', uploadError.message);
-      
-      // Estratégia B: URL remota
-      console.log('=== TENTATIVA B: URL REMOTA ===');
-      const extractedData = await processWithDifyChat(null, tipoProposta, difyApiKey, difyAppId, modoDebug, 'remote_url', arquivoUrl);
-      console.log('✓ Processamento Dify (estratégia B) concluído');
-      console.log('=== DADOS EXTRAÍDOS PELO DIFY ===', JSON.stringify(extractedData, null, 2));
-
-      return extractedData;
+    await validarUrlPublica(arquivoUrl);
+    console.log('✓ URL validada como acessível publicamente');
+  } catch (validationError) {
+    console.error('✗ URL não acessível:', validationError.message);
+    if (modoDebug) {
+      throw new Error(`URL não acessível pelo Dify: ${validationError.message}`);
     }
+    console.warn('Continuando com URL potencialmente inacessível...');
+  }
+
+  try {
+    // Usar apenas estratégia de URL remota (mais confiável)
+    console.log('=== PROCESSAMENTO VIA URL REMOTA ===');
+    const extractedData = await processWithDifyChat(null, tipoProposta, difyApiKey, difyAppId, modoDebug, 'remote_url', arquivoUrl);
+    console.log('✓ Processamento Dify concluído');
+    console.log('=== DADOS EXTRAÍDOS PELO DIFY ===', JSON.stringify(extractedData, null, 2));
+
+    return extractedData;
     
   } catch (error) {
     console.error('=== ERRO NO PROCESSAMENTO DIFY ===');
@@ -127,10 +126,39 @@ async function processarComDify(arquivoUrl: string, tipoProposta: string, modoDe
   }
 }
 
-// Função removida: testarConectividadeDify
-// A validação das credenciais ocorre naturalmente no primeiro request
+// Validar se URL é acessível publicamente
+async function validarUrlPublica(url: string): Promise<void> {
+  console.log('[VALIDACAO] Testando acesso à URL:', url);
+  
+  try {
+    const response = await fetch(url, { 
+      method: 'HEAD',
+      headers: {
+        'User-Agent': 'Dify-Integration-Test/1.0'
+      }
+    });
+    
+    console.log('[VALIDACAO] Status:', response.status, response.statusText);
+    console.log('[VALIDACAO] Headers:', Object.fromEntries(response.headers.entries()));
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const contentType = response.headers.get('content-type');
+    console.log('[VALIDACAO] Content-Type:', contentType);
+    
+    if (!contentType || (!contentType.includes('pdf') && !contentType.includes('image'))) {
+      console.warn('[VALIDACAO] Content-Type suspeito:', contentType);
+    }
+    
+  } catch (error) {
+    console.error('[VALIDACAO] Erro ao acessar URL:', error);
+    throw error;
+  }
+}
 
-// Upload file to Dify
+// Upload file to Dify (REMOVIDO - usando apenas remote_url)
 async function uploadFileToDify(arquivoUrl: string, apiKey: string): Promise<string> {
   console.log('[UPLOAD] Baixando arquivo original...');
   console.log('[UPLOAD] URL do arquivo:', arquivoUrl);
@@ -203,23 +231,23 @@ async function processWithDifyChat(
   const prompt = getPromptForTipoProposta(tipoProposta);
   console.log('[CHAT] Prompt construído:', prompt.substring(0, 200) + '...');
   
-  // Construir estrutura de arquivos baseada no método
+  // Construir estrutura de arquivos conforme documentação oficial Dify
   let files: any[] = [];
   
-  if (transferMethod === 'local_file' && fileId) {
+  if (transferMethod === 'remote_url' && remoteUrl) {
+    console.log('[CHAT] Configurando arquivo via URL remota:', remoteUrl);
     files = [
       {
-        type: "image", // Conforme documentação, usar "image" mesmo para PDFs
-        transfer_method: "local_file",
-        upload_file_id: fileId
-      }
-    ];
-  } else if (transferMethod === 'remote_url' && remoteUrl) {
-    files = [
-      {
-        type: "image", // Conforme documentação
         transfer_method: "remote_url", 
         url: remoteUrl
+      }
+    ];
+  } else if (transferMethod === 'local_file' && fileId) {
+    console.log('[CHAT] Configurando arquivo via upload local:', fileId);
+    files = [
+      {
+        transfer_method: "local_file",
+        file_id: fileId  // Campo correto conforme documentação
       }
     ];
   }
@@ -254,6 +282,18 @@ async function processWithDifyChat(
     const errorText = await chatResponse.text();
     console.error('[CHAT] Erro detalhado:', errorText);
     console.error('[CHAT] Request que falhou:', JSON.stringify(requestBody, null, 2));
+    console.error('[CHAT] Headers da requisição:', {
+      'Authorization': 'Bearer [HIDDEN]',
+      'Content-Type': 'application/json'
+    });
+    
+    // Tentar parse do erro para mais detalhes
+    try {
+      const errorJson = JSON.parse(errorText);
+      console.error('[CHAT] Erro estruturado:', errorJson);
+    } catch (e) {
+      console.error('[CHAT] Erro não é JSON válido');
+    }
     
     // Se modo debug, mostrar erro completo sem fallback
     if (modoDebug) {

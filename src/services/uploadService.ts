@@ -38,18 +38,35 @@ export class UploadService {
         throw new Error(`Erro no upload: ${error.message}`);
       }
 
-      // Gerar URL pública temporária (válida por 1 hora)
-      const { data: urlData } = supabase.storage
+      // Gerar URL assinada temporária (válida por 24 horas) para acesso público
+      const { data: signedUrlData, error: signedError } = await supabase.storage
         .from('documentos-propostas')
-        .getPublicUrl(data.path);
+        .createSignedUrl(data.path, 86400); // 24 horas
+
+      if (signedError) {
+        console.warn('Erro ao gerar URL assinada, usando URL pública:', signedError);
+        // Fallback para URL pública
+        const { data: urlData } = supabase.storage
+          .from('documentos-propostas')
+          .getPublicUrl(data.path);
+
+        const result: UploadResult = {
+          url: urlData.publicUrl,
+          path: data.path,
+          fullUrl: urlData.publicUrl
+        };
+
+        console.log('Upload concluído com URL pública:', result);
+        return result;
+      }
 
       const result: UploadResult = {
-        url: urlData.publicUrl,
+        url: signedUrlData.signedUrl,
         path: data.path,
-        fullUrl: urlData.publicUrl
+        fullUrl: signedUrlData.signedUrl
       };
 
-      console.log('Upload concluído:', result);
+      console.log('Upload concluído com URL assinada:', result);
       return result;
 
     } catch (error) {
