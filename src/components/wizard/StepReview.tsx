@@ -162,7 +162,7 @@ export function StepReview({
               <Label htmlFor="review-nome">Nome Completo</Label>
               <Input
                 id="review-nome"
-                value={propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente || ''}
+                value={propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_cliente || dadosUnificados?.nome_cliente || ''}
                 onChange={(e) => onDataChange({ clienteNome: e.target.value })}
               />
             </div>
@@ -297,7 +297,7 @@ export function StepReview({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">Cliente:</span>
-                <p className="font-medium">{propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente || 'Não informado'}</p>
+                <p className="font-medium">{propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_cliente || dadosUnificados?.nome_cliente || 'Não informado'}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Tipo:</span>
@@ -332,7 +332,7 @@ export function StepReview({
           onClick={() => {
             // Prepare complete data
             const dadosCompletos = {
-              clienteNome: propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente || '',
+              clienteNome: propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_cliente || dadosUnificados?.nome_cliente || '',
               clienteEmail: propostaData.clienteEmail || '',
               clienteWhatsapp: propostaData.clienteWhatsapp || dadosMateriais?.telefone_do_cliente || dadosUnificados?.telefone_do_cliente || '',
               clienteEndereco: propostaData.clienteEndereco || dadosEnergiaSolar?.dadosContaLuz.endereco || '',
@@ -349,7 +349,7 @@ export function StepReview({
             });
           }}
           disabled={
-            !(propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente) ||
+            !(propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_cliente || dadosUnificados?.nome_cliente) ||
             !propostaData.clienteEmail
           }
           className="bg-primary hover:bg-primary/90"

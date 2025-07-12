@@ -80,9 +80,11 @@ export function StepProcessing({
 
         // Para energia solar, usar a estrutura correta
         if (propostaData.tipoProposta === 'energia-solar') {
+          // result já vem como DadosContaLuz diretamente da edge function
+          console.log('Dados da conta de luz extraídos:', result);
           onDataChange({
             dadosExtraidos: result,
-            valorTotal: result.dadosContaLuz?.valor_total || 0
+            valorTotal: result.valor_total || 0
           })
         } else {
           onDataChange({

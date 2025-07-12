@@ -66,7 +66,7 @@ export function StepGenerate({
               </div>
               <h4 className="font-semibold text-sm text-muted-foreground">CLIENTE</h4>
               <p className="font-bold text-lg">
-                {propostaData.clienteNome || dadosMateriais?.nome_do_cliente}
+                {propostaData.clienteNome || dadosMateriais?.nome_cliente}
               </p>
               <p className="text-sm text-muted-foreground">
                 {propostaData.clienteEmail}

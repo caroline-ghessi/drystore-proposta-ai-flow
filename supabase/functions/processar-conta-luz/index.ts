@@ -119,18 +119,27 @@ serve(async (req) => {
       const outputs = difyResult.structured_output;
       console.log('Dados extraídos do Dify:', JSON.stringify(outputs, null, 2));
       
-      // Extrair dados estruturados da resposta
+      // Log detalhado para debugging
+      console.log('Verificando outputs.nome_cliente:', outputs.nome_cliente);
+      console.log('clienteNome do input:', clienteNome);
+      
+      // Validação REAL do nome do cliente - sem fallbacks fictícios
+      if (!outputs.nome_cliente || outputs.nome_cliente.trim() === '') {
+        throw new Error('Nome do cliente não foi extraído corretamente da conta de luz. Verifique se a imagem está legível.');
+      }
+
+      // Extrair dados estruturados da resposta - SEM FALLBACKS FICTÍCIOS
       const dadosExtraidos: DadosContaLuz = {
-        nome_cliente: outputs.nome_cliente || clienteNome,
+        nome_cliente: outputs.nome_cliente, // Usar APENAS o que o Dify extraiu
         endereco: outputs.endereco || '',
         numero_instalacao: outputs.numero_instalacao || '',
-        data_emissao: outputs.data_emissao || new Date().toLocaleDateString('pt-BR'),
+        data_emissao: outputs.data_emissao || '',
         mes_referencia: outputs.mes_referencia || '',
         preco_kw: outputs.preco_kw !== undefined ? parseFloat(outputs.preco_kw) : null,
-        concessionaria: outputs.concessionaria || 'Não identificada',
+        concessionaria: outputs.concessionaria || '',
         consumo_atual: outputs.consumo_atual !== undefined ? parseFloat(outputs.consumo_atual) : null,
         valor_total: outputs.valor_total !== undefined ? parseFloat(outputs.valor_total) : null,
-        historico_consumo: {
+        historico_consumo: outputs.historico_consumo || {
           dados_ano_atual: {
             ano: new Date().getFullYear(),
             meses: {
@@ -147,26 +156,13 @@ serve(async (req) => {
               setembro: null, outubro: null, novembro: null, dezembro: null
             }
           },
-          observacao: 'Dados de histórico não encontrados na conta de luz'
+          observacao: 'Dados não extraídos do documento'
         },
         tipo_sistema: tipo_sistema || 'on-grid',
         inclui_baterias: inclui_baterias || false
       };
 
-      // Sobrescrever historico_consumo se dados reais existirem
-      if (outputs.historico_consumo) {
-        dadosExtraidos.historico_consumo = outputs.historico_consumo;
-      }
-
-      console.log('Dados finais mapeados:', JSON.stringify(dadosExtraidos, null, 2));
-
-      // Validação básica - só rejeitar se não tiver dados mínimos
-      const temDadosBasicos = dadosExtraidos.nome_cliente && dadosExtraidos.nome_cliente.trim() !== '';
-      
-      if (!temDadosBasicos) {
-        console.warn('Dados extraídos sem nome do cliente. Usando nome fornecido no input.');
-        dadosExtraidos.nome_cliente = clienteNome || 'Cliente não identificado';
-      }
+      console.log('Dados finais mapeados (SEM fallbacks):', JSON.stringify(dadosExtraidos, null, 2));
 
       const resultado: ProcessamentoResult = {
         sucesso: true,

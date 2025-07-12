@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 // Interface unificada baseada nos dados reais do Dify
 export interface DadosExtraidos {
   // Dados do cliente (extraídos do PDF)
-  nome_do_cliente?: string;
+  nome_cliente?: string;
   telefone_do_cliente?: string;
   
   // Produtos (estrutura comum para todos os tipos)
@@ -29,7 +29,7 @@ export interface DadosExtraidos {
 
 export interface DadosMateriaisConstrucao {
   numero_proposta: string | number;
-  nome_do_cliente: string;
+  nome_cliente: string;
   telefone_do_cliente: string;
   produtos: Array<{
     codigo: string;
@@ -201,9 +201,8 @@ export class DifyService {
       // Verificar nome do cliente - aceitar tanto do contaLuz quanto dados globais
       const nomeCliente = contaLuz?.nome_cliente || dados?.nome_cliente;
       
-      if (!nomeCliente || nomeCliente.trim() === '' || nomeCliente === 'Não identificado') {
-        console.warn('Nome do cliente não encontrado ou inválido:', nomeCliente);
-        // Permitir prosseguir mesmo sem nome válido - será usado o nome do input
+      if (!nomeCliente || nomeCliente.trim() === '') {
+        errors.push('Nome do cliente é obrigatório e deve ser extraído da conta de luz');
       }
       
       // Apenas retornar erro se os dados forem completamente inválidos
@@ -213,7 +212,7 @@ export class DifyService {
     // Para materiais de construção, usar interface específica
     if (tipoProposta === 'materiais-construcao') {
       const dadosMateriais = dados as DadosMateriaisConstrucao;
-      if (!dadosMateriais.nome_do_cliente) {
+      if (!dadosMateriais.nome_cliente) {
         errors.push('Nome do cliente é obrigatório');
       }
       if (!dadosMateriais.produtos || dadosMateriais.produtos.length === 0) {
@@ -226,7 +225,7 @@ export class DifyService {
     const dadosUnificados = dados as DadosExtraidos;
     
     // Validação mínima: cliente e produtos
-    if (!dadosUnificados.nome_do_cliente) {
+    if (!dadosUnificados.nome_cliente) {
       errors.push('Nome do cliente é obrigatório');
     }
     
@@ -261,7 +260,7 @@ export class DifyService {
     if (tipoProposta === 'materiais-construcao') {
       const dadosMateriais = dados as DadosMateriaisConstrucao;
       formatado['Número da Proposta'] = dadosMateriais.numero_proposta;
-      formatado['Cliente'] = dadosMateriais.nome_do_cliente;
+      formatado['Cliente'] = dadosMateriais.nome_cliente;
       formatado['Telefone'] = dadosMateriais.telefone_do_cliente;
       formatado['Valor do Frete'] = `R$ ${dadosMateriais.valor_frete?.toFixed(2) || '0,00'}`;
       formatado['Valor Total'] = `R$ ${dadosMateriais.valor_total_proposta?.toFixed(2) || '0,00'}`;
@@ -271,7 +270,7 @@ export class DifyService {
     // Para outros tipos, usar interface unificada baseada nos dados reais do Dify
     const dadosUnificados = dados as DadosExtraidos;
     
-    formatado['Cliente'] = dadosUnificados.nome_do_cliente || 'Não encontrado';
+    formatado['Cliente'] = dadosUnificados.nome_cliente || 'Não encontrado';
     formatado['Telefone'] = dadosUnificados.telefone_do_cliente || 'Não encontrado';
     
     if (dadosUnificados.numero_proposta) {
