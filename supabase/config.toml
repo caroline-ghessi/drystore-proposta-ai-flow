@@ -3,6 +3,9 @@ project_id = "xjmuxtoichwikoquishz"
 [functions.processar-documento]
 verify_jwt = false
 
+[functions.processar-conta-luz]
+verify_jwt = false
+
 [functions.criar-proposta]
 verify_jwt = false
 

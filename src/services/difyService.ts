@@ -44,6 +44,20 @@ export interface DadosMateriaisConstrucao {
   observacoes?: string;
 }
 
+export interface DadosContaLuz {
+  cliente_nome: string;
+  cliente_cpf_cnpj?: string;
+  endereco_instalacao: string;
+  consumo_kwh_mes: number;
+  valor_conta: number;
+  classe_consumo: 'residencial' | 'comercial' | 'industrial';
+  tarifa_kwh?: number;
+  demanda_contratada?: number;
+  distribuidora: string;
+  mes_referencia: string;
+  bandeira_tarifaria?: string;
+}
+
 export interface ProcessamentoResult {
   dados_extraidos: DadosExtraidos | DadosMateriaisConstrucao;
   valor_total: number;
@@ -199,6 +213,39 @@ export class DifyService {
     clienteEmail: string
   ): Promise<ProcessamentoResult> {
     return this.processarDocumento(arquivoUrl, 'materiais-construcao', clienteNome, clienteEmail);
+  }
+
+  async processarContaLuz(
+    imagemUrl: string,
+    clienteNome: string,
+    clienteEmail: string
+  ): Promise<{ sucesso: boolean; dados?: DadosContaLuz; erro?: string }> {
+    try {
+      console.log('Processando conta de luz:', { imagemUrl, clienteNome, clienteEmail });
+
+      // Chamar Edge Function específica para conta de luz
+      const { data, error } = await supabase.functions.invoke('processar-conta-luz', {
+        body: {
+          imagemUrl,
+          clienteNome,
+          clienteEmail
+        }
+      });
+
+      if (error) {
+        throw new Error(`Erro no processamento da conta de luz: ${error.message}`);
+      }
+
+      console.log('Processamento da conta de luz concluído:', data);
+      return data;
+
+    } catch (error) {
+      console.error('Erro no serviço de conta de luz:', error);
+      return {
+        sucesso: false,
+        erro: error.message || 'Erro desconhecido no processamento da conta de luz'
+      };
+    }
   }
 }
 
