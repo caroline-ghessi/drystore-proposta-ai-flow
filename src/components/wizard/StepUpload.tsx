@@ -110,11 +110,40 @@ export function StepUpload({
     <div className="space-y-6">
       <div className="text-center">
         <h3 className="text-lg font-semibold mb-2">
-          Upload de PDF - {TIPO_LABELS[tipoProposta]}
+          Upload de Documento - {TIPO_LABELS[tipoProposta]}
         </h3>
         <p className="text-muted-foreground">
           {info.descricao}. Os dados do cliente serão extraídos automaticamente do documento.
         </p>
+        
+        {/* Campos específicos para energia solar */}
+        {tipoProposta === 'energia-solar' && (
+          <div className="mt-4 space-y-4 max-w-md mx-auto">
+            <div>
+              <Label htmlFor="tipo-sistema">Tipo de Sistema</Label>
+              <select 
+                id="tipo-sistema"
+                className="w-full mt-1 p-2 border border-input rounded-md"
+                onChange={(e) => onDataChange({ tipoSistema: e.target.value as any })}
+                defaultValue="on-grid"
+              >
+                <option value="on-grid">On-Grid (Conectado à rede)</option>
+                <option value="hibrido">Híbrido (Com baterias)</option>
+                <option value="off-grid">Off-Grid (Isolado)</option>
+                <option value="baterias_apenas">Apenas Baterias</option>
+              </select>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <input 
+                type="checkbox" 
+                id="inclui-baterias"
+                onChange={(e) => onDataChange({ incluiBaterias: e.target.checked })}
+              />
+              <Label htmlFor="inclui-baterias">Incluir sistema de baterias</Label>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex justify-center">

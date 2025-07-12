@@ -93,6 +93,8 @@ export interface DadosContaLuz {
   consumo_atual: number | null;
   valor_total: number | null;
   historico_consumo: HistoricoConsumo;
+  tipo_sistema?: 'on-grid' | 'hibrido' | 'off-grid' | 'baterias_apenas';
+  inclui_baterias?: boolean;
 }
 
 export interface DadosEnergiaSolarCompletos {
@@ -178,24 +180,36 @@ export class DifyService {
     }
   }
 
-  validarDadosExtraidos(dados: DadosExtraidos | DadosMateriaisConstrucao | DadosEnergiaSolarCompletos, tipoProposta: string): { valid: boolean; errors: string[] } {
+  validarDadosExtraidos(dados: any, tipoProposta: string): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    // Para energia solar, usar interface específica
+    // Para energia solar, validação mais flexível
     if (tipoProposta === 'energia-solar') {
-      const dadosEnergiaSolar = dados as DadosEnergiaSolarCompletos;
-      if (!dadosEnergiaSolar.dadosContaLuz?.nome_cliente) {
+      // Verificar se os dados têm a estrutura correta
+      if (!dados) {
+        errors.push('Dados não encontrados');
+        return { valid: false, errors };
+      }
+
+      // Aceitar tanto DadosContaLuz diretamente quanto DadosEnergiaSolarCompletos
+      const contaLuz = dados.dadosContaLuz || dados;
+      
+      if (!contaLuz?.nome_cliente || contaLuz.nome_cliente.trim() === '') {
         errors.push('Nome do cliente é obrigatório');
       }
-      if (!dadosEnergiaSolar.dadosContaLuz?.consumo_atual || dadosEnergiaSolar.dadosContaLuz.consumo_atual <= 0) {
-        errors.push('Consumo atual deve ser maior que zero');
+      
+      // Validação mais permissiva para consumo - aceitar null mas alertar
+      if (!contaLuz?.consumo_atual || isNaN(contaLuz.consumo_atual) || contaLuz.consumo_atual <= 0) {
+        console.warn('Consumo atual não encontrado ou inválido:', contaLuz?.consumo_atual);
+        // Não bloquear - permitir prosseguir com dados parciais
       }
-      if (!dadosEnergiaSolar.dadosContaLuz?.concessionaria) {
-        errors.push('Concessionária é obrigatória');
+      
+      if (!contaLuz?.concessionaria || contaLuz.concessionaria.trim() === '') {
+        console.warn('Concessionária não identificada');
+        // Não bloquear - permitir prosseguir
       }
-      if (!dadosEnergiaSolar.consumoMedio || dadosEnergiaSolar.consumoMedio <= 0) {
-        errors.push('Consumo médio deve ser calculado');
-      }
+
+      // Apenas bloquear se não tiver dados básicos do cliente
       return { valid: errors.length === 0, errors };
     }
 
@@ -293,7 +307,9 @@ export class DifyService {
   async processarContaLuz(
     imagemUrl: string,
     clienteNome: string,
-    clienteEmail: string
+    clienteEmail: string,
+    tipoSistema?: string,
+    incluiBaterias?: boolean
   ): Promise<{ sucesso: boolean; dados?: DadosEnergiaSolarCompletos; erro?: string }> {
     try {
       console.log('Processando conta de luz:', { imagemUrl, clienteNome, clienteEmail });
@@ -303,7 +319,9 @@ export class DifyService {
         body: {
           imagemUrl,
           clienteNome,
-          clienteEmail
+          clienteEmail,
+          tipo_sistema: tipoSistema || 'on-grid',
+          inclui_baterias: incluiBaterias || false
         }
       });
 

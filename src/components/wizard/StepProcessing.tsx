@@ -47,21 +47,17 @@ export function StepProcessing({
           const contaLuzResult = await difyService.processarContaLuz(
             propostaData.arquivoUrl,
             propostaData.clienteNome,
-            propostaData.clienteEmail
+            propostaData.clienteEmail,
+            propostaData.tipoSistema,
+            propostaData.incluiBaterias
           )
 
           if (!contaLuzResult.sucesso) {
             throw new Error(contaLuzResult.erro || 'Erro no processamento da conta de luz')
           }
 
-          // Criar resultado compatível com ProcessamentoResult
-          result = {
-            dados_extraidos: contaLuzResult.dados,
-            valor_total: contaLuzResult.dados?.dadosContaLuz.valor_total || 0,
-            status: 'sucesso',
-            timestamp: new Date().toISOString(),
-            tipo_dados: 'energia-solar'
-          }
+          // Usar os dados extraídos diretamente
+          result = contaLuzResult.dados
         } else {
           // Para outros tipos, usar processamento padrão
           result = await difyService.processarDocumento(
@@ -74,7 +70,7 @@ export function StepProcessing({
 
         // Validar dados extraídos
         const validation = difyService.validarDadosExtraidos(
-          result.dados_extraidos,
+          result,
           propostaData.tipoProposta
         )
 
@@ -82,10 +78,18 @@ export function StepProcessing({
           throw new Error(`Erro na validação: ${validation.errors.join(', ')}`)
         }
 
-        onDataChange({
-          dadosExtraidos: result.dados_extraidos,
-          valorTotal: result.valor_total
-        })
+        // Para energia solar, usar a estrutura correta
+        if (propostaData.tipoProposta === 'energia-solar') {
+          onDataChange({
+            dadosExtraidos: result,
+            valorTotal: result.dadosContaLuz?.valor_total || 0
+          })
+        } else {
+          onDataChange({
+            dadosExtraidos: result.dados_extraidos,
+            valorTotal: result.valor_total
+          })
+        }
 
         // Aguardar um pouco para mostrar o progresso
         setTimeout(() => {

@@ -21,6 +21,8 @@ export interface PropostaData {
   valorTotal?: number;
   observacoes?: string;
   ocultar_precos_unitarios?: boolean;
+  tipoSistema?: 'on-grid' | 'hibrido' | 'off-grid' | 'baterias_apenas';
+  incluiBaterias?: boolean;
 }
 
 interface PropostaWizardProps {
