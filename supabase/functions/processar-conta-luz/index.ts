@@ -112,11 +112,21 @@ serve(async (req) => {
     }
 
     const difyResult = await difyResponse.json();
-    console.log('Resposta do Dify:', difyResult);
+    console.log('Resposta completa do Dify:', JSON.stringify(difyResult, null, 2));
 
-    // Processar a resposta do Dify - usar structured_output
-    if (difyResult?.structured_output) {
-      const outputs = difyResult.structured_output;
+    // Verificar a estrutura aninhada da resposta
+    let structuredOutput = null;
+    if (difyResult.data?.outputs?.structured_output) {
+      structuredOutput = difyResult.data.outputs.structured_output;
+    } else if (difyResult.structured_output) {
+      structuredOutput = difyResult.structured_output; // Fallback para estrutura antiga
+    } else {
+      console.error('Estrutura de resposta inesperada do Dify:', difyResult);
+      throw new Error('Structured_output não encontrado na resposta do Dify');
+    }
+
+    console.log('Dados extraídos do Dify (structured_output):', JSON.stringify(structuredOutput, null, 2));
+    const outputs = structuredOutput;
       console.log('Dados extraídos do Dify:', JSON.stringify(outputs, null, 2));
       
       // Log detalhado para debugging
@@ -177,10 +187,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
 
-    } else {
-      console.error('Formato de resposta inesperado do Dify:', difyResult);
-      throw new Error('Formato de resposta inválido do Dify');
-    }
 
   } catch (error) {
     console.error('Erro no processamento da conta de luz:', error);

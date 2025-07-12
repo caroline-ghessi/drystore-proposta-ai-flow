@@ -306,7 +306,7 @@ export class DifyService {
     clienteEmail: string,
     tipoSistema?: string,
     incluiBaterias?: boolean
-  ): Promise<{ sucesso: boolean; dados?: DadosEnergiaSolarCompletos; erro?: string }> {
+  ): Promise<{ sucesso: boolean; dados?: DadosContaLuz; erro?: string }> {
     try {
       console.log('Processando conta de luz:', { imagemUrl, clienteNome, clienteEmail });
 
@@ -331,32 +331,11 @@ export class DifyService {
 
       const dadosContaLuz = data.dados as DadosContaLuz;
       
-      // Calcular consumo médio baseado no histórico de 24 meses
-      const consumoMedio = this.calcularConsumoMedio(dadosContaLuz.historico_consumo);
-      
-      // Extrair cidade e estado do endereço
-      const { cidade, estado } = this.extrairCidadeEstado(dadosContaLuz.endereco);
-      
-      // Determinar tipo de instalação baseado no consumo
-      const tipoInstalacao = this.determinarTipoInstalacao(consumoMedio);
-      
-      // Definir tarifa kWh (usar da conta ou padrão)
-      const tarifaKwh = dadosContaLuz.preco_kw || 0.75;
-
-      const dadosCompletos: DadosEnergiaSolarCompletos = {
-        dadosContaLuz,
-        consumoMedio,
-        cidade,
-        estado,
-        tipoInstalacao,
-        tarifaKwh
-      };
-
-      console.log('Processamento da conta de luz concluído:', dadosCompletos);
+      console.log('Dados da conta de luz recebidos da edge function:', dadosContaLuz);
       
       return {
         sucesso: true,
-        dados: dadosCompletos
+        dados: dadosContaLuz
       };
 
     } catch (error) {
