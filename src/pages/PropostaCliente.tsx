@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
 import { usePropostas } from "@/hooks/usePropostas"
 import DivisoriasPropostaPage from "@/components/propostas/DivisoriasPropostaPage"
+import TelhasShinglePropostaPage from "@/components/propostas/TelhasShinglePropostaPage"
 import { 
   CheckCircle, 
   Zap, 
@@ -147,6 +148,15 @@ const PropostaClientePage = () => {
   if (proposta.tipo_proposta === 'divisorias') {
     return (
       <DivisoriasPropostaPage 
+        proposta={proposta}
+        onAceitarProposta={handleAceitarProposta}
+      />
+    )
+  }
+
+  if (proposta.tipo_proposta === 'telhas') {
+    return (
+      <TelhasShinglePropostaPage 
         proposta={proposta}
         onAceitarProposta={handleAceitarProposta}
       />
