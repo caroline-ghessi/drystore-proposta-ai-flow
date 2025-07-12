@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Calendar, Percent, Filter } from "lucide-react";
+import { MessageSquare, Calendar, Percent, Filter, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Proposta {
@@ -18,6 +19,7 @@ interface Proposta {
   status: "aberta" | "aceita" | "expirada" | "processando" | "enviada" | "visualizada";
   tipo: string;
   data: string;
+  url_unica?: string;
 }
 
 interface PropostasTableProps {
@@ -26,6 +28,7 @@ interface PropostasTableProps {
 
 const PropostasTable = ({ propostas }: PropostasTableProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [followUpData, setFollowUpData] = useState({ proposta: "", mensagem: "" });
   const [lembreteData, setLembreteData] = useState({ proposta: "", data: "", observacao: "" });
@@ -67,6 +70,18 @@ const PropostasTable = ({ propostas }: PropostasTableProps) => {
       description: `Solicitação de ${descontoData.percentual}% enviada para aprovação`,
     });
     setDescontoData({ proposta: "", percentual: "", motivo: "" });
+  };
+
+  const handleVerProposta = (proposta: Proposta) => {
+    if (proposta.url_unica) {
+      navigate(`/proposta/${proposta.url_unica}`);
+    } else {
+      toast({
+        title: "Erro",
+        description: "URL da proposta não encontrada",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -122,6 +137,11 @@ const PropostasTable = ({ propostas }: PropostasTableProps) => {
                 <TableCell>{proposta.data}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
+                    {/* Ver Proposta Button */}
+                    <Button size="sm" variant="outline" onClick={() => handleVerProposta(proposta)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+
                     {/* Follow-up Button */}
                     <Dialog>
                       <DialogTrigger asChild>

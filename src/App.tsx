@@ -37,7 +37,7 @@ const App = () => (
           <Route path="/admin" element={<Admin />} />
           <Route path="/equipamentos-solar" element={<EquipamentosSolar />} />
           <Route path="/cliente-portal" element={<ClientePortal />} />
-          <Route path="/proposta/:id" element={<PropostaCliente />} />
+          <Route path="/proposta/:urlUnica" element={<PropostaCliente />} />
           <Route path="/processamento" element={<ProcessamentoProposta />} />
           <Route path="/login-cliente" element={<LoginCliente />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

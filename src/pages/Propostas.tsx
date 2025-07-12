@@ -153,7 +153,8 @@ export function Propostas() {
                     : 'Calculando...',
                   status: p.status,
                   tipo: formatTipoProposta(p.tipo_proposta),
-                  data: new Date(p.created_at).toLocaleDateString('pt-BR')
+                  data: new Date(p.created_at).toLocaleDateString('pt-BR'),
+                  url_unica: p.url_unica
                 }))}
               />
             )}

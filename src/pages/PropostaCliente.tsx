@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react"
+import { useParams } from "react-router-dom"
 import FluxoPagamento from "@/components/FluxoPagamento"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
+import { usePropostas } from "@/hooks/usePropostas"
 import { 
   CheckCircle, 
   Zap, 
@@ -19,24 +21,39 @@ import {
 } from "lucide-react"
 
 const PropostaClientePage = () => {
+  const { urlUnica } = useParams<{ urlUnica: string }>();
+  const { buscarPropostaPorUrl, registrarVisualizacao, aceitarProposta } = usePropostas();
+  
+  const [proposta, setProposta] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [showRecomendacoes, setShowRecomendacoes] = useState(false);
   const [propostaAceita, setPropostaAceita] = useState(false);
   const [visualizacaoRegistrada, setVisualizacaoRegistrada] = useState(false);
 
-  const proposta = {
-    cliente: "João Silva",
-    endereco: "Rua das Flores, 123 - São Paulo, SP",
-    consumoMedio: "450 kWh/mês",
-    valorContaAtual: "R$ 380,00",
-    sistemaRecomendado: "5.5 kW",
-    modulosPaineis: "10 módulos de 550W",
-    inversor: "Inversor String 5kW",
-    geracao: "620 kWh/mês",
-    economia: "87%",
-    valorSistema: "R$ 28.500,00",
-    payback: "4.2 anos",
-    economiaTotal: "R$ 187.000,00"
-  };
+  // Carregar dados da proposta
+  useEffect(() => {
+    const carregarProposta = async () => {
+      if (!urlUnica) return;
+      
+      try {
+        setLoading(true);
+        const dados = await buscarPropostaPorUrl(urlUnica);
+        
+        if (dados) {
+          setProposta(dados);
+          setPropostaAceita(dados.status === 'aceita');
+        } else {
+          console.error('Proposta não encontrada');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar proposta:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    carregarProposta();
+  }, [urlUnica, buscarPropostaPorUrl]);
 
   const recomendacoes = [
     {
@@ -58,19 +75,31 @@ const PropostaClientePage = () => {
   ];
 
   useEffect(() => {
-    // Simular registro de visualização
-    if (!visualizacaoRegistrada) {
-      setTimeout(() => {
-        console.log("Visualização da proposta registrada - vendedor será notificado");
-        setVisualizacaoRegistrada(true);
+    // Registrar visualização da proposta
+    if (!visualizacaoRegistrada && urlUnica && proposta) {
+      setTimeout(async () => {
+        try {
+          await registrarVisualizacao(urlUnica);
+          console.log("Visualização da proposta registrada - vendedor será notificado");
+          setVisualizacaoRegistrada(true);
+        } catch (error) {
+          console.error('Erro ao registrar visualização:', error);
+        }
       }, 2000);
     }
-  }, [visualizacaoRegistrada]);
+  }, [visualizacaoRegistrada, urlUnica, proposta, registrarVisualizacao]);
 
-  const handleAceitarProposta = (formaPagamento: string) => {
-    console.log("Proposta aceita com pagamento:", formaPagamento);
-    setPropostaAceita(true);
-    setShowRecomendacoes(true);
+  const handleAceitarProposta = async (formaPagamento: string) => {
+    if (!proposta) return;
+    
+    try {
+      await aceitarProposta(proposta.id);
+      console.log("Proposta aceita com pagamento:", formaPagamento);
+      setPropostaAceita(true);
+      setShowRecomendacoes(true);
+    } catch (error) {
+      console.error('Erro ao aceitar proposta:', error);
+    }
   };
 
   const handlePularRecomendacoes = () => {
@@ -80,6 +109,44 @@ const PropostaClientePage = () => {
 
   const handleAceitarRecomendacao = () => {
     alert("Ótimo! Um consultor especialista entrará em contato para detalhar essa solução.");
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-lg">Carregando proposta...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!proposta) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Proposta não encontrada</h1>
+          <p className="text-muted-foreground">A proposta que você está procurando não existe ou foi removida.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Extrair dados da proposta ou usar valores padrão
+  const dadosProposta = {
+    cliente: proposta.cliente_nome || "Cliente",
+    endereco: proposta.cliente_endereco || "Endereço não informado",
+    consumoMedio: proposta.dados_extraidos?.consumo_kwh_mes ? `${proposta.dados_extraidos.consumo_kwh_mes} kWh/mês` : "450 kWh/mês",
+    valorContaAtual: proposta.dados_extraidos?.valor_conta ? `R$ ${proposta.dados_extraidos.valor_conta.toFixed(2)}` : "R$ 380,00",
+    sistemaRecomendado: proposta.dados_extraidos?.potencia_sistema || "5.5 kW",
+    modulosPaineis: proposta.dados_extraidos?.modulos || "10 módulos de 550W",
+    inversor: proposta.dados_extraidos?.inversor || "Inversor String 5kW",
+    geracao: proposta.dados_extraidos?.geracao_mensal || "620 kWh/mês",
+    economia: proposta.dados_extraidos?.economia_percentual || "87%",
+    valorSistema: proposta.valor_total ? `R$ ${proposta.valor_total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : "R$ 28.500,00",
+    payback: proposta.dados_extraidos?.payback || "4.2 anos",
+    economiaTotal: proposta.dados_extraidos?.economia_total || "R$ 187.000,00"
   };
 
   if (showRecomendacoes) {
@@ -149,11 +216,11 @@ const PropostaClientePage = () => {
             Sua Solução em Energia Solar Personalizada
           </h1>
           <p className="text-xl opacity-90 mb-6">
-            Proposta exclusiva para {proposta.cliente}
+            Proposta exclusiva para {dadosProposta.cliente}
           </p>
           <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-2">
             <Zap className="h-5 w-5" />
-            <span>Sistema {proposta.sistemaRecomendado} • Economia de {proposta.economia}</span>
+            <span>Sistema {dadosProposta.sistemaRecomendado} • Economia de {dadosProposta.economia}</span>
           </div>
         </div>
       </section>
@@ -215,15 +282,15 @@ const PropostaClientePage = () => {
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
                   <span>Consumo médio:</span>
-                  <span className="font-semibold">{proposta.consumoMedio}</span>
+                  <span className="font-semibold">{dadosProposta.consumoMedio}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Valor da conta:</span>
-                  <span className="font-semibold text-destructive">{proposta.valorContaAtual}</span>
+                  <span className="font-semibold text-destructive">{dadosProposta.valorContaAtual}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Endereço:</span>
-                  <span className="font-semibold text-right text-sm">{proposta.endereco}</span>
+                  <span className="font-semibold text-right text-sm">{dadosProposta.endereco}</span>
                 </div>
               </CardContent>
             </Card>
@@ -239,19 +306,19 @@ const PropostaClientePage = () => {
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
                   <span>Potência:</span>
-                  <span className="font-semibold text-primary">{proposta.sistemaRecomendado}</span>
+                  <span className="font-semibold text-primary">{dadosProposta.sistemaRecomendado}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Módulos:</span>
-                  <span className="font-semibold">{proposta.modulosPaineis}</span>
+                  <span className="font-semibold">{dadosProposta.modulosPaineis}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Inversor:</span>
-                  <span className="font-semibold">{proposta.inversor}</span>
+                  <span className="font-semibold">{dadosProposta.inversor}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Geração mensal:</span>
-                  <span className="font-semibold text-success">{proposta.geracao}</span>
+                  <span className="font-semibold text-success">{dadosProposta.geracao}</span>
                 </div>
               </CardContent>
             </Card>
@@ -271,15 +338,15 @@ const PropostaClientePage = () => {
             <CardContent>
               <div className="grid md:grid-cols-3 gap-6 text-center">
                 <div>
-                  <div className="text-3xl font-bold text-success mb-2">{proposta.economia}</div>
+                  <div className="text-3xl font-bold text-success mb-2">{dadosProposta.economia}</div>
                   <div className="text-sm text-muted-foreground">Redução na conta</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-success mb-2">{proposta.payback}</div>
+                  <div className="text-3xl font-bold text-success mb-2">{dadosProposta.payback}</div>
                   <div className="text-sm text-muted-foreground">Retorno do investimento</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-success mb-2">{proposta.economiaTotal}</div>
+                  <div className="text-3xl font-bold text-success mb-2">{dadosProposta.economiaTotal}</div>
                   <div className="text-sm text-muted-foreground">Economia em 25 anos</div>
                 </div>
               </div>
@@ -307,7 +374,7 @@ const PropostaClientePage = () => {
                 <CreditCard className="h-6 w-6" />
                 Investimento Total
               </CardTitle>
-              <div className="text-4xl font-bold text-primary">{proposta.valorSistema}</div>
+              <div className="text-4xl font-bold text-primary">{dadosProposta.valorSistema}</div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-3">
@@ -335,9 +402,9 @@ const PropostaClientePage = () => {
                   <>
                     <FluxoPagamento 
                       proposta={{
-                        valor: 45000,
-                        produtos: ["Sistema Solar 5kWp", "Instalação"],
-                        cliente: proposta.cliente
+                        valor: proposta.valor_total || 45000,
+                        produtos: proposta.dados_extraidos?.produtos || ["Sistema Solar", "Instalação"],
+                        cliente: dadosProposta.cliente
                       }}
                       onAceitar={handleAceitarProposta}
                     />

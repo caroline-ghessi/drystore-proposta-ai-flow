@@ -303,7 +303,18 @@ export function StepReview({
           Voltar
         </Button>
         <Button 
-          onClick={() => onComplete({ ocultarPrecosUnitarios })}
+          onClick={() => {
+            // Ensure client data is updated before proceeding
+            const nomeCliente = propostaData.clienteNome || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente;
+            const whatsappCliente = propostaData.clienteWhatsapp || dadosMateriais?.telefone_do_cliente || dadosUnificados?.telefone_do_cliente;
+            
+            onDataChange({
+              clienteNome: nomeCliente,
+              clienteWhatsapp: whatsappCliente
+            });
+            
+            onComplete({ ocultarPrecosUnitarios });
+          }}
           disabled={
             !(propostaData.clienteNome || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente) ||
             !propostaData.clienteEmail
