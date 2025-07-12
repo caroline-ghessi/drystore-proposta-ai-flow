@@ -7,6 +7,7 @@ import { StepProcessing } from "./wizard/StepProcessing"
 import { StepReview } from "./wizard/StepReview"
 import { StepCalculoSolar } from "./wizard/StepCalculoSolar"
 import { StepCalculoTelhas } from "./wizard/StepCalculoTelhas"
+import { StepDadosManuaisTelhas } from "./wizard/StepDadosManuaisTelhas"
 import { StepGenerate } from "./wizard/StepGenerate"
 
 export type TipoProposta = 'energia-solar' | 'telhas' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao' | 'tintas-texturas' | 'verga-fibra' | 'argamassa-silentfloor' | 'light-steel-frame'
@@ -25,6 +26,11 @@ export interface PropostaData {
   ocultar_precos_unitarios?: boolean;
   tipoSistema?: 'on-grid' | 'hibrido' | 'off-grid' | 'baterias_apenas';
   incluiBaterias?: boolean;
+  entradaManual?: boolean;
+  // Dados manuais para telhas
+  areaTelhado?: number;
+  inclinacaoTelhado?: number;
+  tipoEstrutura?: string;
 }
 
 interface PropostaWizardProps {
@@ -50,11 +56,19 @@ const STEPS_ENERGIA_SOLAR = [
   { title: "Gerar Proposta", description: "Confirmar e criar proposta" }
 ]
 
-const STEPS_TELHAS = [
+const STEPS_TELHAS_UPLOAD = [
   { title: "Tipo de Proposta", description: "Selecione o tipo de proposta" },
   { title: "Upload de Especificações", description: "Envie as especificações" },
   { title: "Extração de Dados", description: "Processamento automático" },
   { title: "Confirmação dos Dados", description: "Validar dados do cliente" },
+  { title: "Cálculos de Cobertura", description: "Dimensionamento automático" },
+  { title: "Gerar Proposta", description: "Confirmar e criar proposta" }
+]
+
+const STEPS_TELHAS_MANUAL = [
+  { title: "Tipo de Proposta", description: "Selecione o tipo de proposta" },
+  { title: "Entrada de Dados", description: "Upload ou dados manuais" },
+  { title: "Dados do Cliente", description: "Informações do projeto" },
   { title: "Cálculos de Cobertura", description: "Dimensionamento automático" },
   { title: "Gerar Proposta", description: "Confirmar e criar proposta" }
 ]
@@ -131,7 +145,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
       case 'energia-solar':
         return STEPS_ENERGIA_SOLAR;
       case 'telhas':
-        return STEPS_TELHAS;
+        return propostaData.entradaManual ? STEPS_TELHAS_MANUAL : STEPS_TELHAS_UPLOAD;
       default:
         return STEPS_DEFAULT;
     }
@@ -193,7 +207,17 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             />
           )}
 
-          {currentStep === 2 && (
+          {/* Step 2: Processing ou Dados Manuais */}
+          {currentStep === 2 && propostaData.tipoProposta === 'telhas' && propostaData.entradaManual && (
+            <StepDadosManuaisTelhas
+              data={propostaData}
+              onDataChange={handleStepData}
+              onBack={handleBack}
+              onNext={handleNext}
+            />
+          )}
+
+          {currentStep === 2 && !(propostaData.tipoProposta === 'telhas' && propostaData.entradaManual) && (
             <StepProcessing
               propostaData={propostaData}
               isProcessing={isProcessing}
@@ -205,7 +229,8 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             />
           )}
 
-          {currentStep === 3 && propostaData.tipoProposta !== 'energia-solar' && (
+          {/* Step 3: Review - fluxo normal ou após processing */}
+          {currentStep === 3 && !(propostaData.tipoProposta === 'telhas' && propostaData.entradaManual) && (
             <StepReview
               propostaData={propostaData}
               onDataChange={handleStepData}
@@ -213,7 +238,6 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
               onComplete={(options) => {
                 console.log('StepReview completed with options:', options);
                 
-                // Update with complete data if provided
                 if (options?.dadosCompletos) {
                   const updateData = {
                     ...options.dadosCompletos,
@@ -223,7 +247,6 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
                   shouldProceedToNext.current = true;
                   handleStepData(updateData);
                 } else {
-                  // No data update needed, proceed directly
                   if (options?.ocultarPrecosUnitarios !== undefined) {
                     handleStepData({ ocultar_precos_unitarios: options.ocultarPrecosUnitarios });
                   }
@@ -233,30 +256,37 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             />
           )}
 
-          {currentStep === 3 && propostaData.tipoProposta === 'energia-solar' && (
-            <StepReview
-              propostaData={propostaData}
-              onDataChange={handleStepData}
-              onBack={handleBack}
-              onComplete={(options) => {
-                console.log('StepReview completed with options:', options);
-                
-                // For energia solar, just update data and proceed
-                if (options?.dadosCompletos) {
-                  const updateData = {
-                    ...options.dadosCompletos,
-                    ocultar_precos_unitarios: options.ocultarPrecosUnitarios
-                  };
-                  setPendingStepData(updateData);
-                  shouldProceedToNext.current = true;
-                  handleStepData(updateData);
-                } else {
-                  handleNext();
-                }
+          {/* Step 3: Cálculo Telhas - fluxo manual */}
+          {currentStep === 3 && propostaData.tipoProposta === 'telhas' && propostaData.entradaManual && (
+            <StepCalculoTelhas
+              dadosExtraidos={{
+                area_total_m2: propostaData.areaTelhado || 0,
+                inclinacao_telhado: propostaData.inclinacaoTelhado || 0,
+                tipo_estrutura: propostaData.tipoEstrutura || 'madeira',
+                regiao_climatica: 'Sul',
+                cor_preferida: 'Marrom',
+                observacoes_especiais: propostaData.observacoes
               }}
+              onCalculoComplete={(calculo) => {
+                handleStepData({
+                  dadosExtraidos: {
+                    area_total_m2: propostaData.areaTelhado,
+                    inclinacao_telhado: propostaData.inclinacaoTelhado,
+                    tipo_estrutura: propostaData.tipoEstrutura,
+                    regiao_climatica: 'Sul',
+                    cor_preferida: 'Marrom',
+                    observacoes_especiais: propostaData.observacoes,
+                    calculo_telhas: calculo
+                  },
+                  valorTotal: calculo.calculo.valor_total
+                });
+              }}
+              onBack={handleBack}
+              onNext={handleNext}
             />
           )}
 
+          {/* Step 4: Cálculo Solar ou Telhas (fluxo normal) */}
           {currentStep === 4 && propostaData.tipoProposta === 'energia-solar' && (
             <StepCalculoSolar
               propostaData={propostaData}
@@ -266,7 +296,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             />
           )}
 
-          {currentStep === 4 && propostaData.tipoProposta === 'telhas' && (
+          {currentStep === 4 && propostaData.tipoProposta === 'telhas' && !propostaData.entradaManual && (
             <StepCalculoTelhas
               dadosExtraidos={propostaData.dadosExtraidos}
               onCalculoComplete={(calculo) => {
@@ -283,8 +313,11 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             />
           )}
 
-          {((currentStep === 4 && !['energia-solar', 'telhas'].includes(propostaData.tipoProposta)) || 
-            (currentStep === 5 && ['energia-solar', 'telhas'].includes(propostaData.tipoProposta))) && (
+          {/* Step Final: Gerar Proposta */}
+          {((currentStep === 4 && (!['energia-solar', 'telhas'].includes(propostaData.tipoProposta) || 
+             (propostaData.tipoProposta === 'telhas' && propostaData.entradaManual))) || 
+            (currentStep === 5 && propostaData.tipoProposta === 'energia-solar') ||
+            (currentStep === 5 && propostaData.tipoProposta === 'telhas' && !propostaData.entradaManual)) && (
             <StepGenerate
               propostaData={propostaData}
               onBack={handleBack}
