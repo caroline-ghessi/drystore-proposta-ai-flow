@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      calculos_historico: {
+        Row: {
+          created_at: string | null
+          energia_solar_calculo_id: string | null
+          etapa: string | null
+          formula_utilizada: string | null
+          id: string
+          inputs: Json | null
+          outputs: Json | null
+          tempo_processamento_ms: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          energia_solar_calculo_id?: string | null
+          etapa?: string | null
+          formula_utilizada?: string | null
+          id?: string
+          inputs?: Json | null
+          outputs?: Json | null
+          tempo_processamento_ms?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          energia_solar_calculo_id?: string | null
+          etapa?: string | null
+          formula_utilizada?: string | null
+          id?: string
+          inputs?: Json | null
+          outputs?: Json | null
+          tempo_processamento_ms?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calculos_historico_energia_solar_calculo_id_fkey"
+            columns: ["energia_solar_calculo_id"]
+            isOneToOne: false
+            referencedRelation: "energia_solar_calculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           created_at: string
@@ -54,6 +95,209 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      energia_solar_calculos: {
+        Row: {
+          area_disponivel: number | null
+          area_ocupada_m2: number | null
+          configuracao_utilizada_id: string | null
+          consumo_mensal_kwh: number
+          created_at: string | null
+          economia_anual_estimada: number | null
+          economia_mensal_estimada: number | null
+          geracao_estimada_anual_kwh: number | null
+          geracao_estimada_mensal_kwh: number | null
+          id: string
+          inversor_selecionado_id: string | null
+          irradiacao_local: number
+          painel_selecionado_id: string | null
+          payback_descontado_anos: number | null
+          payback_simples_anos: number | null
+          peso_total_kg: number | null
+          potencia_sistema_kwp: number
+          proposta_id: string | null
+          quantidade_paineis: number
+          tipo_instalacao: string | null
+          tipo_telha: string | null
+          updated_at: string | null
+          valor_equipamentos: number | null
+          valor_instalacao: number | null
+          valor_total: number | null
+          vpl_25_anos: number | null
+        }
+        Insert: {
+          area_disponivel?: number | null
+          area_ocupada_m2?: number | null
+          configuracao_utilizada_id?: string | null
+          consumo_mensal_kwh: number
+          created_at?: string | null
+          economia_anual_estimada?: number | null
+          economia_mensal_estimada?: number | null
+          geracao_estimada_anual_kwh?: number | null
+          geracao_estimada_mensal_kwh?: number | null
+          id?: string
+          inversor_selecionado_id?: string | null
+          irradiacao_local: number
+          painel_selecionado_id?: string | null
+          payback_descontado_anos?: number | null
+          payback_simples_anos?: number | null
+          peso_total_kg?: number | null
+          potencia_sistema_kwp: number
+          proposta_id?: string | null
+          quantidade_paineis: number
+          tipo_instalacao?: string | null
+          tipo_telha?: string | null
+          updated_at?: string | null
+          valor_equipamentos?: number | null
+          valor_instalacao?: number | null
+          valor_total?: number | null
+          vpl_25_anos?: number | null
+        }
+        Update: {
+          area_disponivel?: number | null
+          area_ocupada_m2?: number | null
+          configuracao_utilizada_id?: string | null
+          consumo_mensal_kwh?: number
+          created_at?: string | null
+          economia_anual_estimada?: number | null
+          economia_mensal_estimada?: number | null
+          geracao_estimada_anual_kwh?: number | null
+          geracao_estimada_mensal_kwh?: number | null
+          id?: string
+          inversor_selecionado_id?: string | null
+          irradiacao_local?: number
+          painel_selecionado_id?: string | null
+          payback_descontado_anos?: number | null
+          payback_simples_anos?: number | null
+          peso_total_kg?: number | null
+          potencia_sistema_kwp?: number
+          proposta_id?: string | null
+          quantidade_paineis?: number
+          tipo_instalacao?: string | null
+          tipo_telha?: string | null
+          updated_at?: string | null
+          valor_equipamentos?: number | null
+          valor_instalacao?: number | null
+          valor_total?: number | null
+          vpl_25_anos?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energia_solar_calculos_configuracao_utilizada_id_fkey"
+            columns: ["configuracao_utilizada_id"]
+            isOneToOne: false
+            referencedRelation: "energia_solar_configuracoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "energia_solar_calculos_inversor_selecionado_id_fkey"
+            columns: ["inversor_selecionado_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "energia_solar_calculos_painel_selecionado_id_fkey"
+            columns: ["painel_selecionado_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "energia_solar_calculos_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energia_solar_configuracoes: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          custo_instalacao_wp: number | null
+          fator_perdas: number | null
+          fator_seguranca: number | null
+          fator_sombreamento: number | null
+          id: string
+          margem_comercial: number | null
+          nome: string
+          updated_at: string | null
+          vigencia_dias: number | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          custo_instalacao_wp?: number | null
+          fator_perdas?: number | null
+          fator_seguranca?: number | null
+          fator_sombreamento?: number | null
+          id?: string
+          margem_comercial?: number | null
+          nome: string
+          updated_at?: string | null
+          vigencia_dias?: number | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          custo_instalacao_wp?: number | null
+          fator_perdas?: number | null
+          fator_seguranca?: number | null
+          fator_sombreamento?: number | null
+          id?: string
+          margem_comercial?: number | null
+          nome?: string
+          updated_at?: string | null
+          vigencia_dias?: number | null
+        }
+        Relationships: []
+      }
+      irradiacao_solar: {
+        Row: {
+          cidade: string
+          created_at: string | null
+          data_atualizacao: string | null
+          estado: string
+          fator_correcao: number | null
+          fonte_dados: string | null
+          id: string
+          irradiacao_media_anual: number
+          irradiacao_por_mes: Json | null
+          latitude: number | null
+          longitude: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          cidade: string
+          created_at?: string | null
+          data_atualizacao?: string | null
+          estado: string
+          fator_correcao?: number | null
+          fonte_dados?: string | null
+          id?: string
+          irradiacao_media_anual: number
+          irradiacao_por_mes?: Json | null
+          latitude?: number | null
+          longitude?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          cidade?: string
+          created_at?: string | null
+          data_atualizacao?: string | null
+          estado?: string
+          fator_correcao?: number | null
+          fonte_dados?: string | null
+          id?: string
+          irradiacao_media_anual?: number
+          irradiacao_por_mes?: Json | null
+          latitude?: number | null
+          longitude?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       notificacoes: {
         Row: {
@@ -97,30 +341,60 @@ export type Database = {
         Row: {
           ativo: boolean
           categoria: string
+          compatibilidades: Json | null
+          corrente_a: number | null
           created_at: string
+          dimensoes: Json | null
+          eficiencia: number | null
+          especificacoes_tecnicas: Json | null
+          fabricante: string | null
+          garantia_anos: number | null
           id: string
           nome: string
+          peso_kg: number | null
+          potencia_wp: number | null
           preco_unitario: number | null
+          tensao_v: number | null
           unidade: string
           updated_at: string
         }
         Insert: {
           ativo?: boolean
           categoria: string
+          compatibilidades?: Json | null
+          corrente_a?: number | null
           created_at?: string
+          dimensoes?: Json | null
+          eficiencia?: number | null
+          especificacoes_tecnicas?: Json | null
+          fabricante?: string | null
+          garantia_anos?: number | null
           id?: string
           nome: string
+          peso_kg?: number | null
+          potencia_wp?: number | null
           preco_unitario?: number | null
+          tensao_v?: number | null
           unidade?: string
           updated_at?: string
         }
         Update: {
           ativo?: boolean
           categoria?: string
+          compatibilidades?: Json | null
+          corrente_a?: number | null
           created_at?: string
+          dimensoes?: Json | null
+          eficiencia?: number | null
+          especificacoes_tecnicas?: Json | null
+          fabricante?: string | null
+          garantia_anos?: number | null
           id?: string
           nome?: string
+          peso_kg?: number | null
+          potencia_wp?: number | null
           preco_unitario?: number | null
+          tensao_v?: number | null
           unidade?: string
           updated_at?: string
         }
@@ -247,7 +521,41 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calcular_orcamento: {
+        Args: {
+          p_painel_id: string
+          p_quantidade_paineis: number
+          p_inversor_id: string
+          p_potencia_sistema: number
+        }
+        Returns: Json
+      }
+      calcular_payback: {
+        Args: {
+          p_valor_investimento: number
+          p_economia_mensal: number
+          p_tarifa_energia?: number
+          p_taxa_desconto?: number
+        }
+        Returns: Json
+      }
+      dimensionar_sistema: {
+        Args: {
+          p_consumo_kwh: number
+          p_cidade: string
+          p_estado: string
+          p_tipo_instalacao?: string
+        }
+        Returns: Json
+      }
+      selecionar_equipamentos: {
+        Args: {
+          p_potencia_kwp: number
+          p_tipo_telha?: string
+          p_area_disponivel?: number
+        }
+        Returns: Json
+      }
     }
     Enums: {
       status_proposta_enum:
