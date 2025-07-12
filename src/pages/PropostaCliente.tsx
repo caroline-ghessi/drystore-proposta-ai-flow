@@ -12,6 +12,7 @@ import TelhasShinglePropostaPage from "@/components/propostas/TelhasShinglePropo
 import EnergiaSolarPropostaPage from "@/components/propostas/EnergiaSolarPropostaPage"
 import { ForrosPropostaPage } from "@/components/propostas/ForrosPropostaPage"
 import { PisosPropostaPage } from "@/components/propostas/PisosPropostaPage"
+import { VergaFibraPropostaPage } from "@/components/propostas/VergaFibraPropostaPage"
 import { 
   CheckCircle, 
   Zap, 
@@ -205,6 +206,17 @@ const PropostaClientePage = () => {
         nomeCliente={proposta.cliente_nome}
         numeroProposta={proposta.id.slice(0, 8)}
         dataProposta={new Date(proposta.data_criacao).toLocaleDateString('pt-BR')}
+        onAceitarProposta={handleAceitarProposta}
+        onContato={handleContato}
+        onSolicitarMudanca={handleSolicitarMudanca}
+      />
+    )
+  }
+
+  if (proposta.tipo_proposta === 'verga-fibra') {
+    return (
+      <VergaFibraPropostaPage 
+        proposta={proposta}
         onAceitarProposta={handleAceitarProposta}
         onContato={handleContato}
         onSolicitarMudanca={handleSolicitarMudanca}

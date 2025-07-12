@@ -102,7 +102,7 @@ const AdminLayoutsPropostas = () => {
         conversao: "-",
         ultimaAtualizacao: "Nunca"
       },
-      implementado: false
+      implementado: true
     },
     {
       id: "argamassa-silentfloor",
