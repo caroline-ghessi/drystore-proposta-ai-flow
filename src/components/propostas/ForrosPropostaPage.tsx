@@ -117,9 +117,9 @@ export function ForrosPropostaPage({ proposta, onAceitar, onContato, onSolicitar
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-6">Solução Personalizada para Seu Projeto</h2>
           <p className="text-lg text-muted-foreground">
-            Baseado no seu projeto, selecionamos forros que entregam isolamento térmico R&gt;{dadosProposta.isolamento_termico_r} 
-            e durabilidade de {dadosProposta.durabilidade_anos}+ anos. Com a maior variedade do mercado, 
-            a DryStore atende qualquer necessidade – de OWA madeira estética a Knauf gesso superior.
+            Baseado no seu projeto, selecionamos forros que entregam isolamento térmico R{'>'}
+            {dadosProposta.isolamento_termico_r} e durabilidade de {dadosProposta.durabilidade_anos}+ anos. 
+            Com a maior variedade do mercado, a DryStore atende qualquer necessidade – de OWA madeira estética a Knauf gesso superior.
           </p>
         </div>
       </div>
@@ -180,7 +180,7 @@ export function ForrosPropostaPage({ proposta, onAceitar, onContato, onSolicitar
                 <p className="text-sm text-muted-foreground mb-2">
                   Economia de energia em até <span className="font-bold text-primary">{dadosProposta.economia_energia_percent}%</span> com materiais como lã de vidro e minerais.
                 </p>
-                <Badge variant="secondary">R &gt; {dadosProposta.isolamento_termico_r}</Badge>
+                <Badge variant="secondary">R {'>'}  {dadosProposta.isolamento_termico_r}</Badge>
               </CardContent>
             </Card>
 
@@ -325,7 +325,7 @@ export function ForrosPropostaPage({ proposta, onAceitar, onContato, onSolicitar
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-medium mb-2">Isolamento Térmico</h4>
-                    <p className="text-lg font-bold">R &gt; {dadosProposta.isolamento_termico_r}</p>
+                    <p className="text-lg font-bold">R {'>'}  {dadosProposta.isolamento_termico_r}</p>
                   </div>
                   <div>
                     <h4 className="font-medium mb-2">Economia Energética</h4>
