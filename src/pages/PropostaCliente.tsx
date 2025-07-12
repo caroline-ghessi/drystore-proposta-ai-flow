@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress"
 import { usePropostas } from "@/hooks/usePropostas"
 import DivisoriasPropostaPage from "@/components/propostas/DivisoriasPropostaPage"
 import TelhasShinglePropostaPage from "@/components/propostas/TelhasShinglePropostaPage"
+import EnergiaSolarPropostaPage from "@/components/propostas/EnergiaSolarPropostaPage"
 import { 
   CheckCircle, 
   Zap, 
@@ -163,7 +164,16 @@ const PropostaClientePage = () => {
     )
   }
 
-  // Fallback para energia solar e outros tipos (página atual)
+  if (proposta.tipo_proposta === 'energia-solar') {
+    return (
+      <EnergiaSolarPropostaPage 
+        proposta={proposta}
+        onAceitarProposta={handleAceitarProposta}
+      />
+    )
+  }
+
+  // Fallback para outros tipos (página atual)
   const dadosProposta = {
     cliente: proposta.cliente_nome || "Cliente",
     endereco: proposta.cliente_endereco || "Endereço não informado",
