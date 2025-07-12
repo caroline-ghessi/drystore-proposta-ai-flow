@@ -7,49 +7,39 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp, Calculator, Building, Palette, Shield } from 'lucide-react';
+import { ChevronDown, ChevronUp, Calculator, Building, Palette, Shield, Package, AlertCircle } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useProdutos, TelhaShingle } from '@/hooks/useProdutos';
+import { useToast } from '@/hooks/use-toast';
 
 interface DadosTelhas {
   area_total_m2: number;
-  inclinacao_telhado: string;
+  inclinacao_telhado: number;
   tipo_estrutura: string;
   regiao_climatica: string;
   cor_preferida: string;
-  acabamento_desejado: string;
-  necessita_isolamento: boolean;
-  necessita_manta: boolean;
-  observacoes_especiais: string;
+  telha_id?: string;
+  quebra_personalizada?: number;
+  observacoes_especiais?: string;
 }
 
 interface CalculoTelhas {
-  especificacoes_tecnicas: {
-    area_cobertura: number;
-    quantidade_telhas: number;
-    quantidade_rufo_m: number;
-    quantidade_cumeeira_m: number;
-    quantidade_pregos_kg: number;
-    area_manta_m2: number;
-    inclinacao: string;
-    tipo_estrutura: string;
-    cor_especificada: string;
-    nivel_acabamento: string;
-  };
-  orcamento: {
-    materiais: {
-      telhas: number;
-      rufo: number;
-      cumeeira: number;
-      pregos: number;
-      manta: number;
-      subtotal: number;
-    };
-    instalacao: number;
-    subtotal_geral: number;
-    margem_percentual: number;
-    valor_margem: number;
+  telha: TelhaShingle;
+  calculo: {
+    area_original: number;
+    area_corrigida: number;
+    inclinacao_percentual: number;
+    quebra_percentual: number;
+    fator_correcao: number;
+    quantidade_pacotes_calculada: number;
+    quantidade_pacotes_arredondada: number;
     valor_total: number;
-    valor_m2: number;
+    valor_por_m2: number;
+  };
+  economias: {
+    peso_total_kg: number;
+    peso_vs_ceramica: number;
+    economia_estrutural: string;
   };
 }
 
@@ -71,73 +61,50 @@ export function StepCalculoTelhas({
   const [isCalculating, setIsCalculating] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     especificacoes: true,
-    materiais: false,
+    produtos: false,
+    economias: false,
     financeiro: false
   });
 
   const { canViewMargins } = useUserRole();
+  const { telhasShingle, buscarTelhasShingle, calcularOrcamentoShingle, loading } = useProdutos();
+  const { toast } = useToast();
 
   useEffect(() => {
-    calcularTelhas();
+    buscarTelhasShingle();
+  }, []);
+
+  useEffect(() => {
+    if (dadosAjustados.telha_id && dadosAjustados.area_total_m2 > 0) {
+      calcularTelhas();
+    }
   }, [dadosAjustados]);
 
   const calcularTelhas = async () => {
+    if (!dadosAjustados.telha_id || dadosAjustados.area_total_m2 <= 0) return;
+    
     setIsCalculating(true);
     
-    // Simular cálculo (depois será função Supabase)
-    const area = dadosAjustados.area_total_m2;
-    const telhasPorM2 = 3.2;
-    const quantidadeTelhas = Math.ceil(area * telhasPorM2);
-    
-    const especificacoes = {
-      area_cobertura: area,
-      quantidade_telhas: quantidadeTelhas,
-      quantidade_rufo_m: Math.ceil(area * 0.1),
-      quantidade_cumeeira_m: Math.ceil(area * 0.05),
-      quantidade_pregos_kg: Math.ceil(quantidadeTelhas * 4 / 1000),
-      area_manta_m2: dadosAjustados.necessita_manta ? area * 1.1 : 0,
-      inclinacao: dadosAjustados.inclinacao_telhado,
-      tipo_estrutura: dadosAjustados.tipo_estrutura,
-      cor_especificada: dadosAjustados.cor_preferida,
-      nivel_acabamento: dadosAjustados.acabamento_desejado
-    };
+    try {
+      const resultado = await calcularOrcamentoShingle(
+        dadosAjustados.area_total_m2,
+        dadosAjustados.telha_id,
+        dadosAjustados.quebra_personalizada,
+        dadosAjustados.inclinacao_telhado
+      );
 
-    const valorTelhas = quantidadeTelhas * 25;
-    const valorRufo = especificacoes.quantidade_rufo_m * 15;
-    const valorCumeeira = especificacoes.quantidade_cumeeira_m * 18;
-    const valorPregas = especificacoes.quantidade_pregos_kg * 8;
-    const valorManta = especificacoes.area_manta_m2 * 12;
-    
-    const subtotalMateriais = valorTelhas + valorRufo + valorCumeeira + valorPregas + valorManta;
-    const custoInstalacao = subtotalMateriais * 0.4;
-    const margem = 0.25;
-    
-    const subtotal = subtotalMateriais + custoInstalacao;
-    const valorTotal = subtotal * (1 + margem);
-
-    const novoCalculo: CalculoTelhas = {
-      especificacoes_tecnicas: especificacoes,
-      orcamento: {
-        materiais: {
-          telhas: valorTelhas,
-          rufo: valorRufo,
-          cumeeira: valorCumeeira,
-          pregos: valorPregas,
-          manta: valorManta,
-          subtotal: subtotalMateriais
-        },
-        instalacao: custoInstalacao,
-        subtotal_geral: subtotal,
-        margem_percentual: margem * 100,
-        valor_margem: subtotal * margem,
-        valor_total: Math.round(valorTotal),
-        valor_m2: Math.round(valorTotal / area)
-      }
-    };
-
-    setCalculo(novoCalculo);
-    onCalculoComplete(novoCalculo);
-    setIsCalculating(false);
+      setCalculo(resultado as unknown as CalculoTelhas);
+      onCalculoComplete(resultado as unknown as CalculoTelhas);
+      
+    } catch (error) {
+      toast({
+        title: "Erro no cálculo",
+        description: "Não foi possível calcular o orçamento. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCalculating(false);
+    }
   };
 
   const toggleSection = (section: keyof typeof expandedSections) => {
@@ -154,11 +121,14 @@ export function StepCalculoTelhas({
     }));
   };
 
+  const telhasPorLinha = (linha: 'SUPREME' | 'DURATION') => 
+    telhasShingle.filter(t => t.linha === linha);
+
   return (
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold">Cálculo de Telhas Shingle</h2>
-        <p className="text-muted-foreground">Ajuste os parâmetros e visualize o orçamento</p>
+        <p className="text-muted-foreground">Configure os parâmetros e visualize o orçamento detalhado</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -177,68 +147,110 @@ export function StepCalculoTelhas({
                 <Input
                   id="area"
                   type="number"
+                  step="0.01"
                   value={dadosAjustados.area_total_m2}
                   onChange={(e) => handleInputChange('area_total_m2', Number(e.target.value))}
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="inclinacao">Inclinação do Telhado</Label>
-                <Select
-                  value={dadosAjustados.inclinacao_telhado}
-                  onValueChange={(value) => handleInputChange('inclinacao_telhado', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="baixa">Baixa (&lt; 15°)</SelectItem>
-                    <SelectItem value="média">Média (15° - 30°)</SelectItem>
-                    <SelectItem value="alta">Alta (&gt; 30°)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="estrutura">Tipo de Estrutura</Label>
-                <Select
-                  value={dadosAjustados.tipo_estrutura}
-                  onValueChange={(value) => handleInputChange('tipo_estrutura', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="madeira">Madeira</SelectItem>
-                    <SelectItem value="metálica">Metálica</SelectItem>
-                    <SelectItem value="concreto">Concreto</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="acabamento">Nível de Acabamento</Label>
-                <Select
-                  value={dadosAjustados.acabamento_desejado}
-                  onValueChange={(value) => handleInputChange('acabamento_desejado', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="standard">Standard</SelectItem>
-                    <SelectItem value="premium">Premium</SelectItem>
-                    <SelectItem value="luxo">Luxo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cor">Cor Preferida</Label>
+                <Label htmlFor="inclinacao">Inclinação (%)</Label>
                 <Input
-                  id="cor"
-                  value={dadosAjustados.cor_preferida}
-                  onChange={(e) => handleInputChange('cor_preferida', e.target.value)}
+                  id="inclinacao"
+                  type="number"
+                  step="1"
+                  min="0"
+                  max="100"
+                  value={dadosAjustados.inclinacao_telhado}
+                  onChange={(e) => handleInputChange('inclinacao_telhado', Number(e.target.value))}
+                />
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="telha_linha">Linha do Produto</Label>
+                <Select
+                  value={telhasShingle.find(t => t.id === dadosAjustados.telha_id)?.linha || ''}
+                  onValueChange={(linha) => {
+                    const primeiraTelha = telhasPorLinha(linha as 'SUPREME' | 'DURATION')[0];
+                    if (primeiraTelha) {
+                      handleInputChange('telha_id', primeiraTelha.id);
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a linha" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SUPREME">
+                      <div className="flex flex-col">
+                        <span>Linha Supreme</span>
+                        <span className="text-xs text-muted-foreground">Custo-benefício ideal</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="DURATION">
+                      <div className="flex flex-col">
+                        <span>Linha Duration</span>
+                        <span className="text-xs text-muted-foreground">Premium - maior resistência</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="telha_especifica">Telha Específica</Label>
+                <Select
+                  value={dadosAjustados.telha_id || ''}
+                  onValueChange={(value) => handleInputChange('telha_id', value)}
+                  disabled={!telhasShingle.length}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a telha" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {telhasShingle.length > 0 && (
+                      <>
+                        <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Linha Supreme</div>
+                        {telhasPorLinha('SUPREME').map(telha => (
+                          <SelectItem key={telha.id} value={telha.id}>
+                            <div className="flex justify-between items-center w-full">
+                              <span>{telha.cor}</span>
+                              <span className="text-xs text-muted-foreground ml-2">
+                                R$ {telha.preco_unitario.toFixed(2)}/pct
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                        
+                        <div className="px-2 py-1 text-xs font-medium text-muted-foreground mt-2">Linha Duration</div>
+                        {telhasPorLinha('DURATION').map(telha => (
+                          <SelectItem key={telha.id} value={telha.id}>
+                            <div className="flex justify-between items-center w-full">
+                              <span>{telha.cor}</span>
+                              <span className="text-xs text-muted-foreground ml-2">
+                                R$ {telha.preco_unitario.toFixed(2)}/pct
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="quebra">Quebra Personalizada (%)</Label>
+                <Input
+                  id="quebra"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="50"
+                  placeholder="Padrão: 5%"
+                  value={dadosAjustados.quebra_personalizada || ''}
+                  onChange={(e) => handleInputChange('quebra_personalizada', 
+                    e.target.value ? Number(e.target.value) : undefined)}
                 />
               </div>
             </div>
@@ -256,6 +268,52 @@ export function StepCalculoTelhas({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Especificações do Produto */}
+              <Collapsible
+                open={expandedSections.produtos}
+                onOpenChange={() => toggleSection('produtos')}
+              >
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                    <span className="font-semibold flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Produto Selecionado
+                    </span>
+                    {expandedSections.produtos ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-2 mt-2">
+                  <div className="grid gap-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Produto:</span>
+                      <span className="font-medium">{calculo.telha.descricao}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Linha:</span>
+                      <span className="font-medium">{calculo.telha.linha}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Cor:</span>
+                      <span className="font-medium">{calculo.telha.cor}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Cobertura/pacote:</span>
+                      <span className="font-medium">{calculo.telha.qtd_unidade_venda} m²</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Garantia:</span>
+                      <span className="font-medium">{calculo.telha.garantia_anos} anos</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Resistência vento:</span>
+                      <span className="font-medium">{calculo.telha.resistencia_vento_kmh} km/h</span>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              <Separator />
+
               {/* Especificações Técnicas */}
               <Collapsible
                 open={expandedSections.especificacoes}
@@ -265,7 +323,7 @@ export function StepCalculoTelhas({
                   <Button variant="ghost" className="w-full justify-between p-0 h-auto">
                     <span className="font-semibold flex items-center gap-2">
                       <Shield className="h-4 w-4" />
-                      Especificações Técnicas
+                      Cálculos Técnicos
                     </span>
                     {expandedSections.especificacoes ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </Button>
@@ -273,75 +331,69 @@ export function StepCalculoTelhas({
                 <CollapsibleContent className="space-y-2 mt-2">
                   <div className="grid gap-2 text-sm">
                     <div className="flex justify-between">
-                      <span>Área de Cobertura:</span>
-                      <span className="font-medium">{calculo.especificacoes_tecnicas.area_cobertura} m²</span>
+                      <span>Área Original:</span>
+                      <span className="font-medium">{calculo.calculo.area_original} m²</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Quantidade de Telhas:</span>
-                      <span className="font-medium">{calculo.especificacoes_tecnicas.quantidade_telhas} un</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Rufo Linear:</span>
-                      <span className="font-medium">{calculo.especificacoes_tecnicas.quantidade_rufo_m} m</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Cumeeira:</span>
-                      <span className="font-medium">{calculo.especificacoes_tecnicas.quantidade_cumeeira_m} m</span>
-                    </div>
-                    {calculo.especificacoes_tecnicas.area_manta_m2 > 0 && (
+                    {calculo.calculo.area_corrigida !== calculo.calculo.area_original && (
                       <div className="flex justify-between">
-                        <span>Manta Asfáltica:</span>
-                        <span className="font-medium">{calculo.especificacoes_tecnicas.area_manta_m2} m²</span>
+                        <span>Área Corrigida (inclinação):</span>
+                        <span className="font-medium">{calculo.calculo.area_corrigida} m²</span>
                       </div>
                     )}
+                    <div className="flex justify-between">
+                      <span>Fator Multiplicador:</span>
+                      <span className="font-medium">{calculo.telha.fator_multiplicador.toFixed(4)} pct/m²</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Quebra Aplicada:</span>
+                      <span className="font-medium">{calculo.calculo.quebra_percentual}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Fator com Quebra:</span>
+                      <span className="font-medium">{calculo.calculo.fator_correcao.toFixed(4)} pct/m²</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between">
+                      <span>Pacotes Calculados:</span>
+                      <span className="font-medium">{calculo.calculo.quantidade_pacotes_calculada} pacotes</span>
+                    </div>
+                    <div className="flex justify-between font-semibold">
+                      <span>Pacotes a Comprar:</span>
+                      <span className="text-primary">{calculo.calculo.quantidade_pacotes_arredondada} pacotes</span>
+                    </div>
                   </div>
                 </CollapsibleContent>
               </Collapsible>
 
               <Separator />
 
-              {/* Composição de Materiais */}
+              {/* Vantagens e Economias */}
               <Collapsible
-                open={expandedSections.materiais}
-                onOpenChange={() => toggleSection('materiais')}
+                open={expandedSections.economias}
+                onOpenChange={() => toggleSection('economias')}
               >
                 <CollapsibleTrigger asChild>
                   <Button variant="ghost" className="w-full justify-between p-0 h-auto">
                     <span className="font-semibold flex items-center gap-2">
                       <Palette className="h-4 w-4" />
-                      Composição de Materiais
+                      Vantagens do Shingle
                     </span>
-                    {expandedSections.materiais ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    {expandedSections.economias ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-2 mt-2">
                   <div className="grid gap-2 text-sm">
                     <div className="flex justify-between">
-                      <span>Telhas Shingle:</span>
-                      <span className="font-medium">R$ {calculo.orcamento.materiais.telhas.toLocaleString()}</span>
+                      <span>Peso Total Shingle:</span>
+                      <span className="font-medium">{calculo.economias.peso_total_kg} kg</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Rufo e Cumeeira:</span>
-                      <span className="font-medium">R$ {(calculo.orcamento.materiais.rufo + calculo.orcamento.materiais.cumeeira).toLocaleString()}</span>
+                    <div className="flex justify-between text-green-600">
+                      <span>Economia vs Cerâmica:</span>
+                      <span className="font-medium">-{calculo.economias.peso_vs_ceramica} kg</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Fixações:</span>
-                      <span className="font-medium">R$ {calculo.orcamento.materiais.pregos.toLocaleString()}</span>
-                    </div>
-                    {calculo.orcamento.materiais.manta > 0 && (
-                      <div className="flex justify-between">
-                        <span>Manta Asfáltica:</span>
-                        <span className="font-medium">R$ {calculo.orcamento.materiais.manta.toLocaleString()}</span>
-                      </div>
-                    )}
-                    <Separator />
-                    <div className="flex justify-between font-semibold">
-                      <span>Subtotal Materiais:</span>
-                      <span>R$ {calculo.orcamento.materiais.subtotal.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Instalação (40%):</span>
-                      <span className="font-medium">R$ {calculo.orcamento.instalacao.toLocaleString()}</span>
+                    <div className="p-2 bg-green-50 rounded text-xs text-green-800">
+                      <AlertCircle className="h-3 w-3 inline mr-1" />
+                      {calculo.economias.economia_estrutural}
                     </div>
                   </div>
                 </CollapsibleContent>
@@ -357,19 +409,21 @@ export function StepCalculoTelhas({
                 >
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" className="w-full justify-between p-0 h-auto">
-                      <span className="font-semibold">Resumo Financeiro (Admin)</span>
+                      <span className="font-semibold">Detalhes Financeiros (Admin)</span>
                       {expandedSections.financeiro ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-2 mt-2">
                     <div className="grid gap-2 text-sm">
                       <div className="flex justify-between">
-                        <span>Subtotal (Materiais + Instalação):</span>
-                        <span className="font-medium">R$ {calculo.orcamento.subtotal_geral.toLocaleString()}</span>
+                        <span>Preço Unitário:</span>
+                        <span className="font-medium">R$ {calculo.telha.preco_unitario.toFixed(2)}/pct</span>
                       </div>
-                      <div className="flex justify-between text-accent-foreground">
-                        <span>Margem ({calculo.orcamento.margem_percentual}%):</span>
-                        <span className="font-medium">R$ {calculo.orcamento.valor_margem.toLocaleString()}</span>
+                      <div className="flex justify-between">
+                        <span>Custo Base (sem margem):</span>
+                        <span className="font-medium">
+                          R$ {(calculo.calculo.quantidade_pacotes_arredondada * calculo.telha.preco_unitario).toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   </CollapsibleContent>
@@ -381,11 +435,11 @@ export function StepCalculoTelhas({
                 <div className="space-y-2">
                   <div className="flex justify-between text-lg font-bold">
                     <span>Valor Total:</span>
-                    <span className="text-primary">R$ {calculo.orcamento.valor_total.toLocaleString()}</span>
+                    <span className="text-primary">R$ {calculo.calculo.valor_total.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Valor por m²:</span>
-                    <span>R$ {calculo.orcamento.valor_m2.toLocaleString()}</span>
+                    <span>R$ {calculo.calculo.valor_por_m2.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
@@ -399,7 +453,7 @@ export function StepCalculoTelhas({
         <Button variant="outline" onClick={onBack}>
           Voltar
         </Button>
-        <Button onClick={onNext} disabled={!calculo}>
+        <Button onClick={onNext} disabled={!calculo || isCalculating || loading}>
           Continuar
         </Button>
       </div>

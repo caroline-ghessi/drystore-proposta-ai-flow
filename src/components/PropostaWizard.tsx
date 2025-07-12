@@ -275,7 +275,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
                     ...propostaData.dadosExtraidos,
                     calculo_telhas: calculo
                   },
-                  valorTotal: calculo.orcamento.valor_total
+                  valorTotal: calculo.calculo.valor_total
                 });
               }}
               onBack={handleBack}

@@ -55,6 +55,79 @@ export type Database = {
           },
         ]
       }
+      calculos_telhado_shingle: {
+        Row: {
+          area_telhado: number
+          created_at: string | null
+          id: string
+          inclinacao_percentual: number | null
+          observacoes: string | null
+          proposta_id: string | null
+          quantidade_pacotes_arredondada: number | null
+          quantidade_pacotes_calculada: number | null
+          quebra_percentual: number | null
+          telha_shingle_id: string | null
+          updated_at: string | null
+          valor_por_m2: number | null
+          valor_total: number | null
+          valor_unitario: number | null
+        }
+        Insert: {
+          area_telhado: number
+          created_at?: string | null
+          id?: string
+          inclinacao_percentual?: number | null
+          observacoes?: string | null
+          proposta_id?: string | null
+          quantidade_pacotes_arredondada?: number | null
+          quantidade_pacotes_calculada?: number | null
+          quebra_percentual?: number | null
+          telha_shingle_id?: string | null
+          updated_at?: string | null
+          valor_por_m2?: number | null
+          valor_total?: number | null
+          valor_unitario?: number | null
+        }
+        Update: {
+          area_telhado?: number
+          created_at?: string | null
+          id?: string
+          inclinacao_percentual?: number | null
+          observacoes?: string | null
+          proposta_id?: string | null
+          quantidade_pacotes_arredondada?: number | null
+          quantidade_pacotes_calculada?: number | null
+          quebra_percentual?: number | null
+          telha_shingle_id?: string | null
+          updated_at?: string | null
+          valor_por_m2?: number | null
+          valor_total?: number | null
+          valor_unitario?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calculos_telhado_shingle_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calculos_telhado_shingle_telha_shingle_id_fkey"
+            columns: ["telha_shingle_id"]
+            isOneToOne: false
+            referencedRelation: "telhas_shingle"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calculos_telhado_shingle_telha_shingle_id_fkey"
+            columns: ["telha_shingle_id"]
+            isOneToOne: false
+            referencedRelation: "v_telhas_shingle_resumo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           created_at: string
@@ -480,6 +553,63 @@ export type Database = {
           },
         ]
       }
+      telhas_shingle: {
+        Row: {
+          ativo: boolean | null
+          codigo: string
+          consumo_m2: number | null
+          cor: string | null
+          created_at: string | null
+          descricao: string
+          fator_multiplicador: number | null
+          garantia_anos: number | null
+          id: string
+          linha: string
+          peso_kg_m2: number | null
+          preco_unitario: number | null
+          qtd_unidade_venda: number | null
+          quebra_padrao: number | null
+          resistencia_vento_kmh: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          codigo: string
+          consumo_m2?: number | null
+          cor?: string | null
+          created_at?: string | null
+          descricao: string
+          fator_multiplicador?: number | null
+          garantia_anos?: number | null
+          id?: string
+          linha: string
+          peso_kg_m2?: number | null
+          preco_unitario?: number | null
+          qtd_unidade_venda?: number | null
+          quebra_padrao?: number | null
+          resistencia_vento_kmh?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          codigo?: string
+          consumo_m2?: number | null
+          cor?: string | null
+          created_at?: string | null
+          descricao?: string
+          fator_multiplicador?: number | null
+          garantia_anos?: number | null
+          id?: string
+          linha?: string
+          peso_kg_m2?: number | null
+          preco_unitario?: number | null
+          qtd_unidade_venda?: number | null
+          quebra_padrao?: number | null
+          resistencia_vento_kmh?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       vendedores: {
         Row: {
           ativo: boolean
@@ -518,7 +648,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_telhas_shingle_resumo: {
+        Row: {
+          ativo: boolean | null
+          codigo: string | null
+          cor: string | null
+          descricao: string | null
+          fator_multiplicador: number | null
+          garantia_anos: number | null
+          id: string | null
+          linha: string | null
+          peso_kg_m2: number | null
+          preco_unitario: number | null
+          qtd_unidade_venda: number | null
+          resistencia_vento_kmh: number | null
+          valor_por_m2_com_quebra: number | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          codigo?: string | null
+          cor?: string | null
+          descricao?: string | null
+          fator_multiplicador?: number | null
+          garantia_anos?: number | null
+          id?: string | null
+          linha?: string | null
+          peso_kg_m2?: number | null
+          preco_unitario?: number | null
+          qtd_unidade_venda?: number | null
+          resistencia_vento_kmh?: number | null
+          valor_por_m2_com_quebra?: never
+        }
+        Update: {
+          ativo?: boolean | null
+          codigo?: string | null
+          cor?: string | null
+          descricao?: string | null
+          fator_multiplicador?: number | null
+          garantia_anos?: number | null
+          id?: string | null
+          linha?: string | null
+          peso_kg_m2?: number | null
+          preco_unitario?: number | null
+          qtd_unidade_venda?: number | null
+          resistencia_vento_kmh?: number | null
+          valor_por_m2_com_quebra?: never
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calcular_orcamento: {
@@ -527,6 +704,15 @@ export type Database = {
           p_quantidade_paineis: number
           p_inversor_id: string
           p_potencia_sistema: number
+        }
+        Returns: Json
+      }
+      calcular_orcamento_shingle: {
+        Args: {
+          p_area_telhado: number
+          p_telha_id: string
+          p_quebra_percentual?: number
+          p_inclinacao?: number
         }
         Returns: Json
       }
