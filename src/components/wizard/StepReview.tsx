@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { CheckCircle, Edit3, Calculator } from "lucide-react"
 import { PropostaData } from "../PropostaWizard"
-import { difyService, DadosMateriaisConstrucao, DadosEnergiaSolarCompletos } from "@/services/difyService"
+import { difyService, DadosMateriaisConstrucao, DadosEnergiaSolarCompletos, DadosContaLuz } from "@/services/difyService"
 import { ProdutosTable } from "@/components/ProdutosTable"
 import { DadosContaLuzDisplay } from "./DadosContaLuzDisplay"
 
@@ -49,7 +49,7 @@ export function StepReview({
   const isEnergiaSolar = propostaData.tipoProposta === 'energia-solar';
   const isMateriaisConstrucao = ['materiais-construcao', 'tintas-texturas', 'verga-fibra', 'argamassa-silentfloor', 'light-steel-frame'].includes(propostaData.tipoProposta);
   
-  const dadosEnergiaSolar = isEnergiaSolar ? propostaData.dadosExtraidos as DadosEnergiaSolarCompletos : null;
+  const dadosEnergiaSolar = isEnergiaSolar ? propostaData.dadosExtraidos as DadosContaLuz : null;
   const dadosMateriais = isMateriaisConstrucao ? propostaData.dadosExtraidos as DadosMateriaisConstrucao : null;
   const dadosUnificados = !isMateriaisConstrucao && !isEnergiaSolar ? propostaData.dadosExtraidos as any : null;
   
@@ -162,7 +162,7 @@ export function StepReview({
               <Label htmlFor="review-nome">Nome Completo</Label>
               <Input
                 id="review-nome"
-                value={propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_cliente || dadosUnificados?.nome_cliente || ''}
+                value={propostaData.clienteNome || dadosEnergiaSolar?.nome_cliente || dadosMateriais?.nome_cliente || dadosUnificados?.nome_cliente || ''}
                 onChange={(e) => onDataChange({ clienteNome: e.target.value })}
               />
             </div>
@@ -190,7 +190,7 @@ export function StepReview({
               <Label htmlFor="review-endereco">Endereço</Label>
               <Input
                 id="review-endereco"
-                value={propostaData.clienteEndereco || dadosEnergiaSolar?.dadosContaLuz.endereco || ''}
+                value={propostaData.clienteEndereco || dadosEnergiaSolar?.endereco || ''}
                 onChange={(e) => onDataChange({ clienteEndereco: e.target.value })}
                 placeholder="Endereço completo"
               />
@@ -297,7 +297,7 @@ export function StepReview({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">Cliente:</span>
-                <p className="font-medium">{propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_cliente || dadosUnificados?.nome_cliente || 'Não informado'}</p>
+                <p className="font-medium">{propostaData.clienteNome || dadosEnergiaSolar?.nome_cliente || dadosMateriais?.nome_cliente || dadosUnificados?.nome_cliente || 'Não informado'}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Tipo:</span>
@@ -332,10 +332,10 @@ export function StepReview({
           onClick={() => {
             // Prepare complete data
             const dadosCompletos = {
-              clienteNome: propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_cliente || dadosUnificados?.nome_cliente || '',
+              clienteNome: propostaData.clienteNome || dadosEnergiaSolar?.nome_cliente || dadosMateriais?.nome_cliente || dadosUnificados?.nome_cliente || '',
               clienteEmail: propostaData.clienteEmail || '',
               clienteWhatsapp: propostaData.clienteWhatsapp || dadosMateriais?.telefone_do_cliente || dadosUnificados?.telefone_do_cliente || '',
-              clienteEndereco: propostaData.clienteEndereco || dadosEnergiaSolar?.dadosContaLuz.endereco || '',
+              clienteEndereco: propostaData.clienteEndereco || dadosEnergiaSolar?.endereco || '',
               valorTotal: temProdutos 
                 ? (dadosMateriais?.valor_total_proposta || dadosUnificados?.valor_total_proposta) 
                 : propostaData.valorTotal,
@@ -349,7 +349,7 @@ export function StepReview({
             });
           }}
           disabled={
-            !(propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_cliente || dadosUnificados?.nome_cliente) ||
+            !(propostaData.clienteNome || dadosEnergiaSolar?.nome_cliente || dadosMateriais?.nome_cliente || dadosUnificados?.nome_cliente) ||
             !propostaData.clienteEmail
           }
           className="bg-primary hover:bg-primary/90"

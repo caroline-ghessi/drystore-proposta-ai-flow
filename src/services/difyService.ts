@@ -241,18 +241,22 @@ export class DifyService {
 
     // Para energia solar, usar interface específica
     if (tipoProposta === 'energia-solar') {
-      const dadosEnergiaSolar = dados as DadosEnergiaSolarCompletos;
-      const contaLuz = dadosEnergiaSolar.dadosContaLuz;
+      // Verificar se os dados são DadosContaLuz diretamente ou DadosEnergiaSolarCompletos
+      const contaLuz = (dados as any).dadosContaLuz || dados as any;
       
-      formatado['Cliente'] = contaLuz.nome_cliente;
-      formatado['Endereço'] = contaLuz.endereco;
-      formatado['Concessionária'] = contaLuz.concessionaria;
-      formatado['Unidade Consumidora'] = contaLuz.numero_instalacao;
+      if (!contaLuz || typeof contaLuz !== 'object') {
+        console.error('Dados inválidos para energia solar:', dados);
+        return {};
+      }
+      
+      formatado['Cliente'] = contaLuz.nome_cliente || 'Não informado';
+      formatado['Endereço'] = contaLuz.endereco || 'Não informado';
+      formatado['Concessionária'] = contaLuz.concessionaria || 'Não informado';
+      formatado['Unidade Consumidora'] = contaLuz.numero_instalacao || 'Não informado';
       formatado['Consumo Atual'] = `${contaLuz.consumo_atual || 0} kWh`;
-      formatado['Consumo Médio (24 meses)'] = `${dadosEnergiaSolar.consumoMedio} kWh`;
-      formatado['Tarifa kWh'] = `R$ ${contaLuz.preco_kw?.toFixed(4) || dadosEnergiaSolar.tarifaKwh.toFixed(4)}`;
+      formatado['Tarifa kWh'] = `R$ ${contaLuz.preco_kw?.toFixed(4) || '0,0000'}`;
       formatado['Valor Conta'] = `R$ ${contaLuz.valor_total?.toFixed(2) || '0,00'}`;
-      formatado['Mês Referência'] = contaLuz.mes_referencia;
+      formatado['Mês Referência'] = contaLuz.mes_referencia || 'Não informado';
       return formatado;
     }
 

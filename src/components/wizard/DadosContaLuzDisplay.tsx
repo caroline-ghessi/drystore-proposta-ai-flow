@@ -2,14 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Calendar, MapPin, Zap, DollarSign, Building, BarChart3 } from "lucide-react"
-import { DadosEnergiaSolarCompletos } from "@/services/difyService"
+import { DadosContaLuz } from "@/services/difyService"
 
 interface DadosContaLuzDisplayProps {
-  dados: DadosEnergiaSolarCompletos;
+  dados: DadosContaLuz;
 }
 
 export function DadosContaLuzDisplay({ dados }: DadosContaLuzDisplayProps) {
-  const { dadosContaLuz, consumoMedio, cidade, estado, tipoInstalacao, tarifaKwh } = dados;
+  const dadosContaLuz = dados;
 
   const formatCurrency = (value: number | null) => {
     if (!value) return 'N/A';
@@ -44,6 +44,25 @@ export function DadosContaLuzDisplay({ dados }: DadosContaLuzDisplayProps) {
   };
 
   const consumosHistorico = getConsumosPorMes();
+  
+  // Calcular consumo médio
+  const consumoMedio = consumosHistorico.length > 0 
+    ? Math.round(consumosHistorico.reduce((acc, curr) => acc + (curr.consumo || 0), 0) / consumosHistorico.length)
+    : dadosContaLuz.consumo_atual || 0;
+
+  // Extrair cidade e estado do endereço
+  const extrairCidadeEstado = (endereco: string) => {
+    const partes = endereco.split(',').map(p => p.trim());
+    if (partes.length >= 2) {
+      const estado = partes[partes.length - 1];
+      const cidade = partes[partes.length - 2];
+      return { cidade, estado };
+    }
+    return { cidade: 'São Paulo', estado: 'SP' };
+  };
+
+  const { cidade, estado } = extrairCidadeEstado(dadosContaLuz.endereco || '');
+  const tipoInstalacao = consumoMedio <= 500 ? 'residencial' : consumoMedio <= 2000 ? 'comercial' : 'industrial';
 
   return (
     <div className="space-y-6">
@@ -99,7 +118,7 @@ export function DadosContaLuzDisplay({ dados }: DadosContaLuzDisplayProps) {
             </div>
             <div>
               <span className="text-sm font-medium text-muted-foreground">Tarifa kWh:</span>
-              <p className="text-sm">{formatCurrency(tarifaKwh)}</p>
+              <p className="text-sm">{formatCurrency(dadosContaLuz.preco_kw)}</p>
             </div>
           </CardContent>
         </Card>
