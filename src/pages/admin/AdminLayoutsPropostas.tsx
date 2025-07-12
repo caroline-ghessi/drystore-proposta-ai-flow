@@ -50,7 +50,7 @@ const AdminLayoutsPropostas = () => {
         conversao: "22%",
         ultimaAtualizacao: "3 dias atrás"
       },
-      implementado: false
+      implementado: true
     },
     {
       id: "forros",
