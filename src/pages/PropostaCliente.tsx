@@ -29,31 +29,37 @@ const PropostaClientePage = () => {
   const [showRecomendacoes, setShowRecomendacoes] = useState(false);
   const [propostaAceita, setPropostaAceita] = useState(false);
   const [visualizacaoRegistrada, setVisualizacaoRegistrada] = useState(false);
+  const [isLoadingProposta, setIsLoadingProposta] = useState(false);
 
   // Carregar dados da proposta
   useEffect(() => {
     const carregarProposta = async () => {
-      if (!urlUnica) return;
+      if (!urlUnica || isLoadingProposta) return;
       
       try {
+        setIsLoadingProposta(true);
         setLoading(true);
+        console.log('Carregando proposta para URL:', urlUnica);
+        
         const dados = await buscarPropostaPorUrl(urlUnica);
         
         if (dados) {
+          console.log('Proposta carregada:', dados);
           setProposta(dados);
           setPropostaAceita(dados.status === 'aceita');
         } else {
-          console.error('Proposta não encontrada');
+          console.error('Proposta não encontrada para URL:', urlUnica);
         }
       } catch (error) {
         console.error('Erro ao carregar proposta:', error);
       } finally {
         setLoading(false);
+        setIsLoadingProposta(false);
       }
     };
 
     carregarProposta();
-  }, [urlUnica, buscarPropostaPorUrl]);
+  }, [urlUnica]); // Removed buscarPropostaPorUrl from dependencies
 
   const recomendacoes = [
     {
@@ -77,8 +83,9 @@ const PropostaClientePage = () => {
   useEffect(() => {
     // Registrar visualização da proposta
     if (!visualizacaoRegistrada && urlUnica && proposta) {
-      setTimeout(async () => {
+      const timer = setTimeout(async () => {
         try {
+          console.log('Registrando visualização para URL:', urlUnica);
           await registrarVisualizacao(urlUnica);
           console.log("Visualização da proposta registrada - vendedor será notificado");
           setVisualizacaoRegistrada(true);
@@ -86,8 +93,10 @@ const PropostaClientePage = () => {
           console.error('Erro ao registrar visualização:', error);
         }
       }, 2000);
+
+      return () => clearTimeout(timer);
     }
-  }, [visualizacaoRegistrada, urlUnica, proposta, registrarVisualizacao]);
+  }, [visualizacaoRegistrada, urlUnica, proposta]); // Removed registrarVisualizacao from dependencies
 
   const handleAceitarProposta = async (formaPagamento: string) => {
     if (!proposta) return;

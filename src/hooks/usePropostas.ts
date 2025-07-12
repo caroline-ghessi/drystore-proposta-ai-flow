@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -49,7 +49,7 @@ export function usePropostas() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchPropostas = async () => {
+  const fetchPropostas = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -79,9 +79,9 @@ export function usePropostas() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const criarProposta = async (dados: CriarPropostaData): Promise<Proposta | null> => {
+  const criarProposta = useCallback(async (dados: CriarPropostaData): Promise<Proposta | null> => {
     try {
       console.log('Criando proposta:', dados);
 
@@ -112,9 +112,9 @@ export function usePropostas() {
       });
       return null;
     }
-  };
+  }, [fetchPropostas, toast]);
 
-  const atualizarProposta = async (id: string, dados: Partial<Proposta>): Promise<boolean> => {
+  const atualizarProposta = useCallback(async (id: string, dados: Partial<Proposta>): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from('propostas')
@@ -144,10 +144,12 @@ export function usePropostas() {
       });
       return false;
     }
-  };
+  }, [fetchPropostas, toast]);
 
-  const buscarPropostaPorUrl = async (urlUnica: string): Promise<Proposta | null> => {
+  const buscarPropostaPorUrl = useCallback(async (urlUnica: string): Promise<Proposta | null> => {
     try {
+      console.log('Buscando proposta por URL:', urlUnica);
+      
       const { data, error } = await supabase
         .from('propostas')
         .select(`
@@ -155,20 +157,22 @@ export function usePropostas() {
           vendedores (nome, email, whatsapp)
         `)
         .eq('url_unica', urlUnica)
-        .single();
+        .maybeSingle();
 
       if (error) {
+        console.error('Erro na query buscarPropostaPorUrl:', error);
         throw error;
       }
 
+      console.log('Proposta encontrada:', data);
       return data as Proposta;
     } catch (err: any) {
       console.error('Erro ao buscar proposta por URL:', err);
       return null;
     }
-  };
+  }, []);
 
-  const registrarVisualizacao = async (urlUnica: string, dadosExtras?: any): Promise<boolean> => {
+  const registrarVisualizacao = useCallback(async (urlUnica: string, dadosExtras?: any): Promise<boolean> => {
     try {
       const { data, error } = await supabase.functions.invoke('registrar-visualizacao', {
         body: {
@@ -187,9 +191,9 @@ export function usePropostas() {
       console.error('Erro ao registrar visualização:', err);
       return false;
     }
-  };
+  }, []);
 
-  const aceitarProposta = async (id: string): Promise<boolean> => {
+  const aceitarProposta = useCallback(async (id: string): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from('propostas')
@@ -228,7 +232,7 @@ export function usePropostas() {
       });
       return false;
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchPropostas();
