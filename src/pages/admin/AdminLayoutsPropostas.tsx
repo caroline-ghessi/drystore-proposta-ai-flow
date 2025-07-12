@@ -54,7 +54,7 @@ const AdminLayoutsPropostas = () => {
     },
     {
       id: "forros",
-      nome: "Forros",
+      nome: "Forros Acústicos",
       descricao: "Layout com ênfase em conforto térmico e acústico",
       icon: Grid3X3,
       cor: "bg-green-500",
@@ -63,7 +63,7 @@ const AdminLayoutsPropostas = () => {
         conversao: "18%",
         ultimaAtualizacao: "1 semana atrás"
       },
-      implementado: false
+      implementado: true
     },
     {
       id: "pisos",

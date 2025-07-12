@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, Volume2, Thermometer, Leaf, Clock, Palette, Zap } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { BasePropostaLayout } from './BasePropostaLayout';
+import BasePropostaLayout from './BasePropostaLayout';
 
 interface ForrosPropostaPageProps {
   proposta: any;
@@ -80,14 +80,14 @@ export function ForrosPropostaPage({ proposta, onAceitar, onContato, onSolicitar
 
   return (
     <BasePropostaLayout
-      clienteNome={dadosProposta.nome_cliente}
+      cliente={dadosProposta.nome_cliente}
       tipoProduto="Forros Acústicos Premium"
       numeroProposta={proposta?.id?.substring(0, 8) || "FORRO001"}
       dataProposta={proposta?.data_criacao ? new Date(proposta.data_criacao).toLocaleDateString() : new Date().toLocaleDateString()}
-      totalValue={valorTotal}
-      onAceitar={onAceitar}
-      onContato={onContato}
-      onSolicitarMudanca={onSolicitarMudanca}
+      totalValue={`R$ ${valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+      onAcceptProposal={() => onAceitar('cartao')}
+      onContactWhatsApp={onContato}
+      onRequestChanges={onSolicitarMudanca}
     >
       {/* Hero Section */}
       <div className="relative bg-gradient-to-br from-background via-muted/20 to-secondary/10 py-16 px-6 text-center">
@@ -117,7 +117,7 @@ export function ForrosPropostaPage({ proposta, onAceitar, onContato, onSolicitar
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-6">Solução Personalizada para Seu Projeto</h2>
           <p className="text-lg text-muted-foreground">
-            Baseado no seu projeto, selecionamos forros que entregam isolamento térmico R>{dadosProposta.isolamento_termico_r} 
+            Baseado no seu projeto, selecionamos forros que entregam isolamento térmico R&gt;{dadosProposta.isolamento_termico_r} 
             e durabilidade de {dadosProposta.durabilidade_anos}+ anos. Com a maior variedade do mercado, 
             a DryStore atende qualquer necessidade – de OWA madeira estética a Knauf gesso superior.
           </p>
@@ -180,7 +180,7 @@ export function ForrosPropostaPage({ proposta, onAceitar, onContato, onSolicitar
                 <p className="text-sm text-muted-foreground mb-2">
                   Economia de energia em até <span className="font-bold text-primary">{dadosProposta.economia_energia_percent}%</span> com materiais como lã de vidro e minerais.
                 </p>
-                <Badge variant="secondary">R > {dadosProposta.isolamento_termico_r}</Badge>
+                <Badge variant="secondary">R &gt; {dadosProposta.isolamento_termico_r}</Badge>
               </CardContent>
             </Card>
 
@@ -325,7 +325,7 @@ export function ForrosPropostaPage({ proposta, onAceitar, onContato, onSolicitar
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-medium mb-2">Isolamento Térmico</h4>
-                    <p className="text-lg font-bold">R > {dadosProposta.isolamento_termico_r}</p>
+                    <p className="text-lg font-bold">R &gt; {dadosProposta.isolamento_termico_r}</p>
                   </div>
                   <div>
                     <h4 className="font-medium mb-2">Economia Energética</h4>

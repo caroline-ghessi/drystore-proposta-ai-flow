@@ -10,6 +10,7 @@ import { usePropostas } from "@/hooks/usePropostas"
 import DivisoriasPropostaPage from "@/components/propostas/DivisoriasPropostaPage"
 import TelhasShinglePropostaPage from "@/components/propostas/TelhasShinglePropostaPage"
 import EnergiaSolarPropostaPage from "@/components/propostas/EnergiaSolarPropostaPage"
+import { ForrosPropostaPage } from "@/components/propostas/ForrosPropostaPage"
 import { 
   CheckCircle, 
   Zap, 
@@ -146,6 +147,18 @@ const PropostaClientePage = () => {
   }
 
   // Detectar tipo de proposta e renderizar página específica
+  const handleContato = () => {
+    const message = encodeURIComponent(`Olá! Gostaria de falar sobre a proposta ${proposta.id?.substring(0, 8)}`);
+    const whatsappUrl = `https://wa.me/5511999998888?text=${message}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleSolicitarMudanca = () => {
+    const message = encodeURIComponent(`Olá! Gostaria de solicitar alterações na proposta ${proposta.id?.substring(0, 8)}`);
+    const whatsappUrl = `https://wa.me/5511999998888?text=${message}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   if (proposta.tipo_proposta === 'divisorias') {
     return (
       <DivisoriasPropostaPage 
@@ -169,6 +182,17 @@ const PropostaClientePage = () => {
       <EnergiaSolarPropostaPage 
         proposta={proposta}
         onAceitarProposta={handleAceitarProposta}
+      />
+    )
+  }
+
+  if (proposta.tipo_proposta === 'forros') {
+    return (
+      <ForrosPropostaPage 
+        proposta={proposta}
+        onAceitar={handleAceitarProposta}
+        onContato={handleContato}
+        onSolicitarMudanca={handleSolicitarMudanca}
       />
     )
   }
