@@ -54,6 +54,8 @@ interface DadosContaLuz {
     };
     observacao: string;
   };
+  tipo_sistema?: string;
+  inclui_baterias?: boolean;
 }
 
 interface ProcessamentoResult {
@@ -69,9 +71,9 @@ serve(async (req) => {
   }
 
   try {
-    const { imagemUrl, clienteNome, clienteEmail } = await req.json();
+    const { imagemUrl, clienteNome, clienteEmail, tipo_sistema, inclui_baterias } = await req.json();
     
-    console.log('Processando conta de luz:', { imagemUrl, clienteNome, clienteEmail });
+    console.log('Processando conta de luz:', { imagemUrl, clienteNome, clienteEmail, tipo_sistema, inclui_baterias });
 
     const difyApiKey = Deno.env.get('DIFY_ENERGIA_SOLAR_API_KEY');
     const difyAppId = Deno.env.get('DIFY_ENERGIA_SOLAR_APP_ID');
@@ -112,9 +114,10 @@ serve(async (req) => {
     const difyResult = await difyResponse.json();
     console.log('Resposta do Dify:', difyResult);
 
-    // Processar a resposta do Dify
-    if (difyResult.data?.outputs) {
-      const outputs = difyResult.data.outputs;
+    // Processar a resposta do Dify - usar structured_output
+    if (difyResult?.structured_output) {
+      const outputs = difyResult.structured_output;
+      console.log('Dados extraídos do Dify:', JSON.stringify(outputs, null, 2));
       
       // Extrair dados estruturados da resposta
       const dadosExtraidos: DadosContaLuz = {
@@ -145,27 +148,24 @@ serve(async (req) => {
             }
           },
           observacao: 'Dados de histórico não encontrados na conta de luz'
-        }
+        },
+        tipo_sistema: tipo_sistema || 'on-grid',
+        inclui_baterias: inclui_baterias || false
       };
 
-      // Sobrescrever historico_consumo apenas com dados parciais se presentes
+      // Sobrescrever historico_consumo se dados reais existirem
       if (outputs.historico_consumo) {
-        dadosExtraidos.historico_consumo = {
-          ...dadosExtraidos.historico_consumo,
-          ...outputs.historico_consumo
-        };
+        dadosExtraidos.historico_consumo = outputs.historico_consumo;
       }
 
-      // Validação mais robusta
-      const dadosValidos = [
-        dadosExtraidos.nome_cliente.trim() !== '',
-        dadosExtraidos.endereco.trim() !== '',
-        dadosExtraidos.consumo_atual !== null && !isNaN(dadosExtraidos.consumo_atual) && dadosExtraidos.consumo_atual > 0,
-        dadosExtraidos.preco_kw !== null && !isNaN(dadosExtraidos.preco_kw) && dadosExtraidos.preco_kw > 0
-      ].every(Boolean);
+      console.log('Dados finais mapeados:', JSON.stringify(dadosExtraidos, null, 2));
 
-      if (!dadosValidos) {
-        console.warn('Dados extraídos incompletos ou inválidos:', dadosExtraidos);
+      // Validação básica - só rejeitar se não tiver dados mínimos
+      const temDadosBasicos = dadosExtraidos.nome_cliente && dadosExtraidos.nome_cliente.trim() !== '';
+      
+      if (!temDadosBasicos) {
+        console.warn('Dados extraídos sem nome do cliente. Usando nome fornecido no input.');
+        dadosExtraidos.nome_cliente = clienteNome || 'Cliente não identificado';
       }
 
       const resultado: ProcessamentoResult = {

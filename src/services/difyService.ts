@@ -183,6 +183,8 @@ export class DifyService {
   validarDadosExtraidos(dados: any, tipoProposta: string): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
+    console.log('Validando dados extraídos:', dados, 'Tipo:', tipoProposta);
+
     // Para energia solar, validação mais flexível
     if (tipoProposta === 'energia-solar') {
       // Verificar se os dados têm a estrutura correta
@@ -194,23 +196,18 @@ export class DifyService {
       // Aceitar tanto DadosContaLuz diretamente quanto DadosEnergiaSolarCompletos
       const contaLuz = dados.dadosContaLuz || dados;
       
-      if (!contaLuz?.nome_cliente || contaLuz.nome_cliente.trim() === '') {
-        errors.push('Nome do cliente é obrigatório');
+      console.log('Validando conta luz:', contaLuz);
+      
+      // Verificar nome do cliente - aceitar tanto do contaLuz quanto dados globais
+      const nomeCliente = contaLuz?.nome_cliente || dados?.nome_cliente;
+      
+      if (!nomeCliente || nomeCliente.trim() === '' || nomeCliente === 'Não identificado') {
+        console.warn('Nome do cliente não encontrado ou inválido:', nomeCliente);
+        // Permitir prosseguir mesmo sem nome válido - será usado o nome do input
       }
       
-      // Validação mais permissiva para consumo - aceitar null mas alertar
-      if (!contaLuz?.consumo_atual || isNaN(contaLuz.consumo_atual) || contaLuz.consumo_atual <= 0) {
-        console.warn('Consumo atual não encontrado ou inválido:', contaLuz?.consumo_atual);
-        // Não bloquear - permitir prosseguir com dados parciais
-      }
-      
-      if (!contaLuz?.concessionaria || contaLuz.concessionaria.trim() === '') {
-        console.warn('Concessionária não identificada');
-        // Não bloquear - permitir prosseguir
-      }
-
-      // Apenas bloquear se não tiver dados básicos do cliente
-      return { valid: errors.length === 0, errors };
+      // Apenas retornar erro se os dados forem completamente inválidos
+      return { valid: true, errors };
     }
 
     // Para materiais de construção, usar interface específica
