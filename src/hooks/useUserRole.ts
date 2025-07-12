@@ -18,6 +18,7 @@ export const useUserRole = () => {
   const canViewAllPropostas = () => isAdmin || isVendedor;
   const canCreatePropostas = () => isAdmin || isVendedor;
   const canViewProducts = () => isAdmin || isVendedor;
+  const canViewMargins = () => isAdmin;
 
   return {
     usuario,
@@ -30,6 +31,7 @@ export const useUserRole = () => {
     canConfigureSystem,
     canViewAllPropostas,
     canCreatePropostas,
-    canViewProducts
+    canViewProducts,
+    canViewMargins
   };
 };
