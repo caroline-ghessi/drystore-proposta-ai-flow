@@ -304,7 +304,10 @@ export function StepReview({
         </Button>
         <Button 
           onClick={() => onComplete({ ocultarPrecosUnitarios })}
-          disabled={!propostaData.clienteNome || !propostaData.clienteEmail}
+          disabled={
+            !(propostaData.clienteNome || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente) ||
+            !propostaData.clienteEmail
+          }
           className="bg-primary hover:bg-primary/90"
         >
           Prosseguir
