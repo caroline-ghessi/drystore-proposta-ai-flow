@@ -4,8 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { DryStoreSidebar } from "@/components/DryStoreSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Eye, Edit, BarChart3, Palette, FileText, Building2, Sun, Hammer, Grid3X3 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminLayoutsPropostas = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
   const layoutsPropostas = [
     {
       id: "divisorias",
@@ -87,9 +93,44 @@ const AdminLayoutsPropostas = () => {
     }
   ];
 
-  const handleVisualizarLayout = (layoutId: string) => {
-    // Redirecionar para preview do layout
-    console.log("Visualizar layout:", layoutId);
+  const handleVisualizarLayout = async (layoutId: string) => {
+    setLoading(true);
+    
+    try {
+      // Mapear ID do layout para tipo de proposta
+      const tipoMap: Record<string, string> = {
+        'divisorias': 'divisorias',
+        'energia-solar': 'energia-solar',
+        'telhas': 'telhas',
+        'forros': 'forros',
+        'pisos': 'pisos',
+        'materiais': 'materiais-construcao'
+      };
+
+      const tipoProposta = tipoMap[layoutId];
+      
+      // Buscar uma proposta existente deste tipo
+      const { data: proposta, error } = await supabase
+        .from('propostas')
+        .select('url_unica')
+        .eq('tipo_proposta', tipoProposta as any)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (proposta) {
+        // Abrir em nova aba para manter contexto da administração
+        window.open(`/proposta/${proposta.url_unica}`, '_blank');
+      } else {
+        alert(`Não há propostas do tipo "${layoutId}" para visualizar ainda.`);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar proposta:', error);
+      alert('Erro ao carregar proposta de exemplo');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEditarLayout = (layoutId: string) => {
@@ -173,7 +214,7 @@ const AdminLayoutsPropostas = () => {
                           size="sm" 
                           variant="outline" 
                           onClick={() => handleVisualizarLayout(layout.id)}
-                          disabled={!layout.implementado}
+                          disabled={!layout.implementado || loading}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           Ver
