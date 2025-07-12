@@ -6,6 +6,7 @@ import { StepUpload } from "./wizard/StepUpload"
 import { StepProcessing } from "./wizard/StepProcessing"
 import { StepReview } from "./wizard/StepReview"
 import { StepCalculoSolar } from "./wizard/StepCalculoSolar"
+import { StepCalculoTelhas } from "./wizard/StepCalculoTelhas"
 import { StepGenerate } from "./wizard/StepGenerate"
 
 export type TipoProposta = 'energia-solar' | 'telhas' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao' | 'tintas-texturas' | 'verga-fibra' | 'argamassa-silentfloor' | 'light-steel-frame'
@@ -46,6 +47,15 @@ const STEPS_ENERGIA_SOLAR = [
   { title: "Extração de Dados", description: "Processamento automático" },
   { title: "Confirmação dos Dados", description: "Validar dados do cliente" },
   { title: "Cálculos da Usina Solar", description: "Dimensionamento automático" },
+  { title: "Gerar Proposta", description: "Confirmar e criar proposta" }
+]
+
+const STEPS_TELHAS = [
+  { title: "Tipo de Proposta", description: "Selecione o tipo de proposta" },
+  { title: "Upload de Especificações", description: "Envie as especificações" },
+  { title: "Extração de Dados", description: "Processamento automático" },
+  { title: "Confirmação dos Dados", description: "Validar dados do cliente" },
+  { title: "Cálculos de Cobertura", description: "Dimensionamento automático" },
   { title: "Gerar Proposta", description: "Confirmar e criar proposta" }
 ]
 
@@ -116,7 +126,18 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
     }
   }
 
-  const STEPS = propostaData.tipoProposta === 'energia-solar' ? STEPS_ENERGIA_SOLAR : STEPS_DEFAULT
+  const getSteps = () => {
+    switch (propostaData.tipoProposta) {
+      case 'energia-solar':
+        return STEPS_ENERGIA_SOLAR;
+      case 'telhas':
+        return STEPS_TELHAS;
+      default:
+        return STEPS_DEFAULT;
+    }
+  };
+  
+  const STEPS = getSteps();
   const progress = ((currentStep + 1) / STEPS.length) * 100
 
   return (
@@ -245,8 +266,25 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             />
           )}
 
-          {((currentStep === 4 && propostaData.tipoProposta !== 'energia-solar') || 
-            (currentStep === 5 && propostaData.tipoProposta === 'energia-solar')) && (
+          {currentStep === 4 && propostaData.tipoProposta === 'telhas' && (
+            <StepCalculoTelhas
+              dadosExtraidos={propostaData.dadosExtraidos}
+              onCalculoComplete={(calculo) => {
+                handleStepData({
+                  dadosExtraidos: {
+                    ...propostaData.dadosExtraidos,
+                    calculo_telhas: calculo
+                  },
+                  valorTotal: calculo.orcamento.valor_total
+                });
+              }}
+              onBack={handleBack}
+              onNext={handleNext}
+            />
+          )}
+
+          {((currentStep === 4 && !['energia-solar', 'telhas'].includes(propostaData.tipoProposta)) || 
+            (currentStep === 5 && ['energia-solar', 'telhas'].includes(propostaData.tipoProposta))) && (
             <StepGenerate
               propostaData={propostaData}
               onBack={handleBack}

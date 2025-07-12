@@ -9,6 +9,12 @@ verify_jwt = false
 [functions.criar-proposta]
 verify_jwt = false
 
+[functions.processar-telhas]
+verify_jwt = false
+
+[functions.processar-divisorias]
+verify_jwt = false
+
 [functions.registrar-visualizacao]
 verify_jwt = false
 

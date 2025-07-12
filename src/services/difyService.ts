@@ -107,11 +107,15 @@ export interface DadosEnergiaSolarCompletos {
 }
 
 export interface ProcessamentoResult {
-  dados_extraidos: DadosExtraidos | DadosMateriaisConstrucao | DadosEnergiaSolarCompletos;
-  valor_total: number;
-  status: string;
-  timestamp: string;
-  tipo_dados?: 'energia-solar' | 'materiais-construcao';
+  dados_extraidos?: DadosExtraidos | DadosMateriaisConstrucao | DadosEnergiaSolarCompletos;
+  valor_total?: number;
+  status?: string;
+  timestamp?: string;
+  tipo_dados?: 'energia-solar' | 'materiais-construcao' | 'telhas-shingle' | 'divisorias';
+  sucesso?: boolean;
+  dados?: any;
+  tipo?: string;
+  erro?: string;
 }
 
 export class DifyService {
@@ -302,6 +306,74 @@ export class DifyService {
     clienteEmail: string
   ): Promise<ProcessamentoResult> {
     return this.processarDocumento(arquivoUrl, 'materiais-construcao', clienteNome, clienteEmail);
+  }
+
+  async processarTelhas(
+    arquivoUrl: string,
+    clienteNome: string,
+    clienteEmail: string
+  ): Promise<ProcessamentoResult> {
+    try {
+      console.log('Processando telhas shingle:', { arquivoUrl, clienteNome });
+
+      const { data, error } = await supabase.functions.invoke('processar-telhas', {
+        body: {
+          arquivo_url: arquivoUrl,
+          cliente_nome: clienteNome,
+          cliente_email: clienteEmail
+        }
+      });
+
+      if (error) {
+        throw new Error(`Erro no processamento de telhas: ${error.message}`);
+      }
+
+      return {
+        sucesso: true,
+        dados: data,
+        tipo: 'telhas-shingle'
+      };
+    } catch (error) {
+      console.error('Erro no serviço de telhas:', error);
+      return {
+        sucesso: false,
+        erro: error.message || 'Erro desconhecido no processamento de telhas'
+      };
+    }
+  }
+
+  async processarDivisorias(
+    arquivoUrl: string,
+    clienteNome: string,
+    clienteEmail: string
+  ): Promise<ProcessamentoResult> {
+    try {
+      console.log('Processando divisórias:', { arquivoUrl, clienteNome });
+
+      const { data, error } = await supabase.functions.invoke('processar-divisorias', {
+        body: {
+          arquivo_url: arquivoUrl,
+          cliente_nome: clienteNome,
+          cliente_email: clienteEmail
+        }
+      });
+
+      if (error) {
+        throw new Error(`Erro no processamento de divisórias: ${error.message}`);
+      }
+
+      return {
+        sucesso: true,
+        dados: data,
+        tipo: 'divisorias'
+      };
+    } catch (error) {
+      console.error('Erro no serviço de divisórias:', error);
+      return {
+        sucesso: false,
+        erro: error.message || 'Erro desconhecido no processamento de divisórias'
+      };
+    }
   }
 
   async processarContaLuz(
