@@ -10,7 +10,7 @@ import Clientes from "./pages/Clientes";
 import EnergiaSolar from "./pages/EnergiaSolar";
 import Materiais from "./pages/Materiais";
 import Ranking from "./pages/Ranking";
-import Configuracoes from "./pages/Configuracoes";
+
 import ClientePortal from "./pages/ClientePortal";
 import PropostaCliente from "./pages/PropostaCliente";
 import ProcessamentoProposta from "./pages/ProcessamentoProposta";
@@ -39,7 +39,7 @@ const App = () => (
           <Route path="/energia-solar" element={<EnergiaSolar />} />
           <Route path="/materiais" element={<Materiais />} />
           <Route path="/ranking" element={<Ranking />} />
-          <Route path="/configuracoes" element={<Configuracoes />} />
+          
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/propostas" element={<AdminPropostas />} />
           <Route path="/admin/usuarios" element={<AdminUsuarios />} />

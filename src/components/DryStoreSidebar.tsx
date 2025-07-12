@@ -42,7 +42,6 @@ const productsItems = [
 ]
 
 const toolsItems = [
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
   { title: "Notificações", url: "/notificacoes", icon: Bell, badge: "3" },
 ]
 
