@@ -76,7 +76,7 @@ const AdminLayoutsPropostas = () => {
         conversao: "15%",
         ultimaAtualizacao: "2 semanas atrás"
       },
-      implementado: false
+      implementado: true
     },
     {
       id: "materiais",
