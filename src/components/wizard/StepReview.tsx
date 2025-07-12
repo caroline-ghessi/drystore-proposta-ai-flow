@@ -25,7 +25,11 @@ const TIPO_LABELS = {
   'divisorias': 'Divisórias',
   'pisos': 'Pisos',
   'forros': 'Forros',
-  'materiais-construcao': 'Materiais de Construção'
+  'materiais-construcao': 'Materiais de Construção',
+  'tintas-texturas': 'Tintas e Texturas',
+  'verga-fibra': 'Verga Fibra',
+  'argamassa-silentfloor': 'Argamassa SilentFloor',
+  'light-steel-frame': 'Light Steel Frame'
 }
 
 export function StepReview({ 
@@ -41,7 +45,7 @@ export function StepReview({
     ? difyService.formatarDadosParaExibicao(propostaData.dadosExtraidos, propostaData.tipoProposta)
     : {}
 
-  const isMateriaisConstrucao = propostaData.tipoProposta === 'materiais-construcao';
+  const isMateriaisConstrucao = ['materiais-construcao', 'tintas-texturas', 'verga-fibra', 'argamassa-silentfloor', 'light-steel-frame'].includes(propostaData.tipoProposta);
   const dadosMateriais = isMateriaisConstrucao ? propostaData.dadosExtraidos as DadosMateriaisConstrucao : null;
   const dadosUnificados = !isMateriaisConstrucao ? propostaData.dadosExtraidos as any : null;
   

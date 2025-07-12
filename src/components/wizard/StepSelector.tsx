@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Zap, Building, Layers, Square, CreditCard } from "lucide-react"
+import { Zap, Building, Layers, Square, CreditCard, Palette, Drill, Volume2, Home } from "lucide-react"
 import { TipoProposta } from "../PropostaWizard"
 
 interface StepSelectorProps {
@@ -49,6 +49,38 @@ const TIPOS_PROPOSTA = [
     icone: CreditCard,
     documento: 'Planta de forro (PDF)',
     detalhes: 'Área e especificações técnicas'
+  },
+  {
+    tipo: 'tintas-texturas' as TipoProposta,
+    titulo: 'Tintas e Texturas',
+    descricao: 'Tintas decorativas e texturas especiais',
+    icone: Palette,
+    documento: 'Projeto ou especificações (PDF)',
+    detalhes: 'Área, tipo de tinta e aplicação'
+  },
+  {
+    tipo: 'verga-fibra' as TipoProposta,
+    titulo: 'Verga Fibra',
+    descricao: 'Vergas pré-moldadas em fibra',
+    icone: Drill,
+    documento: 'Projeto estrutural (PDF)',
+    detalhes: 'Medidas e especificações técnicas'
+  },
+  {
+    tipo: 'argamassa-silentfloor' as TipoProposta,
+    titulo: 'Argamassa SilentFloor',
+    descricao: 'Argamassa para isolamento acústico',
+    icone: Volume2,
+    documento: 'Projeto acústico (PDF)',
+    detalhes: 'Área e especificações de isolamento'
+  },
+  {
+    tipo: 'light-steel-frame' as TipoProposta,
+    titulo: 'Light Steel Frame',
+    descricao: 'Construção em estrutura metálica leve',
+    icone: Home,
+    documento: 'Projeto arquitetônico (PDF)',
+    detalhes: 'Área construída e especificações'
   }
 ]
 

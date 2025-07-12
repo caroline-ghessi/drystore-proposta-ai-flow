@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DryStoreSidebar } from "@/components/DryStoreSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Eye, Edit, BarChart3, Palette, FileText, Building2, Sun, Hammer, Grid3X3 } from "lucide-react";
+import { Eye, Edit, BarChart3, Palette, FileText, Building2, Sun, Hammer, Grid3X3, Square, Drill, Volume2, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,19 +13,6 @@ const AdminLayoutsPropostas = () => {
   const [loading, setLoading] = useState(false);
 
   const layoutsPropostas = [
-    {
-      id: "divisorias",
-      nome: "Divisórias de Drywall",
-      descricao: "Layout focado em segurança e qualidade Ananda Metais",
-      icon: Building2,
-      cor: "bg-blue-500",
-      estatisticas: {
-        propostas: 23,
-        conversao: "28%",
-        ultimaAtualizacao: "2 dias atrás"
-      },
-      implementado: true
-    },
     {
       id: "energia-solar",
       nome: "Energia Solar",
@@ -53,6 +40,32 @@ const AdminLayoutsPropostas = () => {
       implementado: true
     },
     {
+      id: "divisorias",
+      nome: "Divisórias de Drywall",
+      descricao: "Layout focado em segurança e qualidade Ananda Metais",
+      icon: Building2,
+      cor: "bg-blue-500",
+      estatisticas: {
+        propostas: 23,
+        conversao: "28%",
+        ultimaAtualizacao: "2 dias atrás"
+      },
+      implementado: true
+    },
+    {
+      id: "pisos",
+      nome: "Pisos",
+      descricao: "Layout focado em resistência e design",
+      icon: Square,
+      cor: "bg-purple-500",
+      estatisticas: {
+        propostas: 8,
+        conversao: "15%",
+        ultimaAtualizacao: "2 semanas atrás"
+      },
+      implementado: true
+    },
+    {
       id: "forros",
       nome: "Forros Acústicos",
       descricao: "Layout com ênfase em conforto térmico e acústico",
@@ -66,28 +79,54 @@ const AdminLayoutsPropostas = () => {
       implementado: true
     },
     {
-      id: "pisos",
-      nome: "Pisos",
-      descricao: "Layout focado em resistência e design",
-      icon: FileText,
-      cor: "bg-purple-500",
+      id: "tintas-texturas",
+      nome: "Tintas e Texturas",
+      descricao: "Layout para tintas decorativas e texturas especiais",
+      icon: Palette,
+      cor: "bg-pink-500",
       estatisticas: {
-        propostas: 8,
-        conversao: "15%",
-        ultimaAtualizacao: "2 semanas atrás"
+        propostas: 0,
+        conversao: "-",
+        ultimaAtualizacao: "Nunca"
       },
-      implementado: true
+      implementado: false
     },
     {
-      id: "materiais",
-      nome: "Materiais de Construção",
-      descricao: "Layout geral para diversos materiais",
-      icon: Building2,
-      cor: "bg-gray-500",
+      id: "verga-fibra",
+      nome: "Verga Fibra",
+      descricao: "Layout para vergas pré-moldadas em fibra",
+      icon: Drill,
+      cor: "bg-orange-500",
       estatisticas: {
-        propostas: 31,
-        conversao: "25%",
-        ultimaAtualizacao: "4 dias atrás"
+        propostas: 0,
+        conversao: "-",
+        ultimaAtualizacao: "Nunca"
+      },
+      implementado: false
+    },
+    {
+      id: "argamassa-silentfloor",
+      nome: "Argamassa SilentFloor",
+      descricao: "Layout para argamassa de isolamento acústico",
+      icon: Volume2,
+      cor: "bg-cyan-500",
+      estatisticas: {
+        propostas: 0,
+        conversao: "-",
+        ultimaAtualizacao: "Nunca"
+      },
+      implementado: false
+    },
+    {
+      id: "light-steel-frame",
+      nome: "Light Steel Frame",
+      descricao: "Layout para construção em estrutura metálica leve",
+      icon: Home,
+      cor: "bg-indigo-500",
+      estatisticas: {
+        propostas: 0,
+        conversao: "-",
+        ultimaAtualizacao: "Nunca"
       },
       implementado: false
     }
@@ -99,12 +138,15 @@ const AdminLayoutsPropostas = () => {
     try {
       // Mapear ID do layout para tipo de proposta
       const tipoMap: Record<string, string> = {
-        'divisorias': 'divisorias',
         'energia-solar': 'energia-solar',
         'telhas': 'telhas',
-        'forros': 'forros',
+        'divisorias': 'divisorias',
         'pisos': 'pisos',
-        'materiais': 'materiais-construcao'
+        'forros': 'forros',
+        'tintas-texturas': 'tintas-texturas',
+        'verga-fibra': 'verga-fibra',
+        'argamassa-silentfloor': 'argamassa-silentfloor',
+        'light-steel-frame': 'light-steel-frame'
       };
 
       const tipoProposta = tipoMap[layoutId];

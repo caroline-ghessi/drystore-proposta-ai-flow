@@ -17,7 +17,11 @@ const TIPO_LABELS = {
   'divisorias': 'Divisórias',
   'pisos': 'Pisos',
   'forros': 'Forros',
-  'materiais-construcao': 'Materiais de Construção'
+  'materiais-construcao': 'Materiais de Construção',
+  'tintas-texturas': 'Tintas e Texturas',
+  'verga-fibra': 'Verga Fibra',
+  'argamassa-silentfloor': 'Argamassa SilentFloor',
+  'light-steel-frame': 'Light Steel Frame'
 }
 
 export function StepGenerate({ 
@@ -25,7 +29,7 @@ export function StepGenerate({
   onBack, 
   onComplete 
 }: StepGenerateProps) {
-  const isMateriaisConstrucao = propostaData.tipoProposta === 'materiais-construcao';
+  const isMateriaisConstrucao = ['materiais-construcao', 'tintas-texturas', 'verga-fibra', 'argamassa-silentfloor', 'light-steel-frame'].includes(propostaData.tipoProposta);
   const dadosMateriais = isMateriaisConstrucao ? propostaData.dadosExtraidos as DadosMateriaisConstrucao : null;
   
   const valorFinal = isMateriaisConstrucao 

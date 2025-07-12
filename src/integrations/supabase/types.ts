@@ -262,6 +262,10 @@ export type Database = {
         | "pisos"
         | "forros"
         | "materiais-construcao"
+        | "tintas-texturas"
+        | "verga-fibra"
+        | "argamassa-silentfloor"
+        | "light-steel-frame"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -409,6 +413,10 @@ export const Constants = {
         "pisos",
         "forros",
         "materiais-construcao",
+        "tintas-texturas",
+        "verga-fibra",
+        "argamassa-silentfloor",
+        "light-steel-frame",
       ],
     },
   },
