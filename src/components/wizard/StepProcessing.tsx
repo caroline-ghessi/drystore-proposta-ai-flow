@@ -83,8 +83,8 @@ export function StepProcessing({
           // result já vem como DadosContaLuz diretamente da edge function
           console.log('Dados da conta de luz extraídos:', result);
           onDataChange({
-            dadosExtraidos: result,
-            valorTotal: result.valor_total || 0
+            dadosExtraidos: result
+            // Não definir valorTotal aqui - será definido no StepCalculoSolar
           })
         } else {
           onDataChange({

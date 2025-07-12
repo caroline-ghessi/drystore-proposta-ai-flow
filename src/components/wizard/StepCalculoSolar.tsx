@@ -6,10 +6,11 @@ import { Separator } from "@/components/ui/separator"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Calculator, CheckCircle, Loader2, Sun, Zap, Clock, TrendingUp } from "lucide-react"
+import { Calculator, CheckCircle, Loader2, Sun, Zap, Clock, TrendingUp, Edit3, RotateCcw } from "lucide-react"
 import { PropostaData } from "../PropostaWizard"
 import { DadosContaLuz } from "@/services/difyService"
 import { useEnergiaSolar, DadosEntradaSolar, CalculoCompleto } from "@/hooks/useEnergiaSolar"
+import { useProdutos } from "@/hooks/useProdutos"
 import { useToast } from "@/hooks/use-toast"
 
 interface StepCalculoSolarProps {
@@ -26,6 +27,7 @@ export function StepCalculoSolar({
   onNext 
 }: StepCalculoSolarProps) {
   const { calcularSistemaCompleto, loading, error } = useEnergiaSolar()
+  const { paineis, inversores, buscarInversores, buscarProduto } = useProdutos()
   const { toast } = useToast()
   
   // Parâmetros para o cálculo
@@ -37,6 +39,12 @@ export function StepCalculoSolar({
   // Resultado dos cálculos
   const [calculoCompleto, setCalculoCompleto] = useState<CalculoCompleto | null>(null)
   const [calculado, setCalculado] = useState(false)
+  
+  // Equipamentos editáveis
+  const [painelSelecionado, setPainelSelecionado] = useState<string>('')
+  const [quantidadePaineis, setQuantidadePaineis] = useState<number>(0)
+  const [inversorSelecionado, setInversorSelecionado] = useState<string>('')
+  const [editandoEquipamentos, setEditandoEquipamentos] = useState(false)
 
   const dadosContaLuz = propostaData.dadosExtraidos as DadosContaLuz
 
@@ -45,6 +53,14 @@ export function StepCalculoSolar({
       handleCalcular()
     }
   }, [dadosContaLuz])
+
+  useEffect(() => {
+    if (calculoCompleto) {
+      setPainelSelecionado(calculoCompleto.equipamentos.painel.id)
+      setQuantidadePaineis(calculoCompleto.equipamentos.painel.quantidade)
+      setInversorSelecionado(calculoCompleto.equipamentos.inversor.id)
+    }
+  }, [calculoCompleto])
 
   const handleCalcular = async () => {
     if (!dadosContaLuz?.consumo_atual) {
@@ -88,6 +104,90 @@ export function StepCalculoSolar({
       toast({
         title: "Erro no cálculo",
         description: error || "Erro ao calcular sistema solar",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const recalcularComEquipamentos = async () => {
+    if (!painelSelecionado || !quantidadePaineis || !inversorSelecionado || !calculoCompleto) {
+      toast({
+        title: "Erro",
+        description: "Selecione todos os equipamentos",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const painelProduto = await buscarProduto(painelSelecionado)
+      const inversorProduto = await buscarProduto(inversorSelecionado)
+      
+      if (!painelProduto || !inversorProduto) {
+        throw new Error("Produtos não encontrados")
+      }
+
+      const potenciaSistema = (quantidadePaineis * (painelProduto.potencia_wp || 0)) / 1000
+
+      // Usar funções Supabase para recalcular
+      const dadosEntrada: DadosEntradaSolar = {
+        consumo_mensal_kwh: dadosContaLuz.consumo_atual,
+        cidade: dadosContaLuz.endereco?.split(',')[0]?.trim() || 'São Paulo',
+        estado: 'SP',
+        tipo_instalacao: tipoInstalacao,
+        tipo_telha: tipoTelha,
+        area_disponivel: areaDisponivel,
+        tarifa_energia: tarifaEnergia
+      }
+
+      const resultado = await calcularSistemaCompleto(dadosEntrada)
+      
+      // Substituir equipamentos pelos selecionados
+      resultado.equipamentos.painel = {
+        id: painelProduto.id,
+        modelo: painelProduto.nome,
+        fabricante: painelProduto.fabricante || '',
+        quantidade: quantidadePaineis,
+        potencia_unitaria: painelProduto.potencia_wp || 0,
+        potencia_total: potenciaSistema * 1000,
+        preco_unitario: painelProduto.preco_unitario || 0,
+        preco_total: (painelProduto.preco_unitario || 0) * quantidadePaineis
+      }
+
+      resultado.equipamentos.inversor = {
+        id: inversorProduto.id,
+        modelo: inversorProduto.nome,
+        fabricante: inversorProduto.fabricante || '',
+        potencia: inversorProduto.potencia_wp || 0,
+        preco: inversorProduto.preco_unitario || 0
+      }
+
+      // Recalcular orçamento
+      resultado.orcamento.equipamentos.paineis = resultado.equipamentos.painel.preco_total
+      resultado.orcamento.equipamentos.inversor = resultado.equipamentos.inversor.preco
+      resultado.orcamento.subtotal = resultado.orcamento.equipamentos.paineis + resultado.orcamento.equipamentos.inversor + resultado.orcamento.instalacao
+      resultado.orcamento.valor_total = resultado.orcamento.subtotal * (1 + resultado.orcamento.margem_aplicada / 100)
+
+      setCalculoCompleto(resultado)
+      setEditandoEquipamentos(false)
+      
+      // Atualizar valor total da proposta
+      onDataChange({ 
+        valorTotal: resultado.orcamento.valor_total,
+        dadosExtraidos: {
+          ...dadosContaLuz,
+          calculo_solar: resultado
+        }
+      })
+
+      toast({
+        title: "Recálculo realizado!",
+        description: `Novo valor: ${formatCurrency(resultado.orcamento.valor_total)}`,
+      })
+    } catch (err) {
+      toast({
+        title: "Erro no recálculo",
+        description: error || "Erro ao recalcular sistema",
         variant: "destructive"
       })
     }
@@ -244,32 +344,95 @@ export function StepCalculoSolar({
               <CardTitle className="text-base flex items-center gap-2">
                 <Zap className="h-5 w-5 text-blue-600" />
                 Equipamentos Selecionados
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditandoEquipamentos(!editandoEquipamentos)}
+                  className="ml-auto"
+                >
+                  <Edit3 className="w-4 h-4 mr-1" />
+                  {editandoEquipamentos ? 'Cancelar' : 'Editar'}
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-medium mb-2">Painéis Solares</h4>
-                  <div className="bg-muted p-3 rounded-lg">
-                    <p className="font-medium">{calculoCompleto.equipamentos.painel.modelo}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {calculoCompleto.equipamentos.painel.fabricante} • 
-                      {calculoCompleto.equipamentos.painel.potencia_unitaria}W • 
-                      Qty: {calculoCompleto.equipamentos.painel.quantidade}
-                    </p>
+              {!editandoEquipamentos ? (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Painéis Solares</h4>
+                    <div className="bg-muted p-3 rounded-lg">
+                      <p className="font-medium">{calculoCompleto.equipamentos.painel.modelo}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {calculoCompleto.equipamentos.painel.fabricante} • 
+                        {calculoCompleto.equipamentos.painel.potencia_unitaria}W • 
+                        Qty: {calculoCompleto.equipamentos.painel.quantidade}
+                      </p>
+                      <p className="text-sm font-medium text-green-600">
+                        {formatCurrency(calculoCompleto.equipamentos.painel.preco_total)}
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Inversor</h4>
+                    <div className="bg-muted p-3 rounded-lg">
+                      <p className="font-medium">{calculoCompleto.equipamentos.inversor.modelo}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {calculoCompleto.equipamentos.inversor.fabricante} • 
+                        {calculoCompleto.equipamentos.inversor.potencia}W
+                      </p>
+                      <p className="text-sm font-medium text-green-600">
+                        {formatCurrency(calculoCompleto.equipamentos.inversor.preco)}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <h4 className="font-medium mb-2">Inversor</h4>
-                  <div className="bg-muted p-3 rounded-lg">
-                    <p className="font-medium">{calculoCompleto.equipamentos.inversor.modelo}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {calculoCompleto.equipamentos.inversor.fabricante} • 
-                      {calculoCompleto.equipamentos.inversor.potencia}W
-                    </p>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <Label>Painéis Solares</Label>
+                    <Select value={painelSelecionado} onValueChange={setPainelSelecionado}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o painel" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paineis.map((painel) => (
+                          <SelectItem key={painel.id} value={painel.id}>
+                            {painel.nome} - {painel.potencia_wp}W - {formatCurrency(painel.preco_unitario || 0)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
+                  <div>
+                    <Label>Quantidade de Painéis</Label>
+                    <Input
+                      type="number"
+                      value={quantidadePaineis}
+                      onChange={(e) => setQuantidadePaineis(Number(e.target.value))}
+                      min="1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Inversor</Label>
+                    <Select value={inversorSelecionado} onValueChange={setInversorSelecionado}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o inversor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {inversores.map((inversor) => (
+                          <SelectItem key={inversor.id} value={inversor.id}>
+                            {inversor.nome} - {inversor.potencia_wp}W - {formatCurrency(inversor.preco_unitario || 0)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={recalcularComEquipamentos} className="w-full">
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Recalcular com Novos Equipamentos
+                  </Button>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
