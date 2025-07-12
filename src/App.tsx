@@ -17,6 +17,12 @@ import ProcessamentoProposta from "./pages/ProcessamentoProposta";
 import LoginCliente from "./pages/LoginCliente";
 import Admin from "./pages/Admin";
 import EquipamentosSolar from "./pages/EquipamentosSolar";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminPropostas from "./pages/admin/AdminPropostas";
+import AdminUsuarios from "./pages/admin/AdminUsuarios";
+import AdminProdutos from "./pages/admin/AdminProdutos";
+import AdminLayoutsPropostas from "./pages/admin/AdminLayoutsPropostas";
+import AdminConfiguracoes from "./pages/admin/AdminConfiguracoes";
 
 const queryClient = new QueryClient();
 
@@ -34,7 +40,12 @@ const App = () => (
           <Route path="/materiais" element={<Materiais />} />
           <Route path="/ranking" element={<Ranking />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
-          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/propostas" element={<AdminPropostas />} />
+          <Route path="/admin/usuarios" element={<AdminUsuarios />} />
+          <Route path="/admin/produtos" element={<AdminProdutos />} />
+          <Route path="/admin/layouts-propostas" element={<AdminLayoutsPropostas />} />
+          <Route path="/admin/configuracoes" element={<AdminConfiguracoes />} />
           <Route path="/equipamentos-solar" element={<EquipamentosSolar />} />
           <Route path="/cliente-portal" element={<ClientePortal />} />
           <Route path="/proposta/:urlUnica" element={<PropostaCliente />} />
