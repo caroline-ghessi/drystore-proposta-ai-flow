@@ -22,6 +22,7 @@ interface ProdutosTableProps {
   onProdutosChange: (produtos: Produto[]) => void;
   onFreteChange: (frete: number) => void;
   readonly?: boolean;
+  ocultarPrecosUnitarios?: boolean;
 }
 
 export function ProdutosTable({ 
@@ -30,7 +31,8 @@ export function ProdutosTable({
   valorTotal, 
   onProdutosChange, 
   onFreteChange,
-  readonly = false 
+  readonly = false,
+  ocultarPrecosUnitarios = false 
 }: ProdutosTableProps) {
   const [editandoItem, setEditandoItem] = useState<string | null>(null);
 
@@ -80,9 +82,9 @@ export function ProdutosTable({
               <TableRow>
                 <TableHead>Código</TableHead>
                 <TableHead>Descrição</TableHead>
-                <TableHead>Qtd</TableHead>
-                <TableHead>Unidade</TableHead>
-                <TableHead>Preço Unit.</TableHead>
+                {!ocultarPrecosUnitarios && <TableHead>Qtd</TableHead>}
+                {!ocultarPrecosUnitarios && <TableHead>Unidade</TableHead>}
+                {!ocultarPrecosUnitarios && <TableHead>Preço Unit.</TableHead>}
                 <TableHead>Total</TableHead>
                 {!readonly && <TableHead className="w-[100px]">Ações</TableHead>}
               </TableRow>
@@ -110,44 +112,48 @@ export function ProdutosTable({
                       </span>
                     )}
                   </TableCell>
-                  <TableCell>
-                    {editandoItem === produto.codigo && !readonly ? (
-                      <Input
-                        type="number"
-                        value={produto.quantidade}
-                        onChange={(e) => atualizarProduto(produto.codigo, 'quantidade', parseFloat(e.target.value) || 0)}
-                        onBlur={() => setEditandoItem(null)}
-                        className="w-20"
-                      />
-                    ) : (
-                      <span 
-                        className={!readonly ? "cursor-pointer hover:bg-muted p-1 rounded" : ""}
-                        onClick={() => !readonly && setEditandoItem(produto.codigo)}
-                      >
-                        {produto.quantidade}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>{produto.unidade}</TableCell>
-                  <TableCell>
-                    {editandoItem === produto.codigo && !readonly ? (
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={produto.preco_unitario}
-                        onChange={(e) => atualizarProduto(produto.codigo, 'preco_unitario', parseFloat(e.target.value) || 0)}
-                        onBlur={() => setEditandoItem(null)}
-                        className="w-24"
-                      />
-                    ) : (
-                      <span 
-                        className={!readonly ? "cursor-pointer hover:bg-muted p-1 rounded" : ""}
-                        onClick={() => !readonly && setEditandoItem(produto.codigo)}
-                      >
-                        R$ {produto.preco_unitario.toFixed(2)}
-                      </span>
-                    )}
-                  </TableCell>
+                  {!ocultarPrecosUnitarios && (
+                    <TableCell>
+                      {editandoItem === produto.codigo && !readonly ? (
+                        <Input
+                          type="number"
+                          value={produto.quantidade}
+                          onChange={(e) => atualizarProduto(produto.codigo, 'quantidade', parseFloat(e.target.value) || 0)}
+                          onBlur={() => setEditandoItem(null)}
+                          className="w-20"
+                        />
+                      ) : (
+                        <span 
+                          className={!readonly ? "cursor-pointer hover:bg-muted p-1 rounded" : ""}
+                          onClick={() => !readonly && setEditandoItem(produto.codigo)}
+                        >
+                          {produto.quantidade}
+                        </span>
+                      )}
+                    </TableCell>
+                  )}
+                  {!ocultarPrecosUnitarios && <TableCell>{produto.unidade}</TableCell>}
+                  {!ocultarPrecosUnitarios && (
+                    <TableCell>
+                      {editandoItem === produto.codigo && !readonly ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={produto.preco_unitario}
+                          onChange={(e) => atualizarProduto(produto.codigo, 'preco_unitario', parseFloat(e.target.value) || 0)}
+                          onBlur={() => setEditandoItem(null)}
+                          className="w-24"
+                        />
+                      ) : (
+                        <span 
+                          className={!readonly ? "cursor-pointer hover:bg-muted p-1 rounded" : ""}
+                          onClick={() => !readonly && setEditandoItem(produto.codigo)}
+                        >
+                          R$ {produto.preco_unitario.toFixed(2)}
+                        </span>
+                      )}
+                    </TableCell>
+                  )}
                   <TableCell className="font-medium">
                     R$ {produto.total.toFixed(2)}
                   </TableCell>

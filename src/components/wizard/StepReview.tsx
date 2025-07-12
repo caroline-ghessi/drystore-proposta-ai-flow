@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
 import { CheckCircle, Edit3, Calculator } from "lucide-react"
 import { PropostaData } from "../PropostaWizard"
 import { difyService, DadosMateriaisConstrucao } from "@/services/difyService"
@@ -15,7 +16,7 @@ interface StepReviewProps {
   propostaData: PropostaData;
   onDataChange: (data: Partial<PropostaData>) => void;
   onBack: () => void;
-  onComplete: () => void;
+  onComplete: (options?: { ocultarPrecosUnitarios: boolean }) => void;
 }
 
 const TIPO_LABELS = {
@@ -33,8 +34,8 @@ export function StepReview({
   onBack, 
   onComplete 
 }: StepReviewProps) {
-  const [editandoCliente, setEditandoCliente] = useState(false)
   const [editandoValor, setEditandoValor] = useState(false)
+  const [ocultarPrecosUnitarios, setOcultarPrecosUnitarios] = useState(false)
 
   const dadosFormatados = propostaData.dadosExtraidos 
     ? difyService.formatarDadosParaExibicao(propostaData.dadosExtraidos, propostaData.tipoProposta)
@@ -125,18 +126,9 @@ export function StepReview({
         {/* Dados do Cliente */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Edit3 className="h-5 w-5" />
-                Dados do Cliente
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setEditandoCliente(!editandoCliente)}
-              >
-                {editandoCliente ? 'Salvar' : 'Editar'}
-              </Button>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Edit3 className="h-5 w-5" />
+              Dados do Cliente
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -146,7 +138,6 @@ export function StepReview({
                 id="review-nome"
                 value={propostaData.clienteNome || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente || ''}
                 onChange={(e) => onDataChange({ clienteNome: e.target.value })}
-                disabled={!editandoCliente}
               />
             </div>
 
@@ -156,7 +147,6 @@ export function StepReview({
                 id="review-email"
                 value={propostaData.clienteEmail}
                 onChange={(e) => onDataChange({ clienteEmail: e.target.value })}
-                disabled={!editandoCliente}
               />
             </div>
 
@@ -166,7 +156,6 @@ export function StepReview({
                 id="review-whatsapp"
                 value={propostaData.clienteWhatsapp || dadosMateriais?.telefone_do_cliente || dadosUnificados?.telefone_do_cliente || ''}
                 onChange={(e) => onDataChange({ clienteWhatsapp: e.target.value })}
-                disabled={!editandoCliente}
                 placeholder="(11) 99999-9999"
               />
             </div>
@@ -177,7 +166,6 @@ export function StepReview({
                 id="review-endereco"
                 value={propostaData.clienteEndereco || ''}
                 onChange={(e) => onDataChange({ clienteEndereco: e.target.value })}
-                disabled={!editandoCliente}
                 placeholder="Endereço completo"
               />
             </div>
@@ -232,6 +220,20 @@ export function StepReview({
             )}
           </div>
 
+          {/* Toggle para ocultar preços unitários */}
+          {temProdutos && (
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="ocultar-precos"
+                checked={ocultarPrecosUnitarios}
+                onCheckedChange={setOcultarPrecosUnitarios}
+              />
+              <Label htmlFor="ocultar-precos">
+                Ocultar preços unitários e quantidades na proposta do cliente
+              </Label>
+            </div>
+          )}
+
           <div>
             <Label htmlFor="observacoes">Observações</Label>
             <Textarea
@@ -254,6 +256,7 @@ export function StepReview({
             valorTotal={(dadosMateriais?.valor_total_proposta || dadosUnificados?.valor_total_proposta || 0)}
             onProdutosChange={handleProdutosChange}
             onFreteChange={handleFreteChange}
+            ocultarPrecosUnitarios={ocultarPrecosUnitarios}
           />
         </div>
       )}
@@ -300,7 +303,7 @@ export function StepReview({
           Voltar
         </Button>
         <Button 
-          onClick={onComplete}
+          onClick={() => onComplete({ ocultarPrecosUnitarios })}
           disabled={!propostaData.clienteNome || !propostaData.clienteEmail}
           className="bg-primary hover:bg-primary/90"
         >

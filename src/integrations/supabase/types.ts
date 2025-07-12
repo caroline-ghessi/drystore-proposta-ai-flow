@@ -142,6 +142,7 @@ export type Database = {
           forma_pagamento: string | null
           id: string
           observacoes: string | null
+          ocultar_precos_unitarios: boolean
           status: Database["public"]["Enums"]["status_proposta_enum"]
           tipo_proposta: Database["public"]["Enums"]["tipo_proposta_enum"]
           updated_at: string
@@ -164,6 +165,7 @@ export type Database = {
           forma_pagamento?: string | null
           id?: string
           observacoes?: string | null
+          ocultar_precos_unitarios?: boolean
           status?: Database["public"]["Enums"]["status_proposta_enum"]
           tipo_proposta: Database["public"]["Enums"]["tipo_proposta_enum"]
           updated_at?: string
@@ -186,6 +188,7 @@ export type Database = {
           forma_pagamento?: string | null
           id?: string
           observacoes?: string | null
+          ocultar_precos_unitarios?: boolean
           status?: Database["public"]["Enums"]["status_proposta_enum"]
           tipo_proposta?: Database["public"]["Enums"]["tipo_proposta_enum"]
           updated_at?: string
