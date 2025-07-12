@@ -40,12 +40,37 @@ export function StepProcessing({
         onProcessingChange(true)
         onError('')
 
-        const result = await difyService.processarDocumento(
-          propostaData.arquivoUrl,
-          propostaData.tipoProposta,
-          propostaData.clienteNome,
-          propostaData.clienteEmail
-        )
+        let result: any;
+
+        // Para energia solar, usar processamento específico de conta de luz
+        if (propostaData.tipoProposta === 'energia-solar') {
+          const contaLuzResult = await difyService.processarContaLuz(
+            propostaData.arquivoUrl,
+            propostaData.clienteNome,
+            propostaData.clienteEmail
+          )
+
+          if (!contaLuzResult.sucesso) {
+            throw new Error(contaLuzResult.erro || 'Erro no processamento da conta de luz')
+          }
+
+          // Criar resultado compatível com ProcessamentoResult
+          result = {
+            dados_extraidos: contaLuzResult.dados,
+            valor_total: contaLuzResult.dados?.dadosContaLuz.valor_total || 0,
+            status: 'sucesso',
+            timestamp: new Date().toISOString(),
+            tipo_dados: 'energia-solar'
+          }
+        } else {
+          // Para outros tipos, usar processamento padrão
+          result = await difyService.processarDocumento(
+            propostaData.arquivoUrl,
+            propostaData.tipoProposta,
+            propostaData.clienteNome,
+            propostaData.clienteEmail
+          )
+        }
 
         // Validar dados extraídos
         const validation = difyService.validarDadosExtraidos(

@@ -8,17 +8,52 @@ const corsHeaders = {
 };
 
 interface DadosContaLuz {
-  cliente_nome: string;
-  cliente_cpf_cnpj?: string;
-  endereco_instalacao: string;
-  consumo_kwh_mes: number;
-  valor_conta: number;
-  classe_consumo: 'residencial' | 'comercial' | 'industrial';
-  tarifa_kwh?: number;
-  demanda_contratada?: number;
-  distribuidora: string;
+  nome_cliente: string;
+  endereco: string;
+  numero_instalacao: string;
+  data_emissao: string;
   mes_referencia: string;
-  bandeira_tarifaria?: string;
+  preco_kw: number | null;
+  concessionaria: string;
+  consumo_atual: number | null;
+  valor_total: number | null;
+  historico_consumo: {
+    dados_ano_atual: {
+      ano: number;
+      meses: {
+        janeiro: number | null;
+        fevereiro: number | null;
+        março: number | null;
+        abril: number | null;
+        maio: number | null;
+        junho: number | null;
+        julho: number | null;
+        agosto: number | null;
+        setembro: number | null;
+        outubro: number | null;
+        novembro: number | null;
+        dezembro: number | null;
+      };
+    };
+    dados_ano_anterior: {
+      ano: number;
+      meses: {
+        janeiro: number | null;
+        fevereiro: number | null;
+        março: number | null;
+        abril: number | null;
+        maio: number | null;
+        junho: number | null;
+        julho: number | null;
+        agosto: number | null;
+        setembro: number | null;
+        outubro: number | null;
+        novembro: number | null;
+        dezembro: number | null;
+      };
+    };
+    observacao: string;
+  };
 }
 
 interface ProcessamentoResult {
@@ -79,22 +114,39 @@ serve(async (req) => {
       
       // Extrair dados estruturados da resposta
       const dadosExtraidos: DadosContaLuz = {
-        cliente_nome: outputs.cliente_nome || clienteNome,
-        cliente_cpf_cnpj: outputs.cliente_cpf_cnpj,
-        endereco_instalacao: outputs.endereco_instalacao || '',
-        consumo_kwh_mes: parseFloat(outputs.consumo_kwh_mes) || 0,
-        valor_conta: parseFloat(outputs.valor_conta) || 0,
-        classe_consumo: outputs.classe_consumo || 'residencial',
-        tarifa_kwh: outputs.tarifa_kwh ? parseFloat(outputs.tarifa_kwh) : undefined,
-        demanda_contratada: outputs.demanda_contratada ? parseFloat(outputs.demanda_contratada) : undefined,
-        distribuidora: outputs.distribuidora || '',
+        nome_cliente: outputs.nome_cliente || clienteNome,
+        endereco: outputs.endereco || '',
+        numero_instalacao: outputs.numero_instalacao || '',
+        data_emissao: outputs.data_emissao || new Date().toLocaleDateString('pt-BR'),
         mes_referencia: outputs.mes_referencia || '',
-        bandeira_tarifaria: outputs.bandeira_tarifaria
+        preco_kw: outputs.preco_kw ? parseFloat(outputs.preco_kw) : null,
+        concessionaria: outputs.concessionaria || '',
+        consumo_atual: outputs.consumo_atual ? parseFloat(outputs.consumo_atual) : null,
+        valor_total: outputs.valor_total ? parseFloat(outputs.valor_total) : null,
+        historico_consumo: outputs.historico_consumo || {
+          dados_ano_atual: {
+            ano: new Date().getFullYear(),
+            meses: {
+              janeiro: null, fevereiro: null, março: null, abril: null,
+              maio: null, junho: null, julho: null, agosto: null,
+              setembro: null, outubro: null, novembro: null, dezembro: null
+            }
+          },
+          dados_ano_anterior: {
+            ano: new Date().getFullYear() - 1,
+            meses: {
+              janeiro: null, fevereiro: null, março: null, abril: null,
+              maio: null, junho: null, julho: null, agosto: null,
+              setembro: null, outubro: null, novembro: null, dezembro: null
+            }
+          },
+          observacao: 'Dados de histórico não encontrados na conta de luz'
+        }
       };
 
       // Validar dados essenciais
-      const dadosValidos = dadosExtraidos.consumo_kwh_mes > 0 && 
-                          dadosExtraidos.endereco_instalacao.trim() !== '';
+      const dadosValidos = dadosExtraidos.consumo_atual && dadosExtraidos.consumo_atual > 0 && 
+                          dadosExtraidos.endereco.trim() !== '';
 
       if (!dadosValidos) {
         console.warn('Dados extraídos incompletos:', dadosExtraidos);

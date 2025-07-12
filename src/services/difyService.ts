@@ -44,22 +44,68 @@ export interface DadosMateriaisConstrucao {
   observacoes?: string;
 }
 
+export interface HistoricoConsumo {
+  dados_ano_atual: {
+    ano: number;
+    meses: {
+      janeiro: number | null;
+      fevereiro: number | null;
+      março: number | null;
+      abril: number | null;
+      maio: number | null;
+      junho: number | null;
+      julho: number | null;
+      agosto: number | null;
+      setembro: number | null;
+      outubro: number | null;
+      novembro: number | null;
+      dezembro: number | null;
+    };
+  };
+  dados_ano_anterior: {
+    ano: number;
+    meses: {
+      janeiro: number | null;
+      fevereiro: number | null;
+      março: number | null;
+      abril: number | null;
+      maio: number | null;
+      junho: number | null;
+      julho: number | null;
+      agosto: number | null;
+      setembro: number | null;
+      outubro: number | null;
+      novembro: number | null;
+      dezembro: number | null;
+    };
+  };
+  observacao: string;
+}
+
 export interface DadosContaLuz {
-  cliente_nome: string;
-  cliente_cpf_cnpj?: string;
-  endereco_instalacao: string;
-  consumo_kwh_mes: number;
-  valor_conta: number;
-  classe_consumo: 'residencial' | 'comercial' | 'industrial';
-  tarifa_kwh?: number;
-  demanda_contratada?: number;
-  distribuidora: string;
+  nome_cliente: string;
+  endereco: string;
+  numero_instalacao: string;
+  data_emissao: string;
   mes_referencia: string;
-  bandeira_tarifaria?: string;
+  preco_kw: number | null;
+  concessionaria: string;
+  consumo_atual: number | null;
+  valor_total: number | null;
+  historico_consumo: HistoricoConsumo;
+}
+
+export interface DadosEnergiaSolarCompletos {
+  dadosContaLuz: DadosContaLuz;
+  consumoMedio: number;
+  cidade: string;
+  estado: string;
+  tipoInstalacao: 'residencial' | 'comercial' | 'industrial';
+  tarifaKwh: number;
 }
 
 export interface ProcessamentoResult {
-  dados_extraidos: DadosExtraidos | DadosMateriaisConstrucao;
+  dados_extraidos: DadosExtraidos | DadosMateriaisConstrucao | DadosEnergiaSolarCompletos;
   valor_total: number;
   status: string;
   timestamp: string;
@@ -132,8 +178,26 @@ export class DifyService {
     }
   }
 
-  validarDadosExtraidos(dados: DadosExtraidos | DadosMateriaisConstrucao, tipoProposta: string): { valid: boolean; errors: string[] } {
+  validarDadosExtraidos(dados: DadosExtraidos | DadosMateriaisConstrucao | DadosEnergiaSolarCompletos, tipoProposta: string): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
+
+    // Para energia solar, usar interface específica
+    if (tipoProposta === 'energia-solar') {
+      const dadosEnergiaSolar = dados as DadosEnergiaSolarCompletos;
+      if (!dadosEnergiaSolar.dadosContaLuz?.nome_cliente) {
+        errors.push('Nome do cliente é obrigatório');
+      }
+      if (!dadosEnergiaSolar.dadosContaLuz?.consumo_atual || dadosEnergiaSolar.dadosContaLuz.consumo_atual <= 0) {
+        errors.push('Consumo atual deve ser maior que zero');
+      }
+      if (!dadosEnergiaSolar.dadosContaLuz?.concessionaria) {
+        errors.push('Concessionária é obrigatória');
+      }
+      if (!dadosEnergiaSolar.consumoMedio || dadosEnergiaSolar.consumoMedio <= 0) {
+        errors.push('Consumo médio deve ser calculado');
+      }
+      return { valid: errors.length === 0, errors };
+    }
 
     // Para materiais de construção, usar interface específica
     if (tipoProposta === 'materiais-construcao') {
@@ -162,8 +226,25 @@ export class DifyService {
     return { valid: errors.length === 0, errors };
   }
 
-  formatarDadosParaExibicao(dados: DadosExtraidos | DadosMateriaisConstrucao, tipoProposta: string): Record<string, any> {
+  formatarDadosParaExibicao(dados: DadosExtraidos | DadosMateriaisConstrucao | DadosEnergiaSolarCompletos, tipoProposta: string): Record<string, any> {
     const formatado: Record<string, any> = {};
+
+    // Para energia solar, usar interface específica
+    if (tipoProposta === 'energia-solar') {
+      const dadosEnergiaSolar = dados as DadosEnergiaSolarCompletos;
+      const contaLuz = dadosEnergiaSolar.dadosContaLuz;
+      
+      formatado['Cliente'] = contaLuz.nome_cliente;
+      formatado['Endereço'] = contaLuz.endereco;
+      formatado['Concessionária'] = contaLuz.concessionaria;
+      formatado['Unidade Consumidora'] = contaLuz.numero_instalacao;
+      formatado['Consumo Atual'] = `${contaLuz.consumo_atual || 0} kWh`;
+      formatado['Consumo Médio (24 meses)'] = `${dadosEnergiaSolar.consumoMedio} kWh`;
+      formatado['Tarifa kWh'] = `R$ ${contaLuz.preco_kw?.toFixed(4) || dadosEnergiaSolar.tarifaKwh.toFixed(4)}`;
+      formatado['Valor Conta'] = `R$ ${contaLuz.valor_total?.toFixed(2) || '0,00'}`;
+      formatado['Mês Referência'] = contaLuz.mes_referencia;
+      return formatado;
+    }
 
     // Para materiais de construção, usar interface específica
     if (tipoProposta === 'materiais-construcao') {
@@ -173,7 +254,6 @@ export class DifyService {
       formatado['Telefone'] = dadosMateriais.telefone_do_cliente;
       formatado['Valor do Frete'] = `R$ ${dadosMateriais.valor_frete?.toFixed(2) || '0,00'}`;
       formatado['Valor Total'] = `R$ ${dadosMateriais.valor_total_proposta?.toFixed(2) || '0,00'}`;
-      // Produtos não são incluídos aqui pois há tabela específica para isso
       return formatado;
     }
 
@@ -195,11 +275,6 @@ export class DifyService {
       formatado['Valor Total'] = `R$ ${dadosUnificados.valor_total_proposta?.toFixed(2) || '0,00'}`;
     }
     
-    // Não incluir produtos nos dados formatados pois há tabela específica para isso
-    // if (dadosUnificados.produtos && dadosUnificados.produtos.length > 0) {
-    //   formatado['Produtos'] = dadosUnificados.produtos;
-    // }
-    
     if (dadosUnificados.observacoes) {
       formatado['Observações'] = dadosUnificados.observacoes;
     }
@@ -219,7 +294,7 @@ export class DifyService {
     imagemUrl: string,
     clienteNome: string,
     clienteEmail: string
-  ): Promise<{ sucesso: boolean; dados?: DadosContaLuz; erro?: string }> {
+  ): Promise<{ sucesso: boolean; dados?: DadosEnergiaSolarCompletos; erro?: string }> {
     try {
       console.log('Processando conta de luz:', { imagemUrl, clienteNome, clienteEmail });
 
@@ -236,8 +311,39 @@ export class DifyService {
         throw new Error(`Erro no processamento da conta de luz: ${error.message}`);
       }
 
-      console.log('Processamento da conta de luz concluído:', data);
-      return data;
+      if (!data.sucesso || !data.dados) {
+        throw new Error(data.erro || 'Dados da conta de luz não foram extraídos');
+      }
+
+      const dadosContaLuz = data.dados as DadosContaLuz;
+      
+      // Calcular consumo médio baseado no histórico de 24 meses
+      const consumoMedio = this.calcularConsumoMedio(dadosContaLuz.historico_consumo);
+      
+      // Extrair cidade e estado do endereço
+      const { cidade, estado } = this.extrairCidadeEstado(dadosContaLuz.endereco);
+      
+      // Determinar tipo de instalação baseado no consumo
+      const tipoInstalacao = this.determinarTipoInstalacao(consumoMedio);
+      
+      // Definir tarifa kWh (usar da conta ou padrão)
+      const tarifaKwh = dadosContaLuz.preco_kw || 0.75;
+
+      const dadosCompletos: DadosEnergiaSolarCompletos = {
+        dadosContaLuz,
+        consumoMedio,
+        cidade,
+        estado,
+        tipoInstalacao,
+        tarifaKwh
+      };
+
+      console.log('Processamento da conta de luz concluído:', dadosCompletos);
+      
+      return {
+        sucesso: true,
+        dados: dadosCompletos
+      };
 
     } catch (error) {
       console.error('Erro no serviço de conta de luz:', error);
@@ -245,6 +351,61 @@ export class DifyService {
         sucesso: false,
         erro: error.message || 'Erro desconhecido no processamento da conta de luz'
       };
+    }
+  }
+
+  private calcularConsumoMedio(historico: HistoricoConsumo): number {
+    const consumos: number[] = [];
+    
+    // Adicionar consumos do ano atual
+    Object.values(historico.dados_ano_atual.meses).forEach(consumo => {
+      if (consumo && consumo > 0) {
+        consumos.push(consumo);
+      }
+    });
+    
+    // Adicionar consumos do ano anterior
+    Object.values(historico.dados_ano_anterior.meses).forEach(consumo => {
+      if (consumo && consumo > 0) {
+        consumos.push(consumo);
+      }
+    });
+    
+    if (consumos.length === 0) {
+      return 0;
+    }
+    
+    const soma = consumos.reduce((acc, curr) => acc + curr, 0);
+    return Math.round(soma / consumos.length);
+  }
+
+  private extrairCidadeEstado(endereco: string): { cidade: string; estado: string } {
+    // Extrair cidade e estado do endereço usando padrões comuns
+    const enderecoLimpo = endereco.replace(/[^\w\s,-]/g, '').trim();
+    const partes = enderecoLimpo.split(',').map(p => p.trim());
+    
+    // Padrão: últimas partes geralmente são cidade, estado
+    if (partes.length >= 2) {
+      const estado = partes[partes.length - 1];
+      const cidade = partes[partes.length - 2];
+      return { cidade, estado };
+    }
+    
+    // Fallback: tentar extrair palavras que podem ser cidade/estado
+    const palavras = enderecoLimpo.split(/\s+/);
+    return {
+      cidade: palavras[palavras.length - 2] || 'São Paulo',
+      estado: palavras[palavras.length - 1] || 'SP'
+    };
+  }
+
+  private determinarTipoInstalacao(consumoMedio: number): 'residencial' | 'comercial' | 'industrial' {
+    if (consumoMedio <= 500) {
+      return 'residencial';
+    } else if (consumoMedio <= 2000) {
+      return 'comercial';
+    } else {
+      return 'industrial';
     }
   }
 }

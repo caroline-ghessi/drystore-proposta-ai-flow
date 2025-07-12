@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { CheckCircle, Edit3, Calculator } from "lucide-react"
 import { PropostaData } from "../PropostaWizard"
-import { difyService, DadosMateriaisConstrucao } from "@/services/difyService"
+import { difyService, DadosMateriaisConstrucao, DadosEnergiaSolarCompletos } from "@/services/difyService"
 import { ProdutosTable } from "@/components/ProdutosTable"
+import { DadosContaLuzDisplay } from "./DadosContaLuzDisplay"
 
 interface StepReviewProps {
   propostaData: PropostaData;
@@ -45,9 +46,12 @@ export function StepReview({
     ? difyService.formatarDadosParaExibicao(propostaData.dadosExtraidos, propostaData.tipoProposta)
     : {}
 
+  const isEnergiaSolar = propostaData.tipoProposta === 'energia-solar';
   const isMateriaisConstrucao = ['materiais-construcao', 'tintas-texturas', 'verga-fibra', 'argamassa-silentfloor', 'light-steel-frame'].includes(propostaData.tipoProposta);
+  
+  const dadosEnergiaSolar = isEnergiaSolar ? propostaData.dadosExtraidos as DadosEnergiaSolarCompletos : null;
   const dadosMateriais = isMateriaisConstrucao ? propostaData.dadosExtraidos as DadosMateriaisConstrucao : null;
-  const dadosUnificados = !isMateriaisConstrucao ? propostaData.dadosExtraidos as any : null;
+  const dadosUnificados = !isMateriaisConstrucao && !isEnergiaSolar ? propostaData.dadosExtraidos as any : null;
   
   // Verificar se há produtos em qualquer tipo de proposta
   const temProdutos = dadosMateriais?.produtos?.length > 0 || dadosUnificados?.produtos?.length > 0;
@@ -99,9 +103,27 @@ export function StepReview({
         </p>
       </div>
 
+      {/* Dados da Conta de Luz - Para energia solar */}
+      {isEnergiaSolar && dadosEnergiaSolar && (
+        <div className="col-span-full">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                Dados da Conta de Luz
+                <Badge variant="secondary">{TIPO_LABELS[propostaData.tipoProposta as keyof typeof TIPO_LABELS]}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DadosContaLuzDisplay dados={dadosEnergiaSolar} />
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Dados Extraídos - Só para não-materiais */}
-        {!isMateriaisConstrucao && (
+        {/* Dados Extraídos - Só para não-materiais e não-energia-solar */}
+        {!isMateriaisConstrucao && !isEnergiaSolar && (
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -140,7 +162,7 @@ export function StepReview({
               <Label htmlFor="review-nome">Nome Completo</Label>
               <Input
                 id="review-nome"
-                value={propostaData.clienteNome || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente || ''}
+                value={propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente || ''}
                 onChange={(e) => onDataChange({ clienteNome: e.target.value })}
               />
             </div>
@@ -168,7 +190,7 @@ export function StepReview({
               <Label htmlFor="review-endereco">Endereço</Label>
               <Input
                 id="review-endereco"
-                value={propostaData.clienteEndereco || ''}
+                value={propostaData.clienteEndereco || dadosEnergiaSolar?.dadosContaLuz.endereco || ''}
                 onChange={(e) => onDataChange({ clienteEndereco: e.target.value })}
                 placeholder="Endereço completo"
               />
@@ -275,7 +297,7 @@ export function StepReview({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">Cliente:</span>
-                <p className="font-medium">{propostaData.clienteNome || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente || 'Não informado'}</p>
+                <p className="font-medium">{propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente || 'Não informado'}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Tipo:</span>
@@ -310,10 +332,10 @@ export function StepReview({
           onClick={() => {
             // Prepare complete data
             const dadosCompletos = {
-              clienteNome: propostaData.clienteNome || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente || '',
+              clienteNome: propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente || '',
               clienteEmail: propostaData.clienteEmail || '',
               clienteWhatsapp: propostaData.clienteWhatsapp || dadosMateriais?.telefone_do_cliente || dadosUnificados?.telefone_do_cliente || '',
-              clienteEndereco: propostaData.clienteEndereco || '',
+              clienteEndereco: propostaData.clienteEndereco || dadosEnergiaSolar?.dadosContaLuz.endereco || '',
               valorTotal: temProdutos 
                 ? (dadosMateriais?.valor_total_proposta || dadosUnificados?.valor_total_proposta) 
                 : propostaData.valorTotal,
@@ -327,7 +349,7 @@ export function StepReview({
             });
           }}
           disabled={
-            !(propostaData.clienteNome || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente) ||
+            !(propostaData.clienteNome || dadosEnergiaSolar?.dadosContaLuz.nome_cliente || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente) ||
             !propostaData.clienteEmail
           }
           className="bg-primary hover:bg-primary/90"
