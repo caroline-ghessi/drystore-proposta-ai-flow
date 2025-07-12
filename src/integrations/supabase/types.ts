@@ -213,6 +213,8 @@ export type Database = {
           email: string
           id: string
           nome: string
+          senha: string | null
+          tipo: Database["public"]["Enums"]["tipo_usuario_enum"]
           updated_at: string
           whatsapp: string | null
         }
@@ -222,6 +224,8 @@ export type Database = {
           email: string
           id?: string
           nome: string
+          senha?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_usuario_enum"]
           updated_at?: string
           whatsapp?: string | null
         }
@@ -231,6 +235,8 @@ export type Database = {
           email?: string
           id?: string
           nome?: string
+          senha?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_usuario_enum"]
           updated_at?: string
           whatsapp?: string | null
         }
@@ -266,6 +272,7 @@ export type Database = {
         | "verga-fibra"
         | "argamassa-silentfloor"
         | "light-steel-frame"
+      tipo_usuario_enum: "administrador" | "vendedor" | "representante"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -418,6 +425,7 @@ export const Constants = {
         "argamassa-silentfloor",
         "light-steel-frame",
       ],
+      tipo_usuario_enum: ["administrador", "vendedor", "representante"],
     },
   },
 } as const

@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
+import { useUserRole } from "@/hooks/useUserRole"
 import { 
   Home, 
   FileText, 
@@ -61,6 +62,16 @@ export function DryStoreSidebar() {
   const navigate = useNavigate()
   const currentPath = location.pathname
   const collapsed = state === "collapsed"
+  
+  const { 
+    canAccessAdmin, 
+    canViewProducts, 
+    canViewAllPropostas,
+    usuario,
+    isAdmin,
+    isVendedor,
+    isRepresentante 
+  } = useUserRole()
 
   const isActive = (path: string) => currentPath === path
   const handleNavigation = (url: string) => {
@@ -114,46 +125,54 @@ export function DryStoreSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    onClick={() => handleNavigation(item.url)}
-                    className={getNavCls({ isActive: isActive(item.url) })}
-                    style={getButtonStyles(isActive(item.url))}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {!collapsed && <span style={{ color: 'inherit' }}>{item.title}</span>}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {mainItems.map((item) => {
+                // Controle de acesso para itens principais
+                if (item.url === '/propostas' && !canViewAllPropostas()) return null;
+                if (isRepresentante && item.url === '/clientes') return null; // Representantes só veem clientes limitados
+                
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      onClick={() => handleNavigation(item.url)}
+                      className={getNavCls({ isActive: isActive(item.url) })}
+                      style={getButtonStyles(isActive(item.url))}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span style={{ color: 'inherit' }}>{item.title}</span>}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel 
-            className={collapsed ? "sr-only" : "font-semibold text-sm"}
-            style={{ color: 'hsl(var(--sidebar-foreground))' }}
-          >
-            Produtos
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {productsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    onClick={() => handleNavigation(item.url)}
-                    className={getNavCls({ isActive: isActive(item.url) })}
-                    style={getButtonStyles(isActive(item.url))}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {!collapsed && <span style={{ color: 'inherit' }}>{item.title}</span>}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {canViewProducts() && (
+          <SidebarGroup>
+            <SidebarGroupLabel 
+              className={collapsed ? "sr-only" : "font-semibold text-sm"}
+              style={{ color: 'hsl(var(--sidebar-foreground))' }}
+            >
+              Produtos
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {productsItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      onClick={() => handleNavigation(item.url)}
+                      className={getNavCls({ isActive: isActive(item.url) })}
+                      style={getButtonStyles(isActive(item.url))}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span style={{ color: 'inherit' }}>{item.title}</span>}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         <SidebarGroup>
           <SidebarGroupLabel 
@@ -189,30 +208,32 @@ export function DryStoreSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel 
-            className={collapsed ? "sr-only" : "font-semibold text-sm"}
-            style={{ color: 'hsl(var(--sidebar-foreground))' }}
-          >
-            Administração
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {adminItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    onClick={() => handleNavigation(item.url)}
-                    className={getNavCls({ isActive: isActive(item.url) })}
-                    style={getButtonStyles(isActive(item.url))}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {!collapsed && <span style={{ color: 'inherit' }}>{item.title}</span>}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {canAccessAdmin() && (
+          <SidebarGroup>
+            <SidebarGroupLabel 
+              className={collapsed ? "sr-only" : "font-semibold text-sm"}
+              style={{ color: 'hsl(var(--sidebar-foreground))' }}
+            >
+              Administração
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      onClick={() => handleNavigation(item.url)}
+                      className={getNavCls({ isActive: isActive(item.url) })}
+                      style={getButtonStyles(isActive(item.url))}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span style={{ color: 'inherit' }}>{item.title}</span>}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {!collapsed && (
           <div className="mt-6 p-4 bg-gradient-card rounded-lg border border-border shadow-card">
