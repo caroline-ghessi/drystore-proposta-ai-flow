@@ -16,7 +16,7 @@ interface StepReviewProps {
   propostaData: PropostaData;
   onDataChange: (data: Partial<PropostaData>) => void;
   onBack: () => void;
-  onComplete: (options?: { ocultarPrecosUnitarios: boolean }) => void;
+  onComplete: (options?: { ocultarPrecosUnitarios: boolean; dadosCompletos?: Partial<PropostaData> }) => void;
 }
 
 const TIPO_LABELS = {
@@ -304,7 +304,7 @@ export function StepReview({
         </Button>
         <Button 
           onClick={() => {
-            // Ensure all client data is complete before proceeding
+            // Prepare complete data
             const dadosCompletos = {
               clienteNome: propostaData.clienteNome || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente || '',
               clienteEmail: propostaData.clienteEmail || '',
@@ -316,13 +316,11 @@ export function StepReview({
               observacoes: propostaData.observacoes || ''
             };
             
-            // Update data first
-            onDataChange(dadosCompletos);
-            
-            // Then proceed with completion
-            setTimeout(() => {
-              onComplete({ ocultarPrecosUnitarios });
-            }, 100);
+            // Pass complete data directly to onComplete
+            onComplete({ 
+              ocultarPrecosUnitarios,
+              dadosCompletos 
+            });
           }}
           disabled={
             !(propostaData.clienteNome || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente) ||

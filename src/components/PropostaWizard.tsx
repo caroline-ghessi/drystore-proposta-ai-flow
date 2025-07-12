@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 import { StepSelector } from "./wizard/StepSelector"
@@ -46,6 +46,8 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
   })
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pendingStepData, setPendingStepData] = useState<Partial<PropostaData> | null>(null)
+  const shouldProceedToNext = useRef(false)
 
   const handleNext = () => {
     if (currentStep < STEPS.length - 1) {
@@ -66,6 +68,16 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
       return updated;
     });
   }
+
+  // Effect to handle state updates and proceed to next step when needed
+  useEffect(() => {
+    if (shouldProceedToNext.current && pendingStepData) {
+      console.log('State updated, proceeding to next step with data:', propostaData);
+      shouldProceedToNext.current = false;
+      setPendingStepData(null);
+      handleNext();
+    }
+  }, [propostaData])
 
   const handleReset = () => {
     setCurrentStep(0)
@@ -165,11 +177,24 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
               onDataChange={handleStepData}
               onBack={handleBack}
               onComplete={(options) => {
-                console.log('StepReview completed with data:', propostaData);
-                if (options?.ocultarPrecosUnitarios !== undefined) {
-                  handleStepData({ ocultar_precos_unitarios: options.ocultarPrecosUnitarios });
+                console.log('StepReview completed with options:', options);
+                
+                // Update with complete data if provided
+                if (options?.dadosCompletos) {
+                  const updateData = {
+                    ...options.dadosCompletos,
+                    ocultar_precos_unitarios: options.ocultarPrecosUnitarios
+                  };
+                  setPendingStepData(updateData);
+                  shouldProceedToNext.current = true;
+                  handleStepData(updateData);
+                } else {
+                  // No data update needed, proceed directly
+                  if (options?.ocultarPrecosUnitarios !== undefined) {
+                    handleStepData({ ocultar_precos_unitarios: options.ocultarPrecosUnitarios });
+                  }
+                  handleNext();
                 }
-                handleNext();
               }}
             />
           )}
