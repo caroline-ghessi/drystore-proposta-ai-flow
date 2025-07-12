@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -36,25 +37,27 @@ const App = () => (
       <AuthProvider>
         <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/propostas" element={<Propostas />} />
-          <Route path="/clientes" element={<Clientes />} />
-          <Route path="/energia-solar" element={<EnergiaSolar />} />
-          <Route path="/materiais" element={<Materiais />} />
-          <Route path="/ranking" element={<Ranking />} />
-          
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/propostas" element={<AdminPropostas />} />
-          <Route path="/admin/usuarios" element={<AdminUsuarios />} />
-          <Route path="/admin/produtos" element={<AdminProdutos />} />
-          <Route path="/admin/layouts-propostas" element={<AdminLayoutsPropostas />} />
-          <Route path="/admin/configuracoes" element={<AdminConfiguracoes />} />
-          <Route path="/equipamentos-solar" element={<EquipamentosSolar />} />
-          <Route path="/cliente-portal" element={<ClientePortal />} />
-          <Route path="/proposta/:urlUnica" element={<PropostaCliente />} />
-          <Route path="/processamento" element={<ProcessamentoProposta />} />
           <Route path="/login-cliente" element={<LoginCliente />} />
+          <Route path="/proposta/:urlUnica" element={<PropostaCliente />} />
+          
+          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/propostas" element={<ProtectedRoute><Propostas /></ProtectedRoute>} />
+          <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
+          <Route path="/energia-solar" element={<ProtectedRoute><EnergiaSolar /></ProtectedRoute>} />
+          <Route path="/materiais" element={<ProtectedRoute><Materiais /></ProtectedRoute>} />
+          <Route path="/ranking" element={<ProtectedRoute><Ranking /></ProtectedRoute>} />
+          <Route path="/equipamentos-solar" element={<ProtectedRoute><EquipamentosSolar /></ProtectedRoute>} />
+          <Route path="/cliente-portal" element={<ProtectedRoute><ClientePortal /></ProtectedRoute>} />
+          <Route path="/processamento" element={<ProtectedRoute><ProcessamentoProposta /></ProtectedRoute>} />
+          
+          <Route path="/admin" element={<ProtectedRoute requiredRoles={['administrador']}><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin/propostas" element={<ProtectedRoute requiredRoles={['administrador']}><AdminPropostas /></ProtectedRoute>} />
+          <Route path="/admin/usuarios" element={<ProtectedRoute requiredRoles={['administrador']}><AdminUsuarios /></ProtectedRoute>} />
+          <Route path="/admin/produtos" element={<ProtectedRoute requiredRoles={['administrador']}><AdminProdutos /></ProtectedRoute>} />
+          <Route path="/admin/layouts-propostas" element={<ProtectedRoute requiredRoles={['administrador']}><AdminLayoutsPropostas /></ProtectedRoute>} />
+          <Route path="/admin/configuracoes" element={<ProtectedRoute requiredRoles={['administrador']}><AdminConfiguracoes /></ProtectedRoute>} />
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

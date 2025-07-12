@@ -3,8 +3,15 @@ import { DryStoreSidebar } from "@/components/DryStoreSidebar"
 import { Dashboard } from "@/components/Dashboard"
 import { Bell, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/hooks/useAuth"
 
 const Index = () => {
+  const { usuario, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -24,10 +31,13 @@ const Index = () => {
               </div>
               
               <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground hidden sm:block">
+                  {usuario?.nome}
+                </span>
                 <Button variant="ghost" size="sm">
                   <Bell className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
                   <User className="h-4 w-4" />
                 </Button>
               </div>

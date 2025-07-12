@@ -73,6 +73,22 @@ export function DryStoreSidebar() {
     isRepresentante 
   } = useUserRole()
 
+  // Se não há usuário carregado ainda, mostra loading
+  if (!usuario) {
+    return (
+      <Sidebar
+        className={`${collapsed ? "w-16" : "w-64"} border-r border-border bg-card transition-all duration-300`}
+        collapsible="icon"
+      >
+        <SidebarContent>
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          </div>
+        </SidebarContent>
+      </Sidebar>
+    );
+  }
+
   const isActive = (path: string) => currentPath === path
   const handleNavigation = (url: string) => {
     navigate(url);
