@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
 import { usePropostas } from "@/hooks/usePropostas"
+import DivisoriasPropostaPage from "@/components/propostas/DivisoriasPropostaPage"
 import { 
   CheckCircle, 
   Zap, 
@@ -142,7 +143,17 @@ const PropostaClientePage = () => {
     );
   }
 
-  // Extrair dados da proposta ou usar valores padrão
+  // Detectar tipo de proposta e renderizar página específica
+  if (proposta.tipo_proposta === 'divisorias') {
+    return (
+      <DivisoriasPropostaPage 
+        proposta={proposta}
+        onAceitarProposta={handleAceitarProposta}
+      />
+    )
+  }
+
+  // Fallback para energia solar e outros tipos (página atual)
   const dadosProposta = {
     cliente: proposta.cliente_nome || "Cliente",
     endereco: proposta.cliente_endereco || "Endereço não informado",
