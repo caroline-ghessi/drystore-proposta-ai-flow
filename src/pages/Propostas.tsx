@@ -44,20 +44,28 @@ export function Propostas() {
 
   const handleCriarProposta = async (data: PropostaData) => {
     try {
+      console.log('Criando proposta com dados completos:', data);
+      
+      // Garantir que temos o nome do cliente
+      if (!data.clienteNome) {
+        throw new Error('Nome do cliente é obrigatório');
+      }
+      
       const novaProposta = await criarProposta({
         cliente_nome: data.clienteNome,
         cliente_email: data.clienteEmail,
-        cliente_whatsapp: data.clienteWhatsapp,
-        cliente_endereco: data.clienteEndereco,
+        cliente_whatsapp: data.clienteWhatsapp || '',
+        cliente_endereco: data.clienteEndereco || '',
         tipo_proposta: data.tipoProposta,
-        arquivo_original: data.arquivoUrl,
+        arquivo_original: data.arquivoUrl || '',
         dados_extraidos: data.dadosExtraidos,
         valor_total: data.valorTotal,
-        observacoes: data.observacoes
+        observacoes: data.observacoes || '',
+        ocultar_precos_unitarios: data.ocultar_precos_unitarios || false
       })
 
       if (novaProposta) {
-        console.log('Proposta criada:', novaProposta)
+        console.log('Proposta criada com sucesso:', novaProposta)
         await fetchPropostas()
         navigate(`/proposta/${novaProposta.url_unica}`)
       }

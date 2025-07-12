@@ -304,16 +304,25 @@ export function StepReview({
         </Button>
         <Button 
           onClick={() => {
-            // Ensure client data is updated before proceeding
-            const nomeCliente = propostaData.clienteNome || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente;
-            const whatsappCliente = propostaData.clienteWhatsapp || dadosMateriais?.telefone_do_cliente || dadosUnificados?.telefone_do_cliente;
+            // Ensure all client data is complete before proceeding
+            const dadosCompletos = {
+              clienteNome: propostaData.clienteNome || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente || '',
+              clienteEmail: propostaData.clienteEmail || '',
+              clienteWhatsapp: propostaData.clienteWhatsapp || dadosMateriais?.telefone_do_cliente || dadosUnificados?.telefone_do_cliente || '',
+              clienteEndereco: propostaData.clienteEndereco || '',
+              valorTotal: temProdutos 
+                ? (dadosMateriais?.valor_total_proposta || dadosUnificados?.valor_total_proposta) 
+                : propostaData.valorTotal,
+              observacoes: propostaData.observacoes || ''
+            };
             
-            onDataChange({
-              clienteNome: nomeCliente,
-              clienteWhatsapp: whatsappCliente
-            });
+            // Update data first
+            onDataChange(dadosCompletos);
             
-            onComplete({ ocultarPrecosUnitarios });
+            // Then proceed with completion
+            setTimeout(() => {
+              onComplete({ ocultarPrecosUnitarios });
+            }, 100);
           }}
           disabled={
             !(propostaData.clienteNome || dadosMateriais?.nome_do_cliente || dadosUnificados?.nome_do_cliente) ||

@@ -20,6 +20,7 @@ export interface PropostaData {
   dadosExtraidos?: any;
   valorTotal?: number;
   observacoes?: string;
+  ocultar_precos_unitarios?: boolean;
 }
 
 interface PropostaWizardProps {
@@ -59,7 +60,11 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
   }
 
   const handleStepData = (data: Partial<PropostaData>) => {
-    setPropostaData(prev => ({ ...prev, ...data }))
+    setPropostaData(prev => {
+      const updated = { ...prev, ...data };
+      console.log('PropostaWizard - Updating data:', data, 'New state:', updated);
+      return updated;
+    });
   }
 
   const handleReset = () => {
@@ -159,7 +164,13 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
               propostaData={propostaData}
               onDataChange={handleStepData}
               onBack={handleBack}
-              onComplete={handleNext}
+              onComplete={(options) => {
+                console.log('StepReview completed with data:', propostaData);
+                if (options?.ocultarPrecosUnitarios !== undefined) {
+                  handleStepData({ ocultar_precos_unitarios: options.ocultarPrecosUnitarios });
+                }
+                handleNext();
+              }}
             />
           )}
 

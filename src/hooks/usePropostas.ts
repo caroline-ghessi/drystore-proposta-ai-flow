@@ -40,6 +40,7 @@ export interface CriarPropostaData {
   forma_pagamento?: string;
   observacoes?: string;
   arquivo_original?: string;
+  ocultar_precos_unitarios?: boolean;
 }
 
 export function usePropostas() {
