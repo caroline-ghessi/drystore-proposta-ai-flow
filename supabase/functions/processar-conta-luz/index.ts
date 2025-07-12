@@ -90,7 +90,11 @@ serve(async (req) => {
       body: JSON.stringify({
         app_id: difyAppId,
         inputs: {
-          image_file: imagemUrl,
+          image_file: {
+            transfer_method: "remote_url",
+            type: "image",
+            url: imagemUrl
+          },
           cliente_nome: clienteNome,
           cliente_email: clienteEmail
         },
@@ -119,11 +123,11 @@ serve(async (req) => {
         numero_instalacao: outputs.numero_instalacao || '',
         data_emissao: outputs.data_emissao || new Date().toLocaleDateString('pt-BR'),
         mes_referencia: outputs.mes_referencia || '',
-        preco_kw: outputs.preco_kw ? parseFloat(outputs.preco_kw) : null,
-        concessionaria: outputs.concessionaria || '',
-        consumo_atual: outputs.consumo_atual ? parseFloat(outputs.consumo_atual) : null,
-        valor_total: outputs.valor_total ? parseFloat(outputs.valor_total) : null,
-        historico_consumo: outputs.historico_consumo || {
+        preco_kw: outputs.preco_kw !== undefined ? parseFloat(outputs.preco_kw) : null,
+        concessionaria: outputs.concessionaria || 'Não identificada',
+        consumo_atual: outputs.consumo_atual !== undefined ? parseFloat(outputs.consumo_atual) : null,
+        valor_total: outputs.valor_total !== undefined ? parseFloat(outputs.valor_total) : null,
+        historico_consumo: {
           dados_ano_atual: {
             ano: new Date().getFullYear(),
             meses: {
@@ -144,20 +148,32 @@ serve(async (req) => {
         }
       };
 
-      // Validar dados essenciais
-      const dadosValidos = dadosExtraidos.consumo_atual && dadosExtraidos.consumo_atual > 0 && 
-                          dadosExtraidos.endereco.trim() !== '';
+      // Sobrescrever historico_consumo apenas com dados parciais se presentes
+      if (outputs.historico_consumo) {
+        dadosExtraidos.historico_consumo = {
+          ...dadosExtraidos.historico_consumo,
+          ...outputs.historico_consumo
+        };
+      }
+
+      // Validação mais robusta
+      const dadosValidos = [
+        dadosExtraidos.nome_cliente.trim() !== '',
+        dadosExtraidos.endereco.trim() !== '',
+        dadosExtraidos.consumo_atual !== null && !isNaN(dadosExtraidos.consumo_atual) && dadosExtraidos.consumo_atual > 0,
+        dadosExtraidos.preco_kw !== null && !isNaN(dadosExtraidos.preco_kw) && dadosExtraidos.preco_kw > 0
+      ].every(Boolean);
 
       if (!dadosValidos) {
-        console.warn('Dados extraídos incompletos:', dadosExtraidos);
+        console.warn('Dados extraídos incompletos ou inválidos:', dadosExtraidos);
       }
 
       const resultado: ProcessamentoResult = {
         sucesso: true,
         dados: dadosExtraidos,
         detalhes: {
-          workflow_id: difyResult.workflow_run_id,
-          tempo_processamento: difyResult.elapsed_time
+          workflow_id: difyResult.workflow_run_id || 'não disponível',
+          tempo_processamento: difyResult.elapsed_time || 0
         }
       };
 
@@ -176,7 +192,7 @@ serve(async (req) => {
     const resultado: ProcessamentoResult = {
       sucesso: false,
       erro: error.message || 'Erro desconhecido no processamento',
-      detalhes: error
+      detalhes: error.stack || error.toString()
     };
 
     return new Response(JSON.stringify(resultado), {
