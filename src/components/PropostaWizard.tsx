@@ -5,6 +5,7 @@ import { StepSelector } from "./wizard/StepSelector"
 import { StepUpload } from "./wizard/StepUpload"
 import { StepProcessing } from "./wizard/StepProcessing"
 import { StepReview } from "./wizard/StepReview"
+import { StepCalculoSolar } from "./wizard/StepCalculoSolar"
 import { StepGenerate } from "./wizard/StepGenerate"
 
 export type TipoProposta = 'energia-solar' | 'telhas' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao' | 'tintas-texturas' | 'verga-fibra' | 'argamassa-silentfloor' | 'light-steel-frame'
@@ -31,11 +32,20 @@ interface PropostaWizardProps {
   onComplete: (data: PropostaData) => Promise<void>;
 }
 
-const STEPS = [
+const STEPS_DEFAULT = [
   { title: "Tipo de Proposta", description: "Selecione o tipo de proposta" },
   { title: "Upload de PDF", description: "Envie o documento" },
   { title: "Extração de Dados", description: "Processamento automático" },
   { title: "Validar Dados", description: "Revisar e completar informações" },
+  { title: "Gerar Proposta", description: "Confirmar e criar proposta" }
+]
+
+const STEPS_ENERGIA_SOLAR = [
+  { title: "Tipo de Proposta", description: "Selecione o tipo de proposta" },
+  { title: "Upload da Conta de Luz", description: "Envie a conta de luz" },
+  { title: "Extração de Dados", description: "Processamento automático" },
+  { title: "Confirmação dos Dados", description: "Validar dados do cliente" },
+  { title: "Cálculos da Usina Solar", description: "Dimensionamento automático" },
   { title: "Gerar Proposta", description: "Confirmar e criar proposta" }
 ]
 
@@ -106,6 +116,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
     }
   }
 
+  const STEPS = propostaData.tipoProposta === 'energia-solar' ? STEPS_ENERGIA_SOLAR : STEPS_DEFAULT
   const progress = ((currentStep + 1) / STEPS.length) * 100
 
   return (
@@ -173,7 +184,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             />
           )}
 
-          {currentStep === 3 && (
+          {currentStep === 3 && propostaData.tipoProposta !== 'energia-solar' && (
             <StepReview
               propostaData={propostaData}
               onDataChange={handleStepData}
@@ -201,7 +212,41 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             />
           )}
 
-          {currentStep === 4 && (
+          {currentStep === 3 && propostaData.tipoProposta === 'energia-solar' && (
+            <StepReview
+              propostaData={propostaData}
+              onDataChange={handleStepData}
+              onBack={handleBack}
+              onComplete={(options) => {
+                console.log('StepReview completed with options:', options);
+                
+                // For energia solar, just update data and proceed
+                if (options?.dadosCompletos) {
+                  const updateData = {
+                    ...options.dadosCompletos,
+                    ocultar_precos_unitarios: options.ocultarPrecosUnitarios
+                  };
+                  setPendingStepData(updateData);
+                  shouldProceedToNext.current = true;
+                  handleStepData(updateData);
+                } else {
+                  handleNext();
+                }
+              }}
+            />
+          )}
+
+          {currentStep === 4 && propostaData.tipoProposta === 'energia-solar' && (
+            <StepCalculoSolar
+              propostaData={propostaData}
+              onDataChange={handleStepData}
+              onBack={handleBack}
+              onNext={handleNext}
+            />
+          )}
+
+          {((currentStep === 4 && propostaData.tipoProposta !== 'energia-solar') || 
+            (currentStep === 5 && propostaData.tipoProposta === 'energia-solar')) && (
             <StepGenerate
               propostaData={propostaData}
               onBack={handleBack}
