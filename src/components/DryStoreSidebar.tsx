@@ -53,7 +53,6 @@ const adminItems = [
   { title: "Produtos", url: "/admin/produtos", icon: Building2 },
   { title: "Layouts", url: "/admin/layouts-propostas", icon: Zap },
   { title: "Configurações", url: "/admin/configuracoes", icon: Shield },
-  { title: "Equipamentos Solar", url: "/equipamentos-solar", icon: Sun },
 ]
 
 export function DryStoreSidebar() {

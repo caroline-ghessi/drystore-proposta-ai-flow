@@ -395,8 +395,8 @@ export function Dashboard() {
               <Plus className="h-4 w-4 mr-2" />
               Nova Proposta Solar
             </Button>
-            <Button variant="drysolar-outline" size="sm" className="w-full" onClick={() => navigate('/equipamentos-solar')}>
-              Ver Equipamentos
+            <Button variant="drysolar-outline" size="sm" className="w-full" onClick={() => navigate('/admin/produtos')}>
+              Gerenciar Produtos
             </Button>
           </CardContent>
         </Card>
