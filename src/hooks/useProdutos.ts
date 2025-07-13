@@ -220,18 +220,22 @@ export const useProdutos = () => {
     comprimentoCalha: number = 0,
     telhaCodigo: string = '10420',
     corAcessorios: string = 'CINZA',
-    incluirManta: boolean = true
+    incluirManta: boolean = true,
+    incluirCalha: boolean = true
   ): Promise<ResumoOrcamentoShingle> => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.rpc('calcular_orcamento_shingle_completo', {
+      setError(null);
+      
+      const { data, error } = await supabase.rpc('calcular_orcamento_shingle_completo_v2', {
         p_area_telhado: areaTelhado,
         p_comprimento_cumeeira: comprimentoCumeeira,
         p_perimetro_telhado: perimetroTelhado,
         p_comprimento_calha: comprimentoCalha,
         p_telha_codigo: telhaCodigo,
         p_cor_acessorios: corAcessorios,
-        p_incluir_manta: incluirManta
+        p_incluir_manta: incluirManta,
+        p_incluir_calha: incluirCalha
       });
 
       if (error) throw error;
