@@ -57,14 +57,25 @@ export type Database = {
       }
       calculos_impermeabilizacao: {
         Row: {
+          altura_subida: number | null
           area_aplicacao: number
+          area_total_impermeabilizar: number | null
+          area_vertical: number | null
+          com_primer: boolean | null
+          com_protecao_mecanica: boolean | null
+          com_tela: boolean | null
+          com_transito: boolean | null
+          contato_agua: string | null
           created_at: string
+          exposicao_uv: boolean | null
           id: string
           inclui_primer: boolean | null
           inclui_reforco_cantos: boolean | null
           numero_demaos: number | null
           observacoes: string | null
+          perimetro: number | null
           proposta_id: string | null
+          quebra_percentual: number | null
           sistema_impermeabilizacao: string | null
           tipo_superficie: string | null
           updated_at: string
@@ -72,14 +83,25 @@ export type Database = {
           valor_total: number | null
         }
         Insert: {
+          altura_subida?: number | null
           area_aplicacao: number
+          area_total_impermeabilizar?: number | null
+          area_vertical?: number | null
+          com_primer?: boolean | null
+          com_protecao_mecanica?: boolean | null
+          com_tela?: boolean | null
+          com_transito?: boolean | null
+          contato_agua?: string | null
           created_at?: string
+          exposicao_uv?: boolean | null
           id?: string
           inclui_primer?: boolean | null
           inclui_reforco_cantos?: boolean | null
           numero_demaos?: number | null
           observacoes?: string | null
+          perimetro?: number | null
           proposta_id?: string | null
+          quebra_percentual?: number | null
           sistema_impermeabilizacao?: string | null
           tipo_superficie?: string | null
           updated_at?: string
@@ -87,14 +109,25 @@ export type Database = {
           valor_total?: number | null
         }
         Update: {
+          altura_subida?: number | null
           area_aplicacao?: number
+          area_total_impermeabilizar?: number | null
+          area_vertical?: number | null
+          com_primer?: boolean | null
+          com_protecao_mecanica?: boolean | null
+          com_tela?: boolean | null
+          com_transito?: boolean | null
+          contato_agua?: string | null
           created_at?: string
+          exposicao_uv?: boolean | null
           id?: string
           inclui_primer?: boolean | null
           inclui_reforco_cantos?: boolean | null
           numero_demaos?: number | null
           observacoes?: string | null
+          perimetro?: number | null
           proposta_id?: string | null
+          quebra_percentual?: number | null
           sistema_impermeabilizacao?: string | null
           tipo_superficie?: string | null
           updated_at?: string
@@ -428,6 +461,69 @@ export type Database = {
         }
         Relationships: []
       }
+      itens_calculo_impermeabilizacao: {
+        Row: {
+          area_aplicacao: number
+          calculo_id: string | null
+          consumo_m2: number
+          created_at: string | null
+          funcao: string
+          id: string
+          ordem_aplicacao: number | null
+          preco_unitario: number
+          produto_id: string | null
+          quantidade_com_quebra: number
+          quantidade_necessaria: number | null
+          unidades_compra: number
+          valor_total: number | null
+        }
+        Insert: {
+          area_aplicacao: number
+          calculo_id?: string | null
+          consumo_m2: number
+          created_at?: string | null
+          funcao: string
+          id?: string
+          ordem_aplicacao?: number | null
+          preco_unitario: number
+          produto_id?: string | null
+          quantidade_com_quebra: number
+          quantidade_necessaria?: number | null
+          unidades_compra: number
+          valor_total?: number | null
+        }
+        Update: {
+          area_aplicacao?: number
+          calculo_id?: string | null
+          consumo_m2?: number
+          created_at?: string | null
+          funcao?: string
+          id?: string
+          ordem_aplicacao?: number | null
+          preco_unitario?: number
+          produto_id?: string | null
+          quantidade_com_quebra?: number
+          quantidade_necessaria?: number | null
+          unidades_compra?: number
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_calculo_impermeabilizacao_calculo_id_fkey"
+            columns: ["calculo_id"]
+            isOneToOne: false
+            referencedRelation: "calculos_impermeabilizacao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_calculo_impermeabilizacao_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos_impermeabilizacao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       itens_orcamento_shingle: {
         Row: {
           created_at: string | null
@@ -674,6 +770,66 @@ export type Database = {
           tensao_v?: number | null
           unidade?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      produtos_impermeabilizacao: {
+        Row: {
+          aplicacoes: string[] | null
+          ativo: boolean | null
+          categoria: string
+          codigo: string
+          consumo_m2: number
+          created_at: string | null
+          fator_multiplicador: number | null
+          id: string
+          nome: string
+          normas: string[] | null
+          preco_unitario: number
+          quantidade_unidade_venda: number
+          quebra_padrao: number | null
+          tipo: string
+          unidade_medida: string
+          unidade_venda: string
+          updated_at: string | null
+        }
+        Insert: {
+          aplicacoes?: string[] | null
+          ativo?: boolean | null
+          categoria: string
+          codigo: string
+          consumo_m2: number
+          created_at?: string | null
+          fator_multiplicador?: number | null
+          id?: string
+          nome: string
+          normas?: string[] | null
+          preco_unitario: number
+          quantidade_unidade_venda: number
+          quebra_padrao?: number | null
+          tipo: string
+          unidade_medida: string
+          unidade_venda: string
+          updated_at?: string | null
+        }
+        Update: {
+          aplicacoes?: string[] | null
+          ativo?: boolean | null
+          categoria?: string
+          codigo?: string
+          consumo_m2?: number
+          created_at?: string | null
+          fator_multiplicador?: number | null
+          id?: string
+          nome?: string
+          normas?: string[] | null
+          preco_unitario?: number
+          quantidade_unidade_venda?: number
+          quebra_padrao?: number | null
+          tipo?: string
+          unidade_medida?: string
+          unidade_venda?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -964,6 +1120,34 @@ export type Database = {
           p_potencia_sistema: number
         }
         Returns: Json
+      }
+      calcular_orcamento_impermeabilizacao: {
+        Args: {
+          p_area_total: number
+          p_tipo_aplicacao?: string
+          p_perimetro?: number
+          p_altura_subida?: number
+          p_com_tela?: boolean
+          p_com_primer?: boolean
+          p_quebra?: number
+          p_produto_principal_id?: string
+        }
+        Returns: {
+          produto_id: string
+          produto_codigo: string
+          produto_nome: string
+          tipo: string
+          funcao: string
+          consumo_m2: number
+          area_aplicacao: number
+          quantidade_necessaria: number
+          quantidade_com_quebra: number
+          unidades_compra: number
+          unidade_venda: string
+          preco_unitario: number
+          valor_total: number
+          ordem: number
+        }[]
       }
       calcular_orcamento_shingle: {
         Args: {
