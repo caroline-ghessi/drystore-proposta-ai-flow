@@ -53,6 +53,11 @@ const TIPOS_PAREDE = [
     descricao: 'Parede resistente à umidade'
   },
   { 
+    value: 'Parede Performa Acústica 95mm', 
+    label: 'Performa 95mm - Alta Performance Acústica',
+    descricao: 'Parede com placa Performa para excelente desempenho acústico'
+  },
+  { 
     value: 'Parede Dupla ST 98mm', 
     label: 'Dupla ST 98mm - Maior Resistência',
     descricao: 'Parede reforçada com maior resistência mecânica'
