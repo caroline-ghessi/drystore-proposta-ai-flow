@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const grokApiKey = Deno.env.get('GROK_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -68,7 +68,7 @@ serve(async (req) => {
       dataVencimento: proposta.data_vencimento
     };
 
-    // Preparar prompt para OpenAI
+    // Preparar prompt para Grok
     const sistemaPrompt = `Você é um especialista em vendas consultivas que gera mensagens de follow-up personalizadas para WhatsApp.
 
 TÉCNICAS DE VENDAS A APLICAR:
@@ -102,16 +102,16 @@ INSTRUÇÕES:
       ? `Melhore a mensagem seguindo esta orientação: ${promptMelhoria}`
       : `Gere uma mensagem de follow-up para ${categoria}`;
 
-    console.log('Chamando OpenAI...');
+    console.log('Chamando Grok...');
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${grokApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'grok-beta',
         messages: [
           { role: 'system', content: sistemaPrompt },
           { role: 'user', content: userPrompt }
@@ -122,7 +122,7 @@ INSTRUÇÕES:
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
+      throw new Error(`Grok API error: ${response.statusText}`);
     }
 
     const data = await response.json();
