@@ -23,6 +23,7 @@ import {
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProdutos, ProdutoShingleCompleto, ResumoOrcamentoShingle } from '@/hooks/useProdutos';
 import { useToast } from '@/hooks/use-toast';
+import { TelhaSelectionCard } from './TelhaSelectionCard';
 
 interface DimensoesTelhadoCompleto {
   area_total_m2: number;
@@ -66,6 +67,7 @@ export function StepCalculoTelhasCompleto({
 
   const [orcamento, setOrcamento] = useState<ResumoOrcamentoShingle | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [showTelhaSelector, setShowTelhaSelector] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     dimensoes: true,
     configuracoes: true,
@@ -313,46 +315,69 @@ export function StepCalculoTelhasCompleto({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="tipo-telha">Tipo de Telha</Label>
-                  <Select
-                    value={dimensoes.tipo_telha}
-                    onValueChange={(value) => handleDimensaoChange('tipo_telha', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a telha" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                        Linha Supreme
-                      </div>
-                      {telhas.filter(t => t.linha === 'SUPREME').map(telha => (
-                        <SelectItem key={telha.codigo} value={telha.codigo}>
-                          <div className="flex justify-between items-center w-full">
-                            <span>{telha.descricao}</span>
-                            <span className="text-xs text-muted-foreground ml-2">
-                              {formatCurrency(telha.preco_unitario)}/pct
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                      
-                      <div className="px-2 py-1 text-xs font-medium text-muted-foreground mt-2">
-                        Linha Duration
-                      </div>
-                      {telhas.filter(t => t.linha === 'DURATION').map(telha => (
-                        <SelectItem key={telha.codigo} value={telha.codigo}>
-                          <div className="flex justify-between items-center w-full">
-                            <span>{telha.descricao}</span>
-                            <span className="text-xs text-muted-foreground ml-2">
-                              {formatCurrency(telha.preco_unitario)}/pct
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {/* Telha Selecionada */}
+                <div className="space-y-3">
+                  <Label>Telha Selecionada</Label>
+                  <TelhaSelectionCard 
+                    telha={telhasSelecionada}
+                    onEdit={() => setShowTelhaSelector(!showTelhaSelector)}
+                  />
                 </div>
+
+                {/* Seletor de Telha (Collapsible) */}
+                {showTelhaSelector && (
+                  <div className="space-y-2 border border-border rounded-lg p-3 bg-muted/20">
+                    <Label htmlFor="tipo-telha">Escolher Nova Telha</Label>
+                    <Select
+                      value={dimensoes.tipo_telha}
+                      onValueChange={(value) => {
+                        handleDimensaoChange('tipo_telha', value);
+                        setShowTelhaSelector(false);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a telha" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-64">
+                        <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                          Linha Supreme
+                        </div>
+                        {telhas.filter(t => t.linha === 'SUPREME').map(telha => (
+                          <SelectItem key={telha.codigo} value={telha.codigo}>
+                            <div className="flex flex-col gap-1 py-1">
+                              <span className="font-medium">{telha.descricao}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {formatCurrency(telha.preco_unitario)}/pct
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                        
+                        <div className="px-2 py-1 text-xs font-medium text-muted-foreground mt-2">
+                          Linha Duration
+                        </div>
+                        {telhas.filter(t => t.linha === 'DURATION').map(telha => (
+                          <SelectItem key={telha.codigo} value={telha.codigo}>
+                            <div className="flex flex-col gap-1 py-1">
+                              <span className="font-medium">{telha.descricao}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {formatCurrency(telha.preco_unitario)}/pct
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setShowTelhaSelector(false)}
+                      className="w-full mt-2"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="cor-acessorios">Cor dos Acessórios</Label>
