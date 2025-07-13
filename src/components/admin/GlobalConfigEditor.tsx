@@ -304,37 +304,64 @@ export const GlobalConfigEditor: React.FC<GlobalConfigEditorProps> = ({
             )}
 
             {config.chave === 'rodape' && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Nome da Empresa</Label>
-                  <Input
-                    value={config.valor?.empresa || 'DryStore'}
-                    onChange={(e) => {
-                      const novoValor = { ...config.valor, empresa: e.target.value };
-                      salvarConfiguracao(config.chave, novoValor);
-                    }}
-                  />
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Nome da Empresa</Label>
+                    <Input
+                      value={config.valor?.empresa || 'DryStore'}
+                      onChange={(e) => {
+                        const novoValor = { ...config.valor, empresa: e.target.value };
+                        salvarConfiguracao(config.chave, novoValor);
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label>Descrição da Empresa</Label>
+                    <Textarea
+                      value={config.valor?.descricao || 'Sua escolha segura em materiais de construção e energia renovável.'}
+                      onChange={(e) => {
+                        const novoValor = { ...config.valor, descricao: e.target.value };
+                        salvarConfiguracao(config.chave, novoValor);
+                      }}
+                      rows={2}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label>Telefone</Label>
-                  <Input
-                    value={config.valor?.telefone || '(11) 9999-9999'}
-                    onChange={(e) => {
-                      const novoValor = { ...config.valor, telefone: e.target.value };
-                      salvarConfiguracao(config.chave, novoValor);
-                    }}
-                  />
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label>Telefone</Label>
+                    <Input
+                      value={config.valor?.telefone || '(11) 3456-7890'}
+                      onChange={(e) => {
+                        const novoValor = { ...config.valor, telefone: e.target.value };
+                        salvarConfiguracao(config.chave, novoValor);
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label>WhatsApp</Label>
+                    <Input
+                      value={config.valor?.whatsapp || '(11) 99999-9999'}
+                      onChange={(e) => {
+                        const novoValor = { ...config.valor, whatsapp: e.target.value };
+                        salvarConfiguracao(config.chave, novoValor);
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label>E-mail</Label>
+                    <Input
+                      value={config.valor?.email || 'contato@drystore.com.br'}
+                      onChange={(e) => {
+                        const novoValor = { ...config.valor, email: e.target.value };
+                        salvarConfiguracao(config.chave, novoValor);
+                      }}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label>E-mail</Label>
-                  <Input
-                    value={config.valor?.email || 'contato@drystore.com'}
-                    onChange={(e) => {
-                      const novoValor = { ...config.valor, email: e.target.value };
-                      salvarConfiguracao(config.chave, novoValor);
-                    }}
-                  />
-                </div>
+
                 <div>
                   <Label>Endereço</Label>
                   <Input
@@ -344,6 +371,117 @@ export const GlobalConfigEditor: React.FC<GlobalConfigEditorProps> = ({
                       salvarConfiguracao(config.chave, novoValor);
                     }}
                   />
+                </div>
+
+                <div>
+                  <Label>Certificações (uma por linha)</Label>
+                  <Textarea
+                    value={config.valor?.certificacoes?.join('\n') || 'ABNT NBR 14715\nISO 9001\nPBQP-H'}
+                    onChange={(e) => {
+                      const certificacoes = e.target.value.split('\n').filter(cert => cert.trim());
+                      const novoValor = { ...config.valor, certificacoes };
+                      salvarConfiguracao(config.chave, novoValor);
+                    }}
+                    rows={3}
+                  />
+                </div>
+
+                <div>
+                  <Label>Selos de Qualidade (uma por linha)</Label>
+                  <Textarea
+                    value={config.valor?.selos_qualidade?.join('\n') || 'ANCC\nINMETRO'}
+                    onChange={(e) => {
+                      const selos = e.target.value.split('\n').filter(selo => selo.trim());
+                      const novoValor = { ...config.valor, selos_qualidade: selos };
+                      salvarConfiguracao(config.chave, novoValor);
+                    }}
+                    rows={2}
+                  />
+                </div>
+
+                <div>
+                  <Label>Copyright</Label>
+                  <Input
+                    value={config.valor?.copyright || '© 2025 DryStore. Todos os direitos reservados.'}
+                    onChange={(e) => {
+                      const novoValor = { ...config.valor, copyright: e.target.value };
+                      salvarConfiguracao(config.chave, novoValor);
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <Label>Redes Sociais (opcional)</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm">Facebook</Label>
+                      <Input
+                        placeholder="https://facebook.com/empresa"
+                        value={config.valor?.redes_sociais?.facebook || ''}
+                        onChange={(e) => {
+                          const novoValor = { 
+                            ...config.valor, 
+                            redes_sociais: { 
+                              ...config.valor?.redes_sociais, 
+                              facebook: e.target.value 
+                            }
+                          };
+                          salvarConfiguracao(config.chave, novoValor);
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm">Instagram</Label>
+                      <Input
+                        placeholder="https://instagram.com/empresa"
+                        value={config.valor?.redes_sociais?.instagram || ''}
+                        onChange={(e) => {
+                          const novoValor = { 
+                            ...config.valor, 
+                            redes_sociais: { 
+                              ...config.valor?.redes_sociais, 
+                              instagram: e.target.value 
+                            }
+                          };
+                          salvarConfiguracao(config.chave, novoValor);
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm">LinkedIn</Label>
+                      <Input
+                        placeholder="https://linkedin.com/company/empresa"
+                        value={config.valor?.redes_sociais?.linkedin || ''}
+                        onChange={(e) => {
+                          const novoValor = { 
+                            ...config.valor, 
+                            redes_sociais: { 
+                              ...config.valor?.redes_sociais, 
+                              linkedin: e.target.value 
+                            }
+                          };
+                          salvarConfiguracao(config.chave, novoValor);
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm">YouTube</Label>
+                      <Input
+                        placeholder="https://youtube.com/@empresa"
+                        value={config.valor?.redes_sociais?.youtube || ''}
+                        onChange={(e) => {
+                          const novoValor = { 
+                            ...config.valor, 
+                            redes_sociais: { 
+                              ...config.valor?.redes_sociais, 
+                              youtube: e.target.value 
+                            }
+                          };
+                          salvarConfiguracao(config.chave, novoValor);
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

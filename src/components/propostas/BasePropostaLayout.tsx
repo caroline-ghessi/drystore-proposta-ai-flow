@@ -1,7 +1,8 @@
 import { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MessageCircle, Phone, Mail, Shield, Award, Star } from "lucide-react"
+import { MessageCircle, Phone, Mail, Shield, Award, Star, Facebook, Instagram, Linkedin, Youtube } from "lucide-react"
+import { useGlobalConfig } from "@/hooks/useGlobalConfig"
 
 interface BasePropostaLayoutProps {
   cliente: string
@@ -26,6 +27,9 @@ export default function BasePropostaLayout({
   onRequestChanges,
   totalValue
 }: BasePropostaLayoutProps) {
+  const { getFooterConfig, getCTAs } = useGlobalConfig();
+  const footerConfig = getFooterConfig();
+  const ctaTexts = getCTAs();
   return (
     <div className="min-h-screen bg-background">
       {/* Header Fixo */}
@@ -124,7 +128,7 @@ export default function BasePropostaLayout({
                 className="bg-gradient-primary hover:shadow-glow transition-all duration-300"
               >
                 <Shield className="h-5 w-5 mr-2" />
-                Aceitar Proposta
+                {ctaTexts.aceitar}
               </Button>
               
               <Button 
@@ -134,7 +138,7 @@ export default function BasePropostaLayout({
                 className="hover:bg-success hover:text-success-foreground hover:border-success"
               >
                 <MessageCircle className="h-5 w-5 mr-2" />
-                Falar no WhatsApp
+                {ctaTexts.contato}
               </Button>
               
               <Button 
@@ -143,7 +147,7 @@ export default function BasePropostaLayout({
                 size="lg"
               >
                 <Mail className="h-5 w-5 mr-2" />
-                Solicitar Alterações
+                {ctaTexts.alteracao}
               </Button>
             </div>
 
@@ -159,50 +163,97 @@ export default function BasePropostaLayout({
         <div className="container mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <div className="font-bold text-2xl mb-4">DryStore</div>
+              <div className="font-bold text-2xl mb-4">{footerConfig.empresa}</div>
               <p className="text-background/80 text-sm">
-                Sua escolha segura em materiais de construção e energia renovável.
+                {footerConfig.descricao}
               </p>
+              {footerConfig.endereco && (
+                <p className="text-background/80 text-sm mt-2">
+                  {footerConfig.endereco}
+                </p>
+              )}
             </div>
             <div>
               <h4 className="font-semibold mb-4">Contato</h4>
               <div className="space-y-2 text-sm text-background/80">
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  (11) 3456-7890
-                </div>
-                <div className="flex items-center gap-2">
-                  <MessageCircle className="h-4 w-4" />
-                  (11) 99999-9999
-                </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  contato@drystore.com.br
-                </div>
+                {footerConfig.telefone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    {footerConfig.telefone}
+                  </div>
+                )}
+                {footerConfig.whatsapp && (
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4" />
+                    {footerConfig.whatsapp}
+                  </div>
+                )}
+                {footerConfig.email && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    {footerConfig.email}
+                  </div>
+                )}
               </div>
             </div>
-            <div>
-              <h4 className="font-semibold mb-4">Certificações</h4>
-              <div className="space-y-2">
-                <Badge variant="secondary">ABNT NBR 14715</Badge>
-                <Badge variant="secondary">ISO 9001</Badge>
-                <Badge variant="secondary">PBQP-H</Badge>
-              </div>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Selos de Qualidade</h4>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-background/10 rounded p-2 text-center text-xs">
-                  ANCC
-                </div>
-                <div className="bg-background/10 rounded p-2 text-center text-xs">
-                  INMETRO
+            {footerConfig.certificacoes && footerConfig.certificacoes.length > 0 && (
+              <div>
+                <h4 className="font-semibold mb-4">Certificações</h4>
+                <div className="space-y-2">
+                  {footerConfig.certificacoes.map((cert: string, index: number) => (
+                    <Badge key={index} variant="secondary">{cert}</Badge>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
+            {footerConfig.selos_qualidade && footerConfig.selos_qualidade.length > 0 && (
+              <div>
+                <h4 className="font-semibold mb-4">Selos de Qualidade</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {footerConfig.selos_qualidade.map((selo: string, index: number) => (
+                    <div key={index} className="bg-background/10 rounded p-2 text-center text-xs">
+                      {selo}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+          
+          {/* Redes Sociais */}
+          {footerConfig.redes_sociais && Object.values(footerConfig.redes_sociais).some((url: any) => url) && (
+            <div className="border-t border-background/20 mt-8 pt-6">
+              <div className="flex justify-center gap-4">
+                {footerConfig.redes_sociais.facebook && (
+                  <a href={footerConfig.redes_sociais.facebook} target="_blank" rel="noopener noreferrer" 
+                     className="text-background/60 hover:text-background transition-colors">
+                    <Facebook className="h-5 w-5" />
+                  </a>
+                )}
+                {footerConfig.redes_sociais.instagram && (
+                  <a href={footerConfig.redes_sociais.instagram} target="_blank" rel="noopener noreferrer"
+                     className="text-background/60 hover:text-background transition-colors">
+                    <Instagram className="h-5 w-5" />
+                  </a>
+                )}
+                {footerConfig.redes_sociais.linkedin && (
+                  <a href={footerConfig.redes_sociais.linkedin} target="_blank" rel="noopener noreferrer"
+                     className="text-background/60 hover:text-background transition-colors">
+                    <Linkedin className="h-5 w-5" />
+                  </a>
+                )}
+                {footerConfig.redes_sociais.youtube && (
+                  <a href={footerConfig.redes_sociais.youtube} target="_blank" rel="noopener noreferrer"
+                     className="text-background/60 hover:text-background transition-colors">
+                    <Youtube className="h-5 w-5" />
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+          
           <div className="border-t border-background/20 mt-8 pt-8 text-center text-sm text-background/60">
-            © 2025 DryStore. Todos os direitos reservados.
+            {footerConfig.copyright}
           </div>
         </div>
       </footer>
