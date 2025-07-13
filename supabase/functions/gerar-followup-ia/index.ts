@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,6 +8,7 @@ const corsHeaders = {
 };
 
 const grokApiKey = Deno.env.get('GROK_API_KEY');
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -20,6 +21,10 @@ serve(async (req) => {
     const { propostaId, promptMelhoria, tipoFollowup } = await req.json();
 
     console.log('Gerando follow-up para proposta:', propostaId);
+
+    if (!grokApiKey && !openAIApiKey) {
+      throw new Error('Nenhuma API key de IA configurada (Grok ou OpenAI)');
+    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -102,31 +107,64 @@ INSTRUÇÕES:
       ? `Melhore a mensagem seguindo esta orientação: ${promptMelhoria}`
       : `Gere uma mensagem de follow-up para ${categoria}`;
 
-    console.log('Chamando Grok...');
+    console.log('Chamando IA para geração de follow-up...');
 
-    const response = await fetch('https://api.x.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${grokApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'grok-beta',
-        messages: [
-          { role: 'system', content: sistemaPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        max_tokens: 150,
-        temperature: 0.7,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Grok API error: ${response.statusText}`);
+    let response, data;
+    
+    if (grokApiKey) {
+      // Usar Grok AI (modelo que funciona no chatbot)
+      console.log('Usando Grok AI...');
+      response = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${grokApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'grok-4-0709',
+          messages: [
+            { role: 'system', content: sistemaPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.3,
+          max_tokens: 200,
+        }),
+      });
+    } else {
+      // Fallback para OpenAI
+      console.log('Usando OpenAI como fallback...');
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: sistemaPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 200,
+        }),
+      });
     }
 
-    const data = await response.json();
-    const mensagemGerada = data.choices[0]?.message?.content?.trim();
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error:', response.status, errorText);
+      throw new Error(`IA API error: ${response.status} - ${response.statusText} - ${errorText}`);
+    }
+
+    data = await response.json();
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Resposta inválida da API:', data);
+      throw new Error('Resposta inválida da API de IA');
+    }
+    
+    const mensagemGerada = data.choices[0].message.content?.trim();
 
     if (!mensagemGerada) {
       throw new Error('Não foi possível gerar a mensagem');
