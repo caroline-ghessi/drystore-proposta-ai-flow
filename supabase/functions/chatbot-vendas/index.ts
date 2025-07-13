@@ -111,7 +111,7 @@ ${basePrompt}
 
 Seja direto, use números concretos e foque em ações que geram resultados. Priorize as maiores oportunidades.`;
       
-      model = 'grok-beta';
+      model = 'grok-4-0709';
       apiUrl = 'https://api.x.ai/v1/chat/completions';
       authHeader = `Bearer ${grokApiKey}`;
       
