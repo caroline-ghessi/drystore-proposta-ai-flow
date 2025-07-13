@@ -7,6 +7,7 @@ import { StepProcessing } from "./wizard/StepProcessing"
 import { StepReview } from "./wizard/StepReview"
 import { StepCalculoSolar } from "./wizard/StepCalculoSolar"
 import { StepCalculoTelhas } from "./wizard/StepCalculoTelhas"
+import { StepCalculoTelhasCompleto } from "./wizard/StepCalculoTelhasCompleto"
 import { StepDadosManuaisTelhas } from "./wizard/StepDadosManuaisTelhas"
 import { StepGenerate } from "./wizard/StepGenerate"
 
@@ -256,18 +257,17 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             />
           )}
 
-          {/* Step 3: Cálculo Telhas - fluxo manual */}
+          {/* Step 3: Cálculo Telhas Completo - fluxo manual */}
           {currentStep === 3 && propostaData.tipoProposta === 'telhas' && propostaData.entradaManual && (
-            <StepCalculoTelhas
+            <StepCalculoTelhasCompleto
               dadosExtraidos={{
                 area_total_m2: propostaData.areaTelhado || 0,
-                inclinacao_telhado: propostaData.inclinacaoTelhado || 0,
-                tipo_estrutura: propostaData.tipoEstrutura || 'madeira',
-                regiao_climatica: 'Sul',
-                cor_preferida: 'Marrom',
+                comprimento_cumeeira: 0,
+                perimetro_telhado: 0,
+                comprimento_calha: 0,
                 observacoes_especiais: propostaData.observacoes
               }}
-              onCalculoComplete={(calculo) => {
+              onCalculoComplete={(orcamento) => {
                 handleStepData({
                   dadosExtraidos: {
                     area_total_m2: propostaData.areaTelhado,
@@ -276,9 +276,9 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
                     regiao_climatica: 'Sul',
                     cor_preferida: 'Marrom',
                     observacoes_especiais: propostaData.observacoes,
-                    calculo_telhas: calculo
+                    orcamento_completo: orcamento
                   },
-                  valorTotal: calculo.calculo.valor_total
+                  valorTotal: orcamento.valorTotal
                 });
               }}
               onBack={handleBack}
@@ -297,15 +297,15 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
           )}
 
           {currentStep === 4 && propostaData.tipoProposta === 'telhas' && !propostaData.entradaManual && (
-            <StepCalculoTelhas
+            <StepCalculoTelhasCompleto
               dadosExtraidos={propostaData.dadosExtraidos}
-              onCalculoComplete={(calculo) => {
+              onCalculoComplete={(orcamento) => {
                 handleStepData({
                   dadosExtraidos: {
                     ...propostaData.dadosExtraidos,
-                    calculo_telhas: calculo
+                    orcamento_completo: orcamento
                   },
-                  valorTotal: calculo.calculo.valor_total
+                  valorTotal: orcamento.valorTotal
                 });
               }}
               onBack={handleBack}

@@ -30,10 +30,52 @@ export interface TelhaShingle {
   ativo: boolean;
 }
 
+export interface ProdutoShingleCompleto {
+  id: string;
+  tipo_componente: 'TELHA' | 'CUMEEIRA' | 'RUFO_LATERAL' | 'RUFO_CAPA' | 'CALHA' | 'PREGO' | 'MANTA' | 'STARTER';
+  codigo: string;
+  linha: 'SUPREME' | 'DURATION' | 'UNIVERSAL' | null;
+  descricao: string;
+  cor: string | null;
+  unidade_medida: string;
+  conteudo_unidade: number;
+  quebra_padrao: number;
+  preco_unitario: number;
+  peso_unitario: number | null;
+  especificacoes_tecnicas: any;
+  ativo: boolean;
+}
+
+export interface ItemCalculadoShingle {
+  tipo_item: string;
+  codigo: string;
+  descricao: string;
+  dimensao_base: number;
+  unidade_dimensao: string;
+  fator_conversao: number;
+  quebra_percentual: number;
+  quantidade_calculada: number;
+  quantidade_final: number;
+  unidade_venda: string;
+  preco_unitario: number;
+  valor_total: number;
+}
+
+export interface ResumoOrcamentoShingle {
+  valorTelhas: number;
+  valorAcessorios: number;
+  valorCalhas: number;
+  valorComplementos: number;
+  valorTotal: number;
+  valorPorM2: number;
+  itens: ItemCalculadoShingle[];
+}
+
 export const useProdutos = () => {
   const [paineis, setPaineis] = useState<Produto[]>([]);
   const [inversores, setInversores] = useState<Produto[]>([]);
   const [telhasShingle, setTelhasShingle] = useState<TelhaShingle[]>([]);
+  const [produtosShingleCompletos, setProdutosShingleCompletos] = useState<ProdutoShingleCompleto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -147,6 +189,98 @@ export const useProdutos = () => {
     }
   };
 
+  const buscarProdutosShingleCompletos = async (tipoComponente?: string) => {
+    try {
+      setLoading(true);
+      let query = supabase
+        .from('produtos_shingle_completos')
+        .select('*')
+        .eq('ativo', true);
+
+      if (tipoComponente) {
+        query = query.eq('tipo_componente', tipoComponente);
+      }
+
+      const { data, error } = await query.order('tipo_componente').order('preco_unitario');
+
+      if (error) throw error;
+      setProdutosShingleCompletos((data || []) as ProdutoShingleCompleto[]);
+      return data;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao buscar produtos shingle');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calcularOrcamentoShingleCompleto = async (
+    areaTelhado: number,
+    comprimentoCumeeira: number = 0,
+    perimetroTelhado: number = 0,
+    comprimentoCalha: number = 0,
+    telhaCodigo: string = '10420',
+    corAcessorios: string = 'CINZA',
+    incluirManta: boolean = true
+  ): Promise<ResumoOrcamentoShingle> => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.rpc('calcular_orcamento_shingle_completo', {
+        p_area_telhado: areaTelhado,
+        p_comprimento_cumeeira: comprimentoCumeeira,
+        p_perimetro_telhado: perimetroTelhado,
+        p_comprimento_calha: comprimentoCalha,
+        p_telha_codigo: telhaCodigo,
+        p_cor_acessorios: corAcessorios,
+        p_incluir_manta: incluirManta
+      });
+
+      if (error) throw error;
+      
+      const itens = data as ItemCalculadoShingle[];
+      
+      // Calcular resumo por categoria
+      const resumo: ResumoOrcamentoShingle = {
+        valorTelhas: 0,
+        valorAcessorios: 0,
+        valorCalhas: 0,
+        valorComplementos: 0,
+        valorTotal: 0,
+        valorPorM2: 0,
+        itens
+      };
+
+      itens.forEach(item => {
+        switch(item.tipo_item) {
+          case 'TELHA':
+            resumo.valorTelhas += item.valor_total;
+            break;
+          case 'CUMEEIRA':
+          case 'RUFO_LATERAL':
+          case 'RUFO_CAPA':
+            resumo.valorAcessorios += item.valor_total;
+            break;
+          case 'CALHA':
+            resumo.valorCalhas += item.valor_total;
+            break;
+          case 'PREGO':
+          case 'MANTA_STARTER':
+            resumo.valorComplementos += item.valor_total;
+            break;
+        }
+        resumo.valorTotal += item.valor_total;
+      });
+
+      resumo.valorPorM2 = resumo.valorTotal / areaTelhado;
+      
+      return resumo;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao calcular orçamento completo');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     buscarPaineis();
     buscarInversores();
@@ -157,12 +291,15 @@ export const useProdutos = () => {
     paineis,
     inversores,
     telhasShingle,
+    produtosShingleCompletos,
     loading,
     error,
     buscarPaineis,
     buscarInversores,
     buscarTelhasShingle,
+    buscarProdutosShingleCompletos,
     calcularOrcamentoShingle,
+    calcularOrcamentoShingleCompleto,
     buscarProduto,
     clearError: () => setError(null)
   };

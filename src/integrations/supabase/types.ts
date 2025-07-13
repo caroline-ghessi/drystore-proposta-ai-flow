@@ -372,6 +372,74 @@ export type Database = {
         }
         Relationships: []
       }
+      itens_orcamento_shingle: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          dimensao_base: number | null
+          especificacoes: Json | null
+          fator_com_quebra: number | null
+          fator_conversao: number | null
+          id: string
+          orcamento_id: string | null
+          preco_unitario: number | null
+          produto_codigo: string
+          quantidade_arredondada: number | null
+          quantidade_calculada: number | null
+          quebra_aplicada: number | null
+          tipo_componente: string
+          unidade_dimensao: string | null
+          unidade_venda: string | null
+          valor_total: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          dimensao_base?: number | null
+          especificacoes?: Json | null
+          fator_com_quebra?: number | null
+          fator_conversao?: number | null
+          id?: string
+          orcamento_id?: string | null
+          preco_unitario?: number | null
+          produto_codigo: string
+          quantidade_arredondada?: number | null
+          quantidade_calculada?: number | null
+          quebra_aplicada?: number | null
+          tipo_componente: string
+          unidade_dimensao?: string | null
+          unidade_venda?: string | null
+          valor_total?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          dimensao_base?: number | null
+          especificacoes?: Json | null
+          fator_com_quebra?: number | null
+          fator_conversao?: number | null
+          id?: string
+          orcamento_id?: string | null
+          preco_unitario?: number | null
+          produto_codigo?: string
+          quantidade_arredondada?: number | null
+          quantidade_calculada?: number | null
+          quebra_aplicada?: number | null
+          tipo_componente?: string
+          unidade_dimensao?: string | null
+          unidade_venda?: string | null
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_orcamento_shingle_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos_telhado_shingle"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notificacoes: {
         Row: {
           created_at: string
@@ -403,6 +471,86 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "notificacoes_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orcamentos_telhado_shingle: {
+        Row: {
+          area_telhado: number
+          comprimento_calha: number | null
+          comprimento_cumeeira: number | null
+          comprimento_rufo_capa: number | null
+          comprimento_rufo_lateral: number | null
+          cor_acessorios: string | null
+          created_at: string | null
+          id: string
+          incluir_calha: boolean | null
+          incluir_manta_starter: boolean | null
+          observacoes: string | null
+          perimetro_telhado: number | null
+          proposta_id: string | null
+          quebra_cumeeira: number | null
+          quebra_rufo: number | null
+          quebra_telha: number | null
+          status: string | null
+          telha_codigo: string | null
+          updated_at: string | null
+          valor_por_m2: number | null
+          valor_total: number | null
+        }
+        Insert: {
+          area_telhado: number
+          comprimento_calha?: number | null
+          comprimento_cumeeira?: number | null
+          comprimento_rufo_capa?: number | null
+          comprimento_rufo_lateral?: number | null
+          cor_acessorios?: string | null
+          created_at?: string | null
+          id?: string
+          incluir_calha?: boolean | null
+          incluir_manta_starter?: boolean | null
+          observacoes?: string | null
+          perimetro_telhado?: number | null
+          proposta_id?: string | null
+          quebra_cumeeira?: number | null
+          quebra_rufo?: number | null
+          quebra_telha?: number | null
+          status?: string | null
+          telha_codigo?: string | null
+          updated_at?: string | null
+          valor_por_m2?: number | null
+          valor_total?: number | null
+        }
+        Update: {
+          area_telhado?: number
+          comprimento_calha?: number | null
+          comprimento_cumeeira?: number | null
+          comprimento_rufo_capa?: number | null
+          comprimento_rufo_lateral?: number | null
+          cor_acessorios?: string | null
+          created_at?: string | null
+          id?: string
+          incluir_calha?: boolean | null
+          incluir_manta_starter?: boolean | null
+          observacoes?: string | null
+          perimetro_telhado?: number | null
+          proposta_id?: string | null
+          quebra_cumeeira?: number | null
+          quebra_rufo?: number | null
+          quebra_telha?: number | null
+          status?: string | null
+          telha_codigo?: string | null
+          updated_at?: string | null
+          valor_por_m2?: number | null
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamentos_telhado_shingle_proposta_id_fkey"
             columns: ["proposta_id"]
             isOneToOne: false
             referencedRelation: "propostas"
@@ -470,6 +618,60 @@ export type Database = {
           tensao_v?: number | null
           unidade?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      produtos_shingle_completos: {
+        Row: {
+          ativo: boolean | null
+          codigo: string
+          conteudo_unidade: number
+          cor: string | null
+          created_at: string | null
+          descricao: string
+          especificacoes_tecnicas: Json | null
+          id: string
+          linha: string | null
+          peso_unitario: number | null
+          preco_unitario: number
+          quebra_padrao: number | null
+          tipo_componente: string
+          unidade_medida: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          codigo: string
+          conteudo_unidade: number
+          cor?: string | null
+          created_at?: string | null
+          descricao: string
+          especificacoes_tecnicas?: Json | null
+          id?: string
+          linha?: string | null
+          peso_unitario?: number | null
+          preco_unitario: number
+          quebra_padrao?: number | null
+          tipo_componente: string
+          unidade_medida: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          codigo?: string
+          conteudo_unidade?: number
+          cor?: string | null
+          created_at?: string | null
+          descricao?: string
+          especificacoes_tecnicas?: Json | null
+          id?: string
+          linha?: string | null
+          peso_unitario?: number | null
+          preco_unitario?: number
+          quebra_padrao?: number | null
+          tipo_componente?: string
+          unidade_medida?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -715,6 +917,31 @@ export type Database = {
           p_inclinacao?: number
         }
         Returns: Json
+      }
+      calcular_orcamento_shingle_completo: {
+        Args: {
+          p_area_telhado: number
+          p_comprimento_cumeeira?: number
+          p_perimetro_telhado?: number
+          p_comprimento_calha?: number
+          p_telha_codigo?: string
+          p_cor_acessorios?: string
+          p_incluir_manta?: boolean
+        }
+        Returns: {
+          tipo_item: string
+          codigo: string
+          descricao: string
+          dimensao_base: number
+          unidade_dimensao: string
+          fator_conversao: number
+          quebra_percentual: number
+          quantidade_calculada: number
+          quantidade_final: number
+          unidade_venda: string
+          preco_unitario: number
+          valor_total: number
+        }[]
       }
       calcular_payback: {
         Args: {
