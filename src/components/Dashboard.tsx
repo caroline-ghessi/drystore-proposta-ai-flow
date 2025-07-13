@@ -10,12 +10,21 @@ import {
   Plus,
   Eye,
   Send,
-  AlertCircle
+  AlertCircle,
+  Sun,
+  Home,
+  Wrench,
+  ArrowRight,
+  Star
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import DryStoreLogo from "@/components/DryStoreLogo"
+import DrysolarLogo from "@/components/submarcas/DrysolarLogo"
+import DrybuildLogo from "@/components/submarcas/DrybuildLogo"
+import DrytoolsLogo from "@/components/submarcas/DrytoolsLogo"
 
 interface MetricCardProps {
   title: string
@@ -161,6 +170,40 @@ export function Dashboard() {
   const handleNovaPropostaClick = () => {
     navigate('/propostas?action=nova')
   }
+
+  // Três pilares da Drystore
+  const pilares = [
+    {
+      id: "construir",
+      titulo: "CONSTRUIR",
+      subtitulo: "Materiais de alta qualidade",
+      descricao: "Telhas Shingle, Drywall, Light Steel Frame, Impermeabilização e soluções completas para construção a seco.",
+      icon: Home,
+      submarca: "Drybuild",
+      route: "/materiais",
+      cor: "drybuild"
+    },
+    {
+      id: "viver", 
+      titulo: "VIVER",
+      subtitulo: "Soluções sustentáveis",
+      descricao: "Energia Solar, baterias, carregadores elétricos e tecnologias para um futuro mais sustentável.",
+      icon: Sun,
+      submarca: "Drysolar", 
+      route: "/energia-solar",
+      cor: "drysolar"
+    },
+    {
+      id: "transformar",
+      titulo: "TRANSFORMAR",
+      subtitulo: "Ferramentas profissionais",
+      descricao: "Ferramentas, EPIs, escadas e equipamentos para manutenção e evolução contínua dos projetos.",
+      icon: Wrench,
+      submarca: "Drytools",
+      route: "/ferramentas",
+      cor: "drytools"
+    }
+  ]
   
   const metrics = [
     {
@@ -171,7 +214,7 @@ export function Dashboard() {
       icon: DollarSign
     },
     {
-      title: "Propostas Enviadas",
+      title: "Propostas Enviadas", 
       value: "89",
       change: "+8 esta semana",
       changeType: "positive" as const,
@@ -229,35 +272,103 @@ export function Dashboard() {
   ]
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Bem-vindo ao Portal de Propostas DryStore
+    <div className="space-y-8 animate-fade-in">
+      {/* Hero Section - Drystore */}
+      <div className="relative bg-gradient-hero rounded-2xl p-8 text-white overflow-hidden">
+        <div className="relative z-10">
+          <div className="flex items-center gap-4 mb-6">
+            <DryStoreLogo size="lg" className="text-white" />
+            <div className="hidden md:flex items-center gap-6 text-white/80">
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4" />
+                <span className="text-sm">Desde 2002</span>
+              </div>
+              <div className="text-sm">22 anos de experiência</div>
+              <div className="text-sm">50.000+ clientes atendidos</div>
+            </div>
+          </div>
+          
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            Bem-vindo ao Portal de Propostas
+          </h1>
+          <p className="text-xl text-white/90 mb-8">
+            Transforme seus projetos com nossas soluções inteligentes
           </p>
+          
+          <Button variant="secondary" size="lg" onClick={handleNovaPropostaClick}>
+            <Plus className="h-5 w-5 mr-2" />
+            Criar Nova Proposta
+          </Button>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
-            <Calendar className="h-4 w-4 mr-2" />
-            Este mês
-          </Button>
-          <Button variant="premium" size="sm" onClick={handleNovaPropostaClick}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Proposta
-          </Button>
+        
+        {/* Elemento decorativo */}
+        <div className="absolute -right-20 -top-20 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+      </div>
+
+      {/* Três Pilares da Drystore */}
+      <div className="space-y-6">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-foreground mb-2">Nosso Ecossistema</h2>
+          <p className="text-lg text-muted-foreground">Soluções integrais para cada etapa do seu projeto</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {pilares.map((pilar) => (
+            <Card 
+              key={pilar.id} 
+              className={`group hover:shadow-hover transition-all duration-300 cursor-pointer border-2 hover:border-${pilar.cor} relative overflow-hidden`}
+              onClick={() => navigate(pilar.route)}
+            >
+              <div className={`absolute inset-0 bg-${pilar.cor}/5 opacity-0 group-hover:opacity-100 transition-opacity`}></div>
+              
+              <CardHeader className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <pilar.icon className={`h-12 w-12 text-${pilar.cor}`} />
+                  <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
+                <CardTitle className="text-2xl font-bold text-foreground">{pilar.titulo}</CardTitle>
+                <CardDescription className="text-base font-medium">{pilar.subtitulo}</CardDescription>
+              </CardHeader>
+              
+              <CardContent className="relative z-10">
+                <p className="text-muted-foreground mb-4">{pilar.descricao}</p>
+                <Button variant={`${pilar.cor}-outline` as any} size="sm" className="w-full">
+                  Explorar {pilar.submarca}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
 
-      {/* Metrics Grid */}
+      {/* Métricas Drystore */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {metrics.map((metric) => (
           <MetricCard key={metric.title} {...metric} />
         ))}
       </div>
 
-      {/* Main Content Grid */}
+      {/* Credibilidade Drystore */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 p-6 bg-muted/30 rounded-2xl">
+        <div className="text-center">
+          <div className="text-3xl font-bold text-primary">22</div>
+          <div className="text-sm text-muted-foreground">Anos de experiência</div>
+        </div>
+        <div className="text-center">
+          <div className="text-3xl font-bold text-primary">50.000+</div>
+          <div className="text-sm text-muted-foreground">Clientes atendidos</div>
+        </div>
+        <div className="text-center">
+          <div className="text-3xl font-bold text-primary">15.000+</div>
+          <div className="text-sm text-muted-foreground">Produtos disponíveis</div>
+        </div>
+        <div className="text-center">
+          <div className="text-3xl font-bold text-primary">4.6⭐</div>
+          <div className="text-sm text-muted-foreground">Avaliação Google</div>
+        </div>
+      </div>
+
+      {/* Conteúdo Principal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <PropostasRecentes propostas={propostasRecentes} />
@@ -267,33 +378,71 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <Card className="bg-gradient-card border-border/50">
-        <CardHeader>
-          <CardTitle>Ações Rápidas</CardTitle>
-          <CardDescription>Ferramentas mais utilizadas</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex-col gap-2" onClick={handleNovaPropostaClick}>
-              <FileText className="h-6 w-6" />
-              <span>Nova Proposta</span>
+      {/* Ações Rápidas por Segmento */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="bg-drysolar/10 border-drysolar/20">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Sun className="h-8 w-8 text-drysolar" />
+              <div>
+                <CardTitle className="text-drysolar">Drysolar</CardTitle>
+                <CardDescription>Energia Solar</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button variant="drysolar" size="sm" className="w-full" onClick={() => navigate('/energia-solar')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Proposta Solar
             </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <Users className="h-6 w-6" />
-              <span>Adicionar Cliente</span>
+            <Button variant="drysolar-outline" size="sm" className="w-full" onClick={() => navigate('/equipamentos-solar')}>
+              Ver Equipamentos
             </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <Bell className="h-6 w-6" />
-              <span>Notificações</span>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-drybuild/10 border-drybuild/20">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Home className="h-8 w-8 text-drybuild" />
+              <div>
+                <CardTitle className="text-drybuild">Drybuild</CardTitle>
+                <CardDescription>Construção a Seco</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button variant="drybuild" size="sm" className="w-full" onClick={() => navigate('/materiais')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Proposta Materiais
             </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <TrendingUp className="h-6 w-6" />
-              <span>Relatórios</span>
+            <Button variant="drybuild-outline" size="sm" className="w-full">
+              Ver Catálogo
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-drytools/10 border-drytools/20">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Wrench className="h-8 w-8 text-drytools" />
+              <div>
+                <CardTitle className="text-drytools-foreground">Drytools</CardTitle>
+                <CardDescription>Ferramentas</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button variant="drytools" size="sm" className="w-full">
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Proposta Ferramentas
+            </Button>
+            <Button variant="drytools-outline" size="sm" className="w-full">
+              Ver Produtos
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

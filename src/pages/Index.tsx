@@ -4,6 +4,7 @@ import { Dashboard } from "@/components/Dashboard"
 import { Bell, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/useAuth"
+import DryStoreLogo from "@/components/DryStoreLogo"
 
 const Index = () => {
   const { usuario, logout } = useAuth();
@@ -23,9 +24,10 @@ const Index = () => {
             <div className="flex items-center justify-between h-full px-6">
               <div className="flex items-center gap-4">
                 <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
-                <div className="hidden md:block">
+                <DryStoreLogo size="sm" showTagline={false} className="hidden sm:flex" />
+                <div className="hidden lg:block">
                   <p className="text-sm text-muted-foreground">
-                    Portal de Propostas • Energia Solar & Materiais de Construção
+                    Portal de Propostas • Desde 2002
                   </p>
                 </div>
               </div>

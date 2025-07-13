@@ -2,43 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-/* DryStore Design System - Energia Solar & Materiais de Construção */
-/* Cores exatas do Guia de Design DryStore */
+/* Manual de Design Drystore 2.0 - Soluções Inteligentes */
+/* Cores exatas conforme Manual de Design */
 
 @layer base {
   :root {
-    /* Base colors - Exatos do guia */
-    --background: 0 0% 96.3%; /* #F5F5F5 */
-    --foreground: 0 0% 20%; /* #333333 */
+    /* Base colors - Conforme Manual */
+    --background: 0 0% 100%; /* #FFFFFF */
+    --foreground: 0 0% 22.7%; /* #3A3A3A - Cinza Escuro */
 
     /* Card & popover */
     --card: 0 0% 100%; /* #FFFFFF */
-    --card-foreground: 0 0% 20%; /* #333333 */
+    --card-foreground: 0 0% 22.7%; /* #3A3A3A */
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 20%;
+    --popover-foreground: 0 0% 22.7%;
 
-    /* Primary - Azul Corporativo DryStore */
-    --primary: 213 100% 24.5%; /* #003B7C */
+    /* Primary - Laranja Drystore #F97316 */
+    --primary: 22 96% 52%; /* #F97316 */
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 213 69% 57.1%; /* #4A90E2 */
+    --primary-glow: 22 96% 62%;
 
-    /* Secondary - Verde Sustentável */
-    --secondary: 145 63% 49%; /* #2ECC71 */
+    /* Secondary - Cinza Escuro #3A3A3A */
+    --secondary: 0 0% 22.7%; /* #3A3A3A */
     --secondary-foreground: 0 0% 100%;
-    --secondary-glow: 145 63% 59%;
+    --secondary-glow: 0 0% 32.7%;
+
+    /* Cores específicas submarcas */
+    --drysolar: 22 96% 52%; /* Laranja #F97316 */
+    --drysolar-foreground: 0 0% 100%;
+    --drybuild: 0 0% 54.1%; /* Cinza Médio #8A8A8A */
+    --drybuild-foreground: 0 0% 22.7%;
+    --drytools: 0 0% 22.7%; /* Cinza Escuro #3A3A3A */
+    --drytools-foreground: 0 0% 100%;
 
     /* Muted & Accent */
     --muted: 0 0% 96.3%; /* #F5F5F5 */
-    --muted-foreground: 0 0% 40%; /* #666666 */
-    --accent: 213 69% 95%;
-    --accent-foreground: 213 100% 24.5%;
+    --muted-foreground: 0 0% 54.1%; /* #8A8A8A - Cinza Médio */
+    --accent: 22 96% 95%;
+    --accent-foreground: 22 96% 52%;
 
-    /* Status colors - Exatos do guia */
-    --destructive: 5 76% 62%; /* #E74C3C */
+    /* Status colors */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --success: 145 63% 49%; /* #2ECC71 */
+    --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
-    --warning: 16 100% 60%; /* #FF6B35 */
+    --warning: 22 96% 52%; /* Usa laranja Drystore */
     --warning-foreground: 0 0% 100%;
 
     /* Borders & inputs */
@@ -46,18 +54,18 @@
     --input: 0 0% 90%;
     --ring: 213 100% 24.5%;
 
-    /* Gradients - DryStore */
-    --gradient-primary: linear-gradient(135deg, hsl(213 100% 24.5%), hsl(213 69% 57.1%));
-    --gradient-secondary: linear-gradient(135deg, hsl(145 63% 49%), hsl(145 63% 59%));
-    --gradient-hero: linear-gradient(135deg, hsl(213 100% 24.5%), hsl(145 63% 49%));
+    /* Gradients - Drystore */
+    --gradient-primary: linear-gradient(135deg, hsl(22 96% 52%), hsl(22 96% 62%));
+    --gradient-secondary: linear-gradient(135deg, hsl(0 0% 22.7%), hsl(0 0% 32.7%));
+    --gradient-hero: linear-gradient(135deg, hsl(22 96% 52%), hsl(0 0% 22.7%));
     --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 98%));
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 98%), hsl(0 0% 96.3%));
 
-    /* Shadows - DryStore */
-    --shadow-elegant: 0 10px 30px -10px hsl(213 100% 24.5% / 0.3);
-    --shadow-glow: 0 0 40px hsl(213 69% 57.1% / 0.4);
+    /* Shadows - Drystore */
+    --shadow-elegant: 0 10px 30px -10px hsl(22 96% 52% / 0.3);
+    --shadow-glow: 0 0 40px hsl(22 96% 62% / 0.4);
     --shadow-card: 0 4px 20px -4px hsl(0 0% 20% / 0.08);
-    --shadow-hover: 0 8px 25px -8px hsl(213 100% 24.5% / 0.2);
+    --shadow-hover: 0 8px 25px -8px hsl(22 96% 52% / 0.2);
 
     /* Animations - Conforme guia */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

@@ -19,9 +19,10 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				'heading': ['Montserrat', 'system-ui', 'sans-serif'],
-				'body': ['Open Sans', 'system-ui', 'sans-serif'],
-				'sans': ['Open Sans', 'system-ui', 'sans-serif'],
+				'heading': ['Inter', 'system-ui', 'sans-serif'],
+				'body': ['Inter', 'system-ui', 'sans-serif'],
+				'sans': ['Inter', 'system-ui', 'sans-serif'],
+				'tagline': ['Inter', 'system-ui', 'sans-serif'],
 			},
 			fontSize: {
 				'xs': ['12px', { lineHeight: '16px' }],
@@ -70,6 +71,19 @@ export default {
 				warning: {
 					DEFAULT: 'hsl(var(--warning))',
 					foreground: 'hsl(var(--warning-foreground))'
+				},
+				// Cores específicas submarcas
+				drysolar: {
+					DEFAULT: 'hsl(var(--drysolar))',
+					foreground: 'hsl(var(--drysolar-foreground))'
+				},
+				drybuild: {
+					DEFAULT: 'hsl(var(--drybuild))',
+					foreground: 'hsl(var(--drybuild-foreground))'
+				},
+				drytools: {
+					DEFAULT: 'hsl(var(--drytools))',
+					foreground: 'hsl(var(--drytools-foreground))'
 				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
