@@ -752,6 +752,144 @@ export type Database = {
           },
         ]
       }
+      layout_configuracoes: {
+        Row: {
+          ativo: boolean
+          configuracao: Json
+          configuracao_padrao: boolean
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          tipo_proposta: string
+          updated_at: string
+          versao: number
+        }
+        Insert: {
+          ativo?: boolean
+          configuracao?: Json
+          configuracao_padrao?: boolean
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          tipo_proposta: string
+          updated_at?: string
+          versao?: number
+        }
+        Update: {
+          ativo?: boolean
+          configuracao?: Json
+          configuracao_padrao?: boolean
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          tipo_proposta?: string
+          updated_at?: string
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "layout_configuracoes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vendedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      layout_elementos: {
+        Row: {
+          configuracao: Json
+          created_at: string
+          elemento_nome: string
+          elemento_tipo: string
+          id: string
+          layout_id: string
+          ordem: number
+          updated_at: string
+          visivel: boolean
+        }
+        Insert: {
+          configuracao?: Json
+          created_at?: string
+          elemento_nome: string
+          elemento_tipo: string
+          id?: string
+          layout_id: string
+          ordem?: number
+          updated_at?: string
+          visivel?: boolean
+        }
+        Update: {
+          configuracao?: Json
+          created_at?: string
+          elemento_nome?: string
+          elemento_tipo?: string
+          id?: string
+          layout_id?: string
+          ordem?: number
+          updated_at?: string
+          visivel?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "layout_elementos_layout_id_fkey"
+            columns: ["layout_id"]
+            isOneToOne: false
+            referencedRelation: "layout_configuracoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      layout_estatisticas: {
+        Row: {
+          conversoes: number
+          created_at: string
+          data_evento: string
+          id: string
+          layout_id: string
+          taxa_conversao: number | null
+          tempo_medio_visualizacao: unknown | null
+          updated_at: string
+          visualizacoes: number
+        }
+        Insert: {
+          conversoes?: number
+          created_at?: string
+          data_evento?: string
+          id?: string
+          layout_id: string
+          taxa_conversao?: number | null
+          tempo_medio_visualizacao?: unknown | null
+          updated_at?: string
+          visualizacoes?: number
+        }
+        Update: {
+          conversoes?: number
+          created_at?: string
+          data_evento?: string
+          id?: string
+          layout_id?: string
+          taxa_conversao?: number | null
+          tempo_medio_visualizacao?: unknown | null
+          updated_at?: string
+          visualizacoes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "layout_estatisticas_layout_id_fkey"
+            columns: ["layout_id"]
+            isOneToOne: false
+            referencedRelation: "layout_configuracoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notificacoes: {
         Row: {
           created_at: string

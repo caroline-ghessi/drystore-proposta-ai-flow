@@ -3,14 +3,43 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DryStoreSidebar } from "@/components/DryStoreSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Eye, Edit, BarChart3, Palette, FileText, Building2, Sun, Hammer, Grid3X3, Square, Drill, Volume2, Home } from "lucide-react";
+import { Eye, Edit, BarChart3, Palette, FileText, Building2, Sun, Hammer, Grid3X3, Square, Drill, Volume2, Home, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { LayoutEditor } from "@/components/admin/LayoutEditor";
+import { LayoutStats } from "@/components/admin/LayoutStats";
 
 const AdminLayoutsPropostas = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [layoutsConfiguracoes, setLayoutsConfiguracoes] = useState<any[]>([]);
+  const [editorAberto, setEditorAberto] = useState(false);
+  const [statsAberto, setStatsAberto] = useState(false);
+  const [layoutSelecionado, setLayoutSelecionado] = useState<string | null>(null);
+
+  useEffect(() => {
+    carregarLayoutsConfiguracoes();
+  }, []);
+
+  const carregarLayoutsConfiguracoes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('layout_configuracoes')
+        .select('*')
+        .order('tipo_proposta');
+
+      if (error) throw error;
+      setLayoutsConfiguracoes(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar configurações:', error);
+    }
+  };
+
+  // Encontrar configuração do layout no banco
+  const encontrarConfiguracao = (layoutId: string) => {
+    return layoutsConfiguracoes.find(config => config.tipo_proposta === layoutId);
+  };
 
   const layoutsPropostas = [
     {
@@ -79,6 +108,19 @@ const AdminLayoutsPropostas = () => {
       implementado: true
     },
     {
+      id: "impermeabilizacao",
+      nome: "Impermeabilização",
+      descricao: "Layout para sistemas de impermeabilização",
+      icon: Shield,
+      cor: "bg-teal-500",
+      estatisticas: {
+        propostas: 6,
+        conversao: "25%",
+        ultimaAtualizacao: "5 dias atrás"
+      },
+      implementado: true
+    },
+    {
       id: "tintas-texturas",
       nome: "Tintas e Texturas",
       descricao: "Layout para tintas decorativas e texturas especiais",
@@ -103,32 +145,6 @@ const AdminLayoutsPropostas = () => {
         ultimaAtualizacao: "Nunca"
       },
       implementado: true
-    },
-    {
-      id: "argamassa-silentfloor",
-      nome: "Argamassa SilentFloor",
-      descricao: "Layout para argamassa de isolamento acústico",
-      icon: Volume2,
-      cor: "bg-cyan-500",
-      estatisticas: {
-        propostas: 0,
-        conversao: "-",
-        ultimaAtualizacao: "Nunca"
-      },
-      implementado: false
-    },
-    {
-      id: "light-steel-frame",
-      nome: "Light Steel Frame",
-      descricao: "Layout para construção em estrutura metálica leve",
-      icon: Home,
-      cor: "bg-indigo-500",
-      estatisticas: {
-        propostas: 0,
-        conversao: "-",
-        ultimaAtualizacao: "Nunca"
-      },
-      implementado: false
     }
   ];
 
@@ -143,10 +159,9 @@ const AdminLayoutsPropostas = () => {
         'divisorias': 'divisorias',
         'pisos': 'pisos',
         'forros': 'forros',
+        'impermeabilizacao': 'impermeabilizacao',
         'tintas-texturas': 'tintas-texturas',
-        'verga-fibra': 'verga-fibra',
-        'argamassa-silentfloor': 'argamassa-silentfloor',
-        'light-steel-frame': 'light-steel-frame'
+        'verga-fibra': 'verga-fibra'
       };
 
       const tipoProposta = tipoMap[layoutId];
@@ -176,13 +191,33 @@ const AdminLayoutsPropostas = () => {
   };
 
   const handleEditarLayout = (layoutId: string) => {
-    // Redirecionar para editor do layout
-    console.log("Editar layout:", layoutId);
+    const configuracao = encontrarConfiguracao(layoutId);
+    if (configuracao) {
+      setLayoutSelecionado(configuracao.id);
+      setEditorAberto(true);
+    }
   };
 
   const handleVerEstatisticas = (layoutId: string) => {
-    // Mostrar estatísticas detalhadas
-    console.log("Ver estatísticas:", layoutId);
+    const configuracao = encontrarConfiguracao(layoutId);
+    if (configuracao) {
+      setLayoutSelecionado(configuracao.id);
+      setStatsAberto(true);
+    }
+  };
+
+  const handleFecharEditor = () => {
+    setEditorAberto(false);
+    setLayoutSelecionado(null);
+  };
+
+  const handleFecharStats = () => {
+    setStatsAberto(false);
+    setLayoutSelecionado(null);
+  };
+
+  const handleSalvarEditor = () => {
+    carregarLayoutsConfiguracoes(); // Recarregar dados após salvar
   };
 
   return (
@@ -210,6 +245,8 @@ const AdminLayoutsPropostas = () => {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {layoutsPropostas.map((layout) => {
                 const IconComponent = layout.icon;
+                const configuracao = encontrarConfiguracao(layout.id);
+                
                 return (
                   <Card key={layout.id} className="relative">
                     <CardHeader>
@@ -221,8 +258,8 @@ const AdminLayoutsPropostas = () => {
                           <div>
                             <CardTitle className="text-lg">{layout.nome}</CardTitle>
                             <div className="flex items-center space-x-2 mt-1">
-                              <Badge variant={layout.implementado ? "default" : "secondary"}>
-                                {layout.implementado ? "Implementado" : "Pendente"}
+                              <Badge variant={configuracao ? "default" : "secondary"}>
+                                {configuracao ? "Configurado" : "Padrão"}
                               </Badge>
                             </div>
                           </div>
@@ -265,14 +302,16 @@ const AdminLayoutsPropostas = () => {
                           size="sm" 
                           variant="outline" 
                           onClick={() => handleEditarLayout(layout.id)}
+                          disabled={!configuracao}
                         >
                           <Edit className="h-4 w-4 mr-1" />
-                          {layout.implementado ? "Editar" : "Criar"}
+                          Editar
                         </Button>
                         <Button 
                           size="sm" 
                           variant="outline" 
                           onClick={() => handleVerEstatisticas(layout.id)}
+                          disabled={!configuracao}
                         >
                           <BarChart3 className="h-4 w-4 mr-1" />
                           Stats
@@ -317,6 +356,20 @@ const AdminLayoutsPropostas = () => {
           </main>
         </div>
       </div>
+
+      {/* Modais */}
+      <LayoutEditor
+        layoutId={layoutSelecionado}
+        isOpen={editorAberto}
+        onClose={handleFecharEditor}
+        onSave={handleSalvarEditor}
+      />
+
+      <LayoutStats
+        layoutId={layoutSelecionado}
+        isOpen={statsAberto}
+        onClose={handleFecharStats}
+      />
     </SidebarProvider>
   );
 };
