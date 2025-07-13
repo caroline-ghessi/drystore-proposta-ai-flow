@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.cleanup-debug-files]
 verify_jwt = false
+
+[functions.chatbot-vendas]
+verify_jwt = false

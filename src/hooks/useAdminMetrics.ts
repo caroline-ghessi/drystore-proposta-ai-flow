@@ -13,6 +13,31 @@ export interface AdminMetrics {
   vendedoresAtivos: number;
   vendedoresTotais: number;
   vendedoresInativos: number;
+  
+  // Sistema de Metas
+  metaMensal: number;
+  faturamentoDoMes: number;
+  propostasDoMes: number;
+  progressoMeta: number;
+  diasRestantes: number;
+  valorNecessario: number;
+  projecaoMes: number;
+  
+  // Pipeline de Oportunidades
+  valorPipeline: number;
+  propostasAbertas: number;
+  maioresOportunidades: Array<{
+    id: string;
+    cliente: string;
+    valor: number;
+    tipo: string;
+    diasEmAberto: number;
+    prioridade: 'alta' | 'media' | 'baixa';
+    vendedor: string;
+    status: string;
+    dataVencimento?: string;
+  }>;
+  
   performancePorCategoria: Array<{
     categoria: string;
     valor: number;
@@ -154,6 +179,70 @@ export function useAdminMetrics() {
       });
       const statusDistribution = Array.from(statusMap.values());
 
+      // SISTEMA DE METAS
+      const agora = new Date();
+      const mesAtual = agora.getMonth() + 1;
+      const anoAtual = agora.getFullYear();
+      const diaAtual = agora.getDate();
+      const diasNoMes = new Date(anoAtual, mesAtual, 0).getDate();
+      const diasRestantes = diasNoMes - diaAtual;
+      
+      // Meta mensal (configurável - por ora fixada em R$ 200.000)
+      const metaMensal = 200000;
+      
+      // Propostas do mês atual
+      const propostasDoMes = propostas.filter(p => {
+        const data = new Date(p.created_at);
+        return data.getMonth() + 1 === mesAtual && data.getFullYear() === anoAtual;
+      });
+      
+      const faturamentoDoMes = propostasDoMes.reduce((sum, p) => sum + (p.valor_total || 0), 0);
+      const progressoMeta = metaMensal > 0 ? (faturamentoDoMes / metaMensal) * 100 : 0;
+      const valorNecessario = Math.max(0, metaMensal - faturamentoDoMes);
+      
+      // Projeção baseada no ritmo atual
+      const diasPassados = diaAtual;
+      const projecaoMes = diasPassados > 0 ? (faturamentoDoMes / diasPassados) * diasNoMes : 0;
+
+      // PIPELINE DE OPORTUNIDADES
+      const propostasAbertas = propostas.filter(p => 
+        ['enviada', 'visualizada'].includes(p.status)
+      );
+      
+      const valorPipeline = propostasAbertas.reduce((sum, p) => sum + (p.valor_total || 0), 0);
+      
+      // Calcular prioridade das oportunidades
+      const maioresOportunidades = propostasAbertas
+        .map(p => {
+          const diasEmAberto = Math.floor((Date.now() - new Date(p.created_at).getTime()) / (1000 * 60 * 60 * 24));
+          const valor = p.valor_total || 0;
+          
+          // Algoritmo de prioridade: valor alto + urgência temporal
+          let prioridade: 'alta' | 'media' | 'baixa' = 'baixa';
+          
+          if (valor > 30000 && diasEmAberto > 7) prioridade = 'alta';
+          else if (valor > 15000 || diasEmAberto > 14) prioridade = 'media';
+          
+          return {
+            id: p.id,
+            cliente: p.cliente_nome,
+            valor,
+            tipo: p.tipo_proposta,
+            diasEmAberto,
+            prioridade,
+            vendedor: p.vendedores?.nome || 'Não atribuído',
+            status: p.status,
+            dataVencimento: p.data_vencimento
+          };
+        })
+        .sort((a, b) => {
+          // Ordenar por prioridade e depois por valor
+          const prioridadeValues = { alta: 3, media: 2, baixa: 1 };
+          const diff = prioridadeValues[b.prioridade] - prioridadeValues[a.prioridade];
+          return diff !== 0 ? diff : b.valor - a.valor;
+        })
+        .slice(0, 10);
+
       setMetrics({
         faturamentoTotal,
         ticketMedio,
@@ -166,6 +255,21 @@ export function useAdminMetrics() {
         vendedoresAtivos,
         vendedoresTotais: vendedores.length,
         vendedoresInativos,
+        
+        // Sistema de Metas
+        metaMensal,
+        faturamentoDoMes,
+        propostasDoMes: propostasDoMes.length,
+        progressoMeta,
+        diasRestantes,
+        valorNecessario,
+        projecaoMes,
+        
+        // Pipeline
+        valorPipeline,
+        propostasAbertas: propostasAbertas.length,
+        maioresOportunidades,
+        
         performancePorCategoria,
         evolucaoMensal,
         rankingVendedores,

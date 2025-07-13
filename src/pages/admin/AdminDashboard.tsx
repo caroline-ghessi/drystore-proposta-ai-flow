@@ -16,7 +16,13 @@ import {
   UserCheck,
   UserX,
   Timer,
-  Percent
+  Percent,
+  Clock,
+  Zap,
+  TrendingDown,
+  Award,
+  Phone,
+  Mail
 } from "lucide-react";
 import { 
   BarChart, 
@@ -38,6 +44,9 @@ import { useAdminMetrics } from "@/hooks/useAdminMetrics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ChatbotVendas } from "@/components/ChatbotVendas";
 
 const AdminDashboard = () => {
   const { metrics, loading, error } = useAdminMetrics();
@@ -87,6 +96,201 @@ const AdminDashboard = () => {
                 </Card>
               ) : metrics ? (
                 <>
+                  {/* SISTEMA DE METAS E STATUS */}
+                  <div className="grid gap-6 lg:grid-cols-3">
+                    {/* Meta Mensal */}
+                    <Card className="lg:col-span-2">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Target className="h-5 w-5" />
+                          Meta Mensal vs Realizado
+                        </CardTitle>
+                        <CardDescription>
+                          {metrics.diasRestantes} dias restantes no mês
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-2xl font-bold">
+                              {new Intl.NumberFormat('pt-BR', { 
+                                style: 'currency', 
+                                currency: 'BRL' 
+                              }).format(metrics.faturamentoDoMes)}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              de {new Intl.NumberFormat('pt-BR', { 
+                                style: 'currency', 
+                                currency: 'BRL' 
+                              }).format(metrics.metaMensal)} meta
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-primary">
+                              {metrics.progressoMeta.toFixed(1)}%
+                            </p>
+                            <p className="text-sm text-muted-foreground">atingido</p>
+                          </div>
+                        </div>
+                        
+                        <Progress value={metrics.progressoMeta} className="h-3" />
+                        
+                        <div className="grid grid-cols-3 gap-4 pt-2 border-t">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Necessário</p>
+                            <p className="font-bold text-destructive">
+                              {new Intl.NumberFormat('pt-BR', { 
+                                style: 'currency', 
+                                currency: 'BRL' 
+                              }).format(metrics.valorNecessario)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Projeção</p>
+                            <p className={`font-bold ${metrics.projecaoMes >= metrics.metaMensal ? 'text-green-600' : 'text-yellow-600'}`}>
+                              {new Intl.NumberFormat('pt-BR', { 
+                                style: 'currency', 
+                                currency: 'BRL' 
+                              }).format(metrics.projecaoMes)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Pipeline</p>
+                            <p className="font-bold text-blue-600">
+                              {new Intl.NumberFormat('pt-BR', { 
+                                style: 'currency', 
+                                currency: 'BRL' 
+                              }).format(metrics.valorPipeline)}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Status Crítico */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <AlertTriangle className="h-5 w-5" />
+                          Status Crítico
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Propostas Abertas</span>
+                            <Badge variant="outline">{metrics.propostasAbertas}</Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Propostas do Mês</span>
+                            <Badge variant="secondary">{metrics.propostasDoMes}</Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Taxa Conversão</span>
+                            <Badge variant={metrics.taxaConversao > 20 ? "default" : "destructive"}>
+                              {metrics.taxaConversao.toFixed(1)}%
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        <div className="pt-3 border-t">
+                          <p className="text-sm text-muted-foreground mb-2">Urgência</p>
+                          {metrics.progressoMeta < 50 && metrics.diasRestantes < 15 ? (
+                            <Badge variant="destructive" className="w-full justify-center">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Meta em Risco
+                            </Badge>
+                          ) : metrics.progressoMeta < 80 ? (
+                            <Badge variant="secondary" className="w-full justify-center">
+                              <Clock className="h-3 w-3 mr-1" />
+                              Atenção
+                            </Badge>
+                          ) : (
+                            <Badge variant="default" className="w-full justify-center">
+                              <Award className="h-3 w-3 mr-1" />
+                              No Caminho
+                            </Badge>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* MAIORES OPORTUNIDADES */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Zap className="h-5 w-5" />
+                        Maiores Oportunidades em Aberto
+                      </CardTitle>
+                      <CardDescription>
+                        Foque nestas propostas para acelerar o fechamento das metas
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Cliente</TableHead>
+                            <TableHead>Valor</TableHead>
+                            <TableHead>Tipo</TableHead>
+                            <TableHead>Prioridade</TableHead>
+                            <TableHead>Vendedor</TableHead>
+                            <TableHead>Ação</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {metrics.maioresOportunidades.slice(0, 8).map((oportunidade, index) => (
+                            <TableRow key={oportunidade.id}>
+                              <TableCell className="font-medium">
+                                <div>
+                                  <p>{oportunidade.cliente}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {oportunidade.diasEmAberto} dias em aberto
+                                  </p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <p className="font-bold">
+                                  {new Intl.NumberFormat('pt-BR', { 
+                                    style: 'currency', 
+                                    currency: 'BRL' 
+                                  }).format(oportunidade.valor)}
+                                </p>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{oportunidade.tipo}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant={
+                                    oportunidade.prioridade === 'alta' ? 'destructive' :
+                                    oportunidade.prioridade === 'media' ? 'secondary' : 'outline'
+                                  }
+                                >
+                                  {oportunidade.prioridade}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {oportunidade.vendedor}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="outline">
+                                    <Phone className="h-3 w-3" />
+                                  </Button>
+                                  <Button size="sm" variant="outline">
+                                    <Mail className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+
                   {/* MÉTRICAS PRINCIPAIS */}
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                     <Card>
@@ -332,6 +536,9 @@ const AdminDashboard = () => {
               ) : null}
             </div>
           </main>
+          
+          {/* CHATBOT DE IA */}
+          <ChatbotVendas metrics={metrics} />
         </div>
       </div>
     </SidebarProvider>
