@@ -55,6 +55,62 @@ export type Database = {
           },
         ]
       }
+      calculos_impermeabilizacao: {
+        Row: {
+          area_aplicacao: number
+          created_at: string
+          id: string
+          inclui_primer: boolean | null
+          inclui_reforco_cantos: boolean | null
+          numero_demaos: number | null
+          observacoes: string | null
+          proposta_id: string | null
+          sistema_impermeabilizacao: string | null
+          tipo_superficie: string | null
+          updated_at: string
+          valor_por_m2: number | null
+          valor_total: number | null
+        }
+        Insert: {
+          area_aplicacao: number
+          created_at?: string
+          id?: string
+          inclui_primer?: boolean | null
+          inclui_reforco_cantos?: boolean | null
+          numero_demaos?: number | null
+          observacoes?: string | null
+          proposta_id?: string | null
+          sistema_impermeabilizacao?: string | null
+          tipo_superficie?: string | null
+          updated_at?: string
+          valor_por_m2?: number | null
+          valor_total?: number | null
+        }
+        Update: {
+          area_aplicacao?: number
+          created_at?: string
+          id?: string
+          inclui_primer?: boolean | null
+          inclui_reforco_cantos?: boolean | null
+          numero_demaos?: number | null
+          observacoes?: string | null
+          proposta_id?: string | null
+          sistema_impermeabilizacao?: string | null
+          tipo_superficie?: string | null
+          updated_at?: string
+          valor_por_m2?: number | null
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calculos_impermeabilizacao_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calculos_telhado_shingle: {
         Row: {
           area_telhado: number
@@ -993,6 +1049,7 @@ export type Database = {
         | "verga-fibra"
         | "argamassa-silentfloor"
         | "light-steel-frame"
+        | "impermeabilizacao"
       tipo_usuario_enum: "administrador" | "vendedor" | "representante"
     }
     CompositeTypes: {
@@ -1145,6 +1202,7 @@ export const Constants = {
         "verga-fibra",
         "argamassa-silentfloor",
         "light-steel-frame",
+        "impermeabilizacao",
       ],
       tipo_usuario_enum: ["administrador", "vendedor", "representante"],
     },

@@ -11,7 +11,7 @@ import { StepCalculoTelhasCompleto } from "./wizard/StepCalculoTelhasCompleto"
 import { StepDadosManuaisTelhas } from "./wizard/StepDadosManuaisTelhas"
 import { StepGenerate } from "./wizard/StepGenerate"
 
-export type TipoProposta = 'energia-solar' | 'telhas' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao' | 'tintas-texturas' | 'verga-fibra' | 'argamassa-silentfloor' | 'light-steel-frame'
+export type TipoProposta = 'energia-solar' | 'telhas' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao' | 'tintas-texturas' | 'verga-fibra' | 'argamassa-silentfloor' | 'light-steel-frame' | 'impermeabilizacao'
 
 export interface PropostaData {
   tipoProposta: TipoProposta;
@@ -32,6 +32,10 @@ export interface PropostaData {
   areaTelhado?: number;
   inclinacaoTelhado?: number;
   tipoEstrutura?: string;
+  // Dados para impermeabilização
+  areaImpermeabilizacao?: number;
+  tipoSuperficie?: string;
+  sistemaImpermeabilizacao?: string;
 }
 
 interface PropostaWizardProps {

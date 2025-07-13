@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Zap, Building, Layers, Square, CreditCard, Palette, Drill, Volume2, Home } from "lucide-react"
+import { Zap, Building, Layers, Square, CreditCard, Palette, Drill, Volume2, Home, Shield } from "lucide-react"
 import { TipoProposta } from "../PropostaWizard"
 
 interface StepSelectorProps {
@@ -81,6 +81,14 @@ const TIPOS_PROPOSTA = [
     icone: Home,
     documento: 'Projeto arquitetônico (PDF)',
     detalhes: 'Área construída e especificações'
+  },
+  {
+    tipo: 'impermeabilizacao' as TipoProposta,
+    titulo: 'Impermeabilização',
+    descricao: 'Sistemas de impermeabilização para lajes e paredes',
+    icone: Shield,
+    documento: 'Projeto ou especificações (PDF)',
+    detalhes: 'Área, tipo de superfície e sistema'
   }
 ]
 
