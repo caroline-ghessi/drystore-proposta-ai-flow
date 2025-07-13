@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +9,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
-import { Edit, Plus, Search, Sun } from "lucide-react";
+import { Edit, Plus, Search, Sun, Download, Upload, Eye, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ProdutoEnergiaSolar {
@@ -30,6 +31,22 @@ interface ProdutoEnergiaSolar {
   compatibilidades: any | null;
   unidade: string;
   ativo: boolean;
+  // Campos específicos expandidos
+  tipo_celula?: 'mono' | 'poli';
+  fator_dimensionamento?: number;
+  capacidade?: number;
+  tipo_conexao?: string;
+  area_ocupada?: number;
+  potencia_minima?: number;
+  potencia_maxima?: number;
+  ciclo_vida?: number;
+  tempo_carregamento?: number;
+  material?: string;
+  resistencia?: number;
+  tipo_corrente?: 'AC' | 'DC';
+  comprimento?: number;
+  calibre?: number;
+  frequencia?: number;
 }
 
 const CATEGORIAS = [
@@ -38,12 +55,14 @@ const CATEGORIAS = [
   { value: 'estrutura', label: 'Estruturas' },
   { value: 'cabo', label: 'Cabos' },
   { value: 'protecao', label: 'Proteções' },
-  { value: 'acessorio', label: 'Acessórios' }
+  { value: 'acessorio', label: 'Acessórios' },
+  { value: 'bateria', label: 'Baterias' },
+  { value: 'conector', label: 'Conectores' },
+  { value: 'material-ca', label: 'Material CA' }
 ];
 
 export const EnergiaSolarManager = () => {
   const [produtos, setProdutos] = useState<ProdutoEnergiaSolar[]>([]);
-  const [filteredProdutos, setFilteredProdutos] = useState<ProdutoEnergiaSolar[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoriaFilter, setCategoriaFilter] = useState<string>("all");
@@ -55,10 +74,6 @@ export const EnergiaSolarManager = () => {
   useEffect(() => {
     fetchProdutos();
   }, []);
-
-  useEffect(() => {
-    filterProdutos();
-  }, [produtos, searchTerm, categoriaFilter, statusFilter]);
 
   const fetchProdutos = async () => {
     try {
@@ -81,7 +96,7 @@ export const EnergiaSolarManager = () => {
     }
   };
 
-  const filterProdutos = () => {
+  const filteredProdutos = useMemo(() => {
     let filtered = produtos;
     
     if (searchTerm) {
@@ -101,8 +116,8 @@ export const EnergiaSolarManager = () => {
       );
     }
     
-    setFilteredProdutos(filtered);
-  };
+    return filtered;
+  }, [produtos, searchTerm, categoriaFilter, statusFilter]);
 
   const handleSave = async (produtoData: Partial<ProdutoEnergiaSolar>) => {
     try {
@@ -160,6 +175,28 @@ export const EnergiaSolarManager = () => {
   const openEditDialog = (produto?: ProdutoEnergiaSolar) => {
     setEditingProduto(produto || null);
     setIsDialogOpen(true);
+  };
+
+  const exportarCSV = () => {
+    const csv = [
+      'ID,Categoria,Nome,Fabricante,Potência (W),Preço,Status',
+      ...filteredProdutos.map(produto => 
+        `${produto.id},${produto.categoria},${produto.nome},${produto.fabricante || ''},${produto.potencia_wp || ''},${produto.preco_unitario || ''},${produto.ativo ? 'Ativo' : 'Inativo'}`
+      )
+    ].join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'produtos-energia-solar.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast({ 
+      title: "Sucesso", 
+      description: "Dados exportados com sucesso!" 
+    });
   };
 
   const getCategoriaColor = (categoria: string) => {
@@ -226,6 +263,10 @@ export const EnergiaSolarManager = () => {
               <Plus className="h-4 w-4 mr-2" />
               Novo
             </Button>
+            <Button variant="outline" onClick={exportarCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar CSV
+            </Button>
           </div>
 
           <div className="rounded-md border">
@@ -236,6 +277,7 @@ export const EnergiaSolarManager = () => {
                   <TableHead>Categoria</TableHead>
                   <TableHead>Fabricante</TableHead>
                   <TableHead>Potência</TableHead>
+                  <TableHead>Eficiência</TableHead>
                   <TableHead>Preço</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ações</TableHead>
@@ -253,6 +295,9 @@ export const EnergiaSolarManager = () => {
                     <TableCell>{produto.fabricante || '-'}</TableCell>
                     <TableCell>
                       {produto.potencia_wp ? `${produto.potencia_wp}W` : '-'}
+                    </TableCell>
+                    <TableCell>
+                      {produto.eficiencia ? `${produto.eficiencia}%` : '-'}
                     </TableCell>
                     <TableCell>
                       {produto.preco_unitario ? `R$ ${produto.preco_unitario.toFixed(2)}` : '-'}
@@ -324,7 +369,23 @@ const ProdutoEditDialog = ({ produto, open, onOpenChange, onSave }: ProdutoEditD
         especificacoes_tecnicas: null,
         compatibilidades: null,
         unidade: 'un',
-        ativo: true
+        ativo: true,
+        // Campos específicos
+        tipo_celula: undefined,
+        fator_dimensionamento: undefined,
+        capacidade: undefined,
+        tipo_conexao: undefined,
+        area_ocupada: undefined,
+        potencia_minima: undefined,
+        potencia_maxima: undefined,
+        ciclo_vida: undefined,
+        tempo_carregamento: undefined,
+        material: undefined,
+        resistencia: undefined,
+        tipo_corrente: undefined,
+        comprimento: undefined,
+        calibre: undefined,
+        frequencia: undefined
       });
     }
   }, [produto]);
@@ -474,6 +535,9 @@ const ProdutoEditDialog = ({ produto, open, onOpenChange, onSave }: ProdutoEditD
             </div>
           </div>
 
+          {/* Campos específicos baseados na categoria */}
+          <CamposEspecificos categoria={formData.categoria} formData={formData} setFormData={setFormData} />
+
           <div>
             <Label htmlFor="especificacoes_tecnicas">Especificações Técnicas (JSON)</Label>
             <Textarea
@@ -530,4 +594,225 @@ const ProdutoEditDialog = ({ produto, open, onOpenChange, onSave }: ProdutoEditD
       </DialogContent>
     </Dialog>
   );
+
+};
+
+// Componente separado para campos específicos
+interface CamposEspecificosProps {
+  categoria?: string;
+  formData: Partial<ProdutoEnergiaSolar>;
+  setFormData: (data: Partial<ProdutoEnergiaSolar>) => void;
+}
+
+const CamposEspecificos = ({ categoria, formData, setFormData }: CamposEspecificosProps) => {
+  switch (categoria) {
+    case 'painel-solar':
+      return (
+        <div className="space-y-4">
+          <h4 className="font-medium">Especificações do Painel</h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="tipo_celula">Tipo de Célula</Label>
+              <Select 
+                value={formData.tipo_celula || ""} 
+                onValueChange={(value) => setFormData({...formData, tipo_celula: value as 'mono' | 'poli'})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mono">Monocristalino</SelectItem>
+                  <SelectItem value="poli">Policristalino</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="area_ocupada">Área Ocupada (m²)</Label>
+              <Input
+                id="area_ocupada"
+                type="number"
+                step="0.01"
+                value={formData.area_ocupada || ""}
+                onChange={(e) => setFormData({...formData, area_ocupada: e.target.value ? parseFloat(e.target.value) : undefined})}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    
+    case 'inversor':
+      return (
+        <div className="space-y-4">
+          <h4 className="font-medium">Especificações do Inversor</h4>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="fator_dimensionamento">Fator de Dimensionamento</Label>
+              <Input
+                id="fator_dimensionamento"
+                type="number"
+                step="0.1"
+                value={formData.fator_dimensionamento || ""}
+                onChange={(e) => setFormData({...formData, fator_dimensionamento: e.target.value ? parseFloat(e.target.value) : undefined})}
+              />
+            </div>
+            <div>
+              <Label htmlFor="potencia_minima">Potência Mínima (kW)</Label>
+              <Input
+                id="potencia_minima"
+                type="number"
+                step="0.1"
+                value={formData.potencia_minima || ""}
+                onChange={(e) => setFormData({...formData, potencia_minima: e.target.value ? parseFloat(e.target.value) : undefined})}
+              />
+            </div>
+            <div>
+              <Label htmlFor="potencia_maxima">Potência Máxima (kW)</Label>
+              <Input
+                id="potencia_maxima"
+                type="number"
+                step="0.1"
+                value={formData.potencia_maxima || ""}
+                onChange={(e) => setFormData({...formData, potencia_maxima: e.target.value ? parseFloat(e.target.value) : undefined})}
+              />
+            </div>
+            <div>
+              <Label htmlFor="frequencia">Frequência (Hz)</Label>
+              <Input
+                id="frequencia"
+                type="number"
+                value={formData.frequencia || ""}
+                onChange={(e) => setFormData({...formData, frequencia: e.target.value ? parseFloat(e.target.value) : undefined})}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    
+    case 'bateria':
+      return (
+        <div className="space-y-4">
+          <h4 className="font-medium">Especificações da Bateria</h4>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="capacidade">Capacidade (Ah/Wh)</Label>
+              <Input
+                id="capacidade"
+                type="number"
+                value={formData.capacidade || ""}
+                onChange={(e) => setFormData({...formData, capacidade: e.target.value ? parseFloat(e.target.value) : undefined})}
+              />
+            </div>
+            <div>
+              <Label htmlFor="ciclo_vida">Ciclo de Vida (ciclos)</Label>
+              <Input
+                id="ciclo_vida"
+                type="number"
+                value={formData.ciclo_vida || ""}
+                onChange={(e) => setFormData({...formData, ciclo_vida: e.target.value ? parseInt(e.target.value) : undefined})}
+              />
+            </div>
+            <div>
+              <Label htmlFor="tempo_carregamento">Tempo de Carregamento (h)</Label>
+              <Input
+                id="tempo_carregamento"
+                type="number"
+                step="0.1"
+                value={formData.tempo_carregamento || ""}
+                onChange={(e) => setFormData({...formData, tempo_carregamento: e.target.value ? parseFloat(e.target.value) : undefined})}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    
+    case 'conector':
+      return (
+        <div className="space-y-4">
+          <h4 className="font-medium">Especificações do Conector</h4>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="tipo_conexao">Tipo de Conexão</Label>
+              <Input
+                id="tipo_conexao"
+                value={formData.tipo_conexao || ""}
+                onChange={(e) => setFormData({...formData, tipo_conexao: e.target.value})}
+              />
+            </div>
+            <div>
+              <Label htmlFor="material">Material</Label>
+              <Select 
+                value={formData.material || ""} 
+                onValueChange={(value) => setFormData({...formData, material: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o material" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cobre">Cobre</SelectItem>
+                  <SelectItem value="aluminio">Alumínio</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="resistencia">Resistência (ohms)</Label>
+              <Input
+                id="resistencia"
+                type="number"
+                step="0.0001"
+                value={formData.resistencia || ""}
+                onChange={(e) => setFormData({...formData, resistencia: e.target.value ? parseFloat(e.target.value) : undefined})}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    
+    case 'material-ca':
+    case 'cabo':
+      return (
+        <div className="space-y-4">
+          <h4 className="font-medium">Especificações do Material</h4>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="tipo_corrente">Tipo de Corrente</Label>
+              <Select 
+                value={formData.tipo_corrente || ""} 
+                onValueChange={(value) => setFormData({...formData, tipo_corrente: value as 'AC' | 'DC'})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AC">AC</SelectItem>
+                  <SelectItem value="DC">DC</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="comprimento">Comprimento (m)</Label>
+              <Input
+                id="comprimento"
+                type="number"
+                step="0.1"
+                value={formData.comprimento || ""}
+                onChange={(e) => setFormData({...formData, comprimento: e.target.value ? parseFloat(e.target.value) : undefined})}
+              />
+            </div>
+            <div>
+              <Label htmlFor="calibre">Calibre (mm²)</Label>
+              <Input
+                id="calibre"
+                type="number"
+                step="0.1"
+                value={formData.calibre || ""}
+                onChange={(e) => setFormData({...formData, calibre: e.target.value ? parseFloat(e.target.value) : undefined})}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    
+    default:
+      return null;
+  }
 };
