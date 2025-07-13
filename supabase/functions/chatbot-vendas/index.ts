@@ -7,6 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const grokApiKey = Deno.env.get('GROK_API_KEY');
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -19,8 +20,8 @@ serve(async (req) => {
   try {
     const { message, tipo = 'consulta' } = await req.json();
     
-    if (!openAIApiKey) {
-      throw new Error('OpenAI API key não configurada');
+    if (!grokApiKey && !openAIApiKey) {
+      throw new Error('Nenhuma API key de IA configurada (Grok ou OpenAI)');
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -81,10 +82,8 @@ serve(async (req) => {
       }).filter(v => v.propostas > 0).sort((a, b) => b.valor - a.valor)
     };
 
-    // Sistema de prompts especializado
-    let systemPrompt = `Você é o assistente de vendas da DryStore, especialista em análise de dados comerciais e estratégias de vendas.
-
-CONTEXTO ATUAL DO NEGÓCIO:
+    // Sistema de prompts otimizado para Grok AI
+    const basePrompt = `CONTEXTO ATUAL DO NEGÓCIO - DryStore:
 - Faturamento do mês: R$ ${metricas.faturamentoDoMes.toLocaleString('pt-BR')}
 - Propostas criadas este mês: ${metricas.propostasDoMes}
 - Pipeline atual: ${metricas.propostasAbertas} propostas abertas no valor de R$ ${metricas.valorPipeline.toLocaleString('pt-BR')}
@@ -99,7 +98,41 @@ ${metricas.maioresOportunidades.map((op, i) =>
 PERFORMANCE DA EQUIPE ESTE MÊS:
 ${metricas.vendedoresPerformance.map((v, i) => 
   `${i+1}. ${v.nome}: ${v.propostas} propostas, R$ ${v.valor.toLocaleString('pt-BR')}, ${v.aceitas} vendas`
-).join('\n')}
+).join('\n')}`;
+
+    // Prompts específicos para cada IA
+    let systemPrompt, model, apiUrl, authHeader, requestBody;
+
+    if (grokApiKey) {
+      // Configuração para Grok AI (X.ai)
+      systemPrompt = `Você é o consultor comercial estratégico da DryStore. Analise dados, identifique oportunidades e dê recomendações práticas.
+
+${basePrompt}
+
+Seja direto, use números concretos e foque em ações que geram resultados. Priorize as maiores oportunidades.`;
+      
+      model = 'grok-beta';
+      apiUrl = 'https://api.x.ai/v1/chat/completions';
+      authHeader = `Bearer ${grokApiKey}`;
+      
+      if (tipo === 'analise_automatica') {
+        systemPrompt += `\n\nFaça uma análise automática e dê 3 recomendações estratégicas prioritárias.`;
+      }
+      
+      requestBody = JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message }
+        ],
+        temperature: 0.3,
+        max_tokens: 1500,
+      });
+    } else {
+      // Fallback para OpenAI
+      systemPrompt = `Você é o assistente de vendas da DryStore, especialista em análise de dados comerciais e estratégias de vendas.
+
+${basePrompt}
 
 SUAS ESPECIALIDADES:
 1. Análise de métricas e identificação de oportunidades
@@ -111,26 +144,33 @@ SUAS ESPECIALIDADES:
 7. Identificação de gargalos no processo
 
 Seja direto, prático e focado em resultados. Use dados reais para embasar suas recomendações.`;
-
-    if (tipo === 'analise_automatica') {
-      systemPrompt += `\n\nFaça uma análise automática da situação atual e forneça 3 recomendações estratégicas prioritárias.`;
-    }
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
+      
+      model = 'gpt-4o';
+      apiUrl = 'https://api.openai.com/v1/chat/completions';
+      authHeader = `Bearer ${openAIApiKey}`;
+      
+      if (tipo === 'analise_automatica') {
+        systemPrompt += `\n\nFaça uma análise automática da situação atual e forneça 3 recomendações estratégicas prioritárias.`;
+      }
+      
+      requestBody = JSON.stringify({
+        model,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
         temperature: 0.7,
         max_tokens: 1500,
-      }),
+      });
+    }
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: requestBody,
     });
 
     const data = await response.json();
