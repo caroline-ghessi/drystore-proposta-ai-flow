@@ -20,7 +20,8 @@ const TIPO_LABELS = {
   'telhas': 'Telhas Shingle',
   'divisorias': 'Divisórias',
   'pisos': 'Pisos',
-  'forros': 'Forros'
+  'forros': 'Forros',
+  'impermeabilizacao': 'Impermeabilização'
 }
 
 const DOCUMENTO_INFO = {
@@ -53,6 +54,12 @@ const DOCUMENTO_INFO = {
     descricao: 'Planta com especificações do forro e medidas',
     formatos: 'PDF',
     exemplo: 'Exemplo: planta_forro.pdf'
+  },
+  'impermeabilizacao': {
+    titulo: 'Projeto de Impermeabilização',
+    descricao: 'Envie especificações técnicas, plantas ou projeto de impermeabilização',
+    formatos: 'PDF',
+    exemplo: 'Exemplo: projeto_impermeabilizacao.pdf'
   }
 }
 
