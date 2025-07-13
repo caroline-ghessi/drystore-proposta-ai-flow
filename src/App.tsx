@@ -17,6 +17,7 @@ import Ranking from "./pages/Ranking";
 import ClientePortal from "./pages/ClientePortal";
 import PropostaCliente from "./pages/PropostaCliente";
 import ProcessamentoProposta from "./pages/ProcessamentoProposta";
+import CalculadoraShingleCompleta from "./pages/CalculadoraShingleCompleta";
 import LoginCliente from "./pages/LoginCliente";
 import Admin from "./pages/Admin";
 import EquipamentosSolar from "./pages/EquipamentosSolar";
@@ -48,6 +49,7 @@ const App = () => (
           <Route path="/materiais" element={<ProtectedRoute><Materiais /></ProtectedRoute>} />
           <Route path="/ranking" element={<ProtectedRoute><Ranking /></ProtectedRoute>} />
           <Route path="/equipamentos-solar" element={<ProtectedRoute><EquipamentosSolar /></ProtectedRoute>} />
+          <Route path="/calculadora-shingle" element={<ProtectedRoute><CalculadoraShingleCompleta /></ProtectedRoute>} />
           <Route path="/cliente-portal" element={<ProtectedRoute><ClientePortal /></ProtectedRoute>} />
           <Route path="/processamento" element={<ProtectedRoute><ProcessamentoProposta /></ProtectedRoute>} />
           

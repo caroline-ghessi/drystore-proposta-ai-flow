@@ -305,6 +305,53 @@ export type Database = {
           },
         ]
       }
+      composicoes_shingle: {
+        Row: {
+          base_calculo: string
+          consumo_unitario: number
+          created_at: string | null
+          id: string
+          linha_telha: string | null
+          nome_composicao: string
+          obrigatorio: boolean | null
+          ordem_instalacao: number | null
+          produto_id: string | null
+          tipo_calculo: string
+        }
+        Insert: {
+          base_calculo: string
+          consumo_unitario: number
+          created_at?: string | null
+          id?: string
+          linha_telha?: string | null
+          nome_composicao: string
+          obrigatorio?: boolean | null
+          ordem_instalacao?: number | null
+          produto_id?: string | null
+          tipo_calculo: string
+        }
+        Update: {
+          base_calculo?: string
+          consumo_unitario?: number
+          created_at?: string | null
+          id?: string
+          linha_telha?: string | null
+          nome_composicao?: string
+          obrigatorio?: boolean | null
+          ordem_instalacao?: number | null
+          produto_id?: string | null
+          tipo_calculo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "composicoes_shingle_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos_shingle_novo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       energia_solar_calculos: {
         Row: {
           area_disponivel: number | null
@@ -1125,6 +1172,60 @@ export type Database = {
         }
         Relationships: []
       }
+      produtos_shingle_novo: {
+        Row: {
+          ativo: boolean | null
+          codigo: string
+          conteudo_unidade: number
+          cor: string | null
+          created_at: string | null
+          descricao: string
+          especificacoes_tecnicas: Json | null
+          id: string
+          linha: string | null
+          peso_unitario: number | null
+          preco_unitario: number
+          quebra_padrao: number | null
+          tipo_componente: string
+          unidade_medida: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          codigo: string
+          conteudo_unidade: number
+          cor?: string | null
+          created_at?: string | null
+          descricao: string
+          especificacoes_tecnicas?: Json | null
+          id?: string
+          linha?: string | null
+          peso_unitario?: number | null
+          preco_unitario: number
+          quebra_padrao?: number | null
+          tipo_componente: string
+          unidade_medida: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          codigo?: string
+          conteudo_unidade?: number
+          cor?: string | null
+          created_at?: string | null
+          descricao?: string
+          especificacoes_tecnicas?: Json | null
+          id?: string
+          linha?: string | null
+          peso_unitario?: number | null
+          preco_unitario?: number
+          quebra_padrao?: number | null
+          tipo_componente?: string
+          unidade_medida?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       propostas: {
         Row: {
           arquivo_original: string | null
@@ -1440,6 +1541,34 @@ export type Database = {
           unidade_venda: string
           preco_unitario: number
           valor_total: number
+        }[]
+      }
+      calcular_orcamento_shingle_completo_v2: {
+        Args: {
+          p_area_telhado: number
+          p_comprimento_cumeeira?: number
+          p_perimetro_telhado?: number
+          p_comprimento_calha?: number
+          p_telha_codigo?: string
+          p_cor_acessorios?: string
+          p_incluir_manta?: boolean
+          p_incluir_calha?: boolean
+        }
+        Returns: {
+          tipo_item: string
+          codigo: string
+          descricao: string
+          dimensao_base: number
+          unidade_dimensao: string
+          fator_conversao: number
+          quebra_percentual: number
+          quantidade_calculada: number
+          quantidade_final: number
+          unidade_venda: string
+          preco_unitario: number
+          valor_total: number
+          categoria: string
+          ordem: number
         }[]
       }
       calcular_payback: {

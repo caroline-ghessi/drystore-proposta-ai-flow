@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DryStoreSidebar } from "@/components/DryStoreSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { TelhasShingleManager } from "@/components/admin/TelhasShingleManager";
+import { TelhasShingleManagerCompleto } from "@/components/admin/TelhasShingleManagerCompleto";
 import { DrywallManager } from "@/components/admin/DrywallManager";
 import { ImpermeabilizacaoManager } from "@/components/admin/ImpermeabilizacaoManager";
 import { EnergiaSolarManager } from "@/components/admin/EnergiaSolarManager";
@@ -43,7 +43,7 @@ const AdminProdutos = () => {
                 </TabsList>
 
                 <TabsContent value="telhas-shingle">
-                  <TelhasShingleManager />
+                  <TelhasShingleManagerCompleto />
                 </TabsContent>
 
                 <TabsContent value="drywall">
