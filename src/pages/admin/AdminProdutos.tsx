@@ -6,6 +6,9 @@ import { TelhasShingleManagerCompleto } from "@/components/admin/TelhasShingleMa
 import { DrywallManager } from "@/components/admin/DrywallManager";
 import { ImpermeabilizacaoManager } from "@/components/admin/ImpermeabilizacaoManager";
 import { EnergiaSolarManager } from "@/components/admin/EnergiaSolarManager";
+import { PisosManager } from "@/components/admin/PisosManager";
+import { ForrosManager } from "@/components/admin/ForrosManager";
+import { TelhasManager } from "@/components/admin/TelhasManager";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const AdminProdutos = () => {
@@ -35,11 +38,14 @@ const AdminProdutos = () => {
               </div>
 
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-7">
                   <TabsTrigger value="telhas-shingle">Telhas Shingle</TabsTrigger>
                   <TabsTrigger value="drywall">Drywall</TabsTrigger>
                   <TabsTrigger value="impermeabilizacao">Impermeabilização</TabsTrigger>
                   <TabsTrigger value="energia-solar">Energia Solar</TabsTrigger>
+                  <TabsTrigger value="pisos">Pisos</TabsTrigger>
+                  <TabsTrigger value="forros">Forros</TabsTrigger>
+                  <TabsTrigger value="telhas">Telhas</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="telhas-shingle">
@@ -56,6 +62,18 @@ const AdminProdutos = () => {
 
                 <TabsContent value="energia-solar">
                   <EnergiaSolarManager />
+                </TabsContent>
+
+                <TabsContent value="pisos">
+                  <PisosManager />
+                </TabsContent>
+
+                <TabsContent value="forros">
+                  <ForrosManager />
+                </TabsContent>
+
+                <TabsContent value="telhas">
+                  <TelhasManager />
                 </TabsContent>
               </Tabs>
             </main>

@@ -80,6 +80,7 @@ export const EnergiaSolarManager = () => {
       const { data, error } = await supabase
         .from('produtos')
         .select('*')
+        .in('categoria', ['energia-solar', 'painel-solar', 'inversor'])
         .order('categoria', { ascending: true })
         .order('nome', { ascending: true });
       
