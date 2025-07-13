@@ -258,6 +258,53 @@ export type Database = {
           },
         ]
       }
+      composicoes_drywall: {
+        Row: {
+          categoria_componente: string | null
+          consumo_por_m2: number | null
+          created_at: string | null
+          espessura_total: number | null
+          id: string
+          nome: string
+          ordem_montagem: number | null
+          produto_id: string | null
+          quebra_padrao: number | null
+          tipo_parede: string
+        }
+        Insert: {
+          categoria_componente?: string | null
+          consumo_por_m2?: number | null
+          created_at?: string | null
+          espessura_total?: number | null
+          id?: string
+          nome: string
+          ordem_montagem?: number | null
+          produto_id?: string | null
+          quebra_padrao?: number | null
+          tipo_parede: string
+        }
+        Update: {
+          categoria_componente?: string | null
+          consumo_por_m2?: number | null
+          created_at?: string | null
+          espessura_total?: number | null
+          id?: string
+          nome?: string
+          ordem_montagem?: number | null
+          produto_id?: string | null
+          quebra_padrao?: number | null
+          tipo_parede?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "composicoes_drywall_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos_drywall"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       energia_solar_calculos: {
         Row: {
           area_disponivel: number | null
@@ -461,6 +508,72 @@ export type Database = {
         }
         Relationships: []
       }
+      itens_calculo_drywall: {
+        Row: {
+          categoria: string
+          consumo_base: number | null
+          consumo_com_quebra: number | null
+          created_at: string | null
+          descricao: string
+          id: string
+          orcamento_id: string | null
+          ordem: number | null
+          preco_unitario: number | null
+          produto_id: string | null
+          quantidade_final: number | null
+          quebra_percentual: number | null
+          unidade: string
+          valor_total: number | null
+        }
+        Insert: {
+          categoria: string
+          consumo_base?: number | null
+          consumo_com_quebra?: number | null
+          created_at?: string | null
+          descricao: string
+          id?: string
+          orcamento_id?: string | null
+          ordem?: number | null
+          preco_unitario?: number | null
+          produto_id?: string | null
+          quantidade_final?: number | null
+          quebra_percentual?: number | null
+          unidade: string
+          valor_total?: number | null
+        }
+        Update: {
+          categoria?: string
+          consumo_base?: number | null
+          consumo_com_quebra?: number | null
+          created_at?: string | null
+          descricao?: string
+          id?: string
+          orcamento_id?: string | null
+          ordem?: number | null
+          preco_unitario?: number | null
+          produto_id?: string | null
+          quantidade_final?: number | null
+          quebra_percentual?: number | null
+          unidade?: string
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_calculo_drywall_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos_drywall"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_calculo_drywall_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos_drywall"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       itens_calculo_impermeabilizacao: {
         Row: {
           area_aplicacao: number
@@ -630,6 +743,86 @@ export type Database = {
           },
         ]
       }
+      orcamentos_drywall: {
+        Row: {
+          area_parede: number
+          composicao_nome: string
+          comprimento_linear: number | null
+          created_at: string | null
+          id: string
+          incluir_porta: boolean | null
+          incluir_tomadas: boolean | null
+          observacoes: string | null
+          pe_direito: number | null
+          peso_total_kg: number | null
+          proposta_id: string | null
+          quantidade_portas: number | null
+          quantidade_tomadas: number | null
+          quebra_isolamento: number | null
+          quebra_perfil: number | null
+          quebra_placa: number | null
+          status: string | null
+          tipo_parede: string
+          updated_at: string | null
+          valor_por_m2: number | null
+          valor_total: number | null
+        }
+        Insert: {
+          area_parede: number
+          composicao_nome: string
+          comprimento_linear?: number | null
+          created_at?: string | null
+          id?: string
+          incluir_porta?: boolean | null
+          incluir_tomadas?: boolean | null
+          observacoes?: string | null
+          pe_direito?: number | null
+          peso_total_kg?: number | null
+          proposta_id?: string | null
+          quantidade_portas?: number | null
+          quantidade_tomadas?: number | null
+          quebra_isolamento?: number | null
+          quebra_perfil?: number | null
+          quebra_placa?: number | null
+          status?: string | null
+          tipo_parede: string
+          updated_at?: string | null
+          valor_por_m2?: number | null
+          valor_total?: number | null
+        }
+        Update: {
+          area_parede?: number
+          composicao_nome?: string
+          comprimento_linear?: number | null
+          created_at?: string | null
+          id?: string
+          incluir_porta?: boolean | null
+          incluir_tomadas?: boolean | null
+          observacoes?: string | null
+          pe_direito?: number | null
+          peso_total_kg?: number | null
+          proposta_id?: string | null
+          quantidade_portas?: number | null
+          quantidade_tomadas?: number | null
+          quebra_isolamento?: number | null
+          quebra_perfil?: number | null
+          quebra_placa?: number | null
+          status?: string | null
+          tipo_parede?: string
+          updated_at?: string | null
+          valor_por_m2?: number | null
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamentos_drywall_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orcamentos_telhado_shingle: {
         Row: {
           area_telhado: number
@@ -770,6 +963,51 @@ export type Database = {
           tensao_v?: number | null
           unidade?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      produtos_drywall: {
+        Row: {
+          ativo: boolean | null
+          categoria: string
+          codigo: string
+          created_at: string | null
+          descricao: string
+          espessura: number | null
+          id: string
+          peso_unitario: number | null
+          preco_unitario: number | null
+          tipo_placa: string | null
+          unidade_medida: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria: string
+          codigo: string
+          created_at?: string | null
+          descricao: string
+          espessura?: number | null
+          id?: string
+          peso_unitario?: number | null
+          preco_unitario?: number | null
+          tipo_placa?: string | null
+          unidade_medida: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria?: string
+          codigo?: string
+          created_at?: string | null
+          descricao?: string
+          espessura?: number | null
+          id?: string
+          peso_unitario?: number | null
+          preco_unitario?: number | null
+          tipo_placa?: string | null
+          unidade_medida?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1120,6 +1358,27 @@ export type Database = {
           p_potencia_sistema: number
         }
         Returns: Json
+      }
+      calcular_orcamento_drywall: {
+        Args: {
+          p_area_parede: number
+          p_composicao_nome: string
+          p_pe_direito?: number
+          p_incluir_porta?: boolean
+          p_quantidade_portas?: number
+        }
+        Returns: {
+          categoria: string
+          descricao: string
+          consumo_base: number
+          quebra_percentual: number
+          consumo_com_quebra: number
+          unidade: string
+          quantidade_final: number
+          preco_unitario: number
+          valor_total: number
+          ordem: number
+        }[]
       }
       calcular_orcamento_impermeabilizacao: {
         Args: {

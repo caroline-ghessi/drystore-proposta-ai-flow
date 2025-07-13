@@ -10,6 +10,7 @@ import { StepCalculoTelhas } from "./wizard/StepCalculoTelhas"
 import { StepCalculoTelhasCompleto } from "./wizard/StepCalculoTelhasCompleto"
 import { StepDadosManuaisTelhas } from "./wizard/StepDadosManuaisTelhas"
 import { StepGenerate } from "./wizard/StepGenerate"
+import { StepCalculoDivisorias } from "./wizard/StepCalculoDivisorias"
 
 export type TipoProposta = 'energia-solar' | 'telhas' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao' | 'tintas-texturas' | 'verga-fibra' | 'argamassa-silentfloor' | 'light-steel-frame' | 'impermeabilizacao'
 
@@ -75,6 +76,21 @@ const STEPS_TELHAS_MANUAL = [
   { title: "Entrada de Dados", description: "Upload ou dados manuais" },
   { title: "Dados do Cliente", description: "Informações do projeto" },
   { title: "Cálculos de Cobertura", description: "Dimensionamento automático" },
+  { title: "Gerar Proposta", description: "Confirmar e criar proposta" }
+]
+
+const STEPS_DIVISORIAS_UPLOAD = [
+  { title: "Tipo de Proposta", description: "Selecione o tipo de proposta" },
+  { title: "Upload de PDF", description: "Envie a planta baixa" },
+  { title: "Extração de Dados", description: "Processamento automático" },
+  { title: "Confirmação dos Dados", description: "Validar dados do cliente" },
+  { title: "Gerar Proposta", description: "Confirmar e criar proposta" }
+]
+
+const STEPS_DIVISORIAS_MANUAL = [
+  { title: "Tipo de Proposta", description: "Selecione o tipo de proposta" },
+  { title: "Entrada de Dados", description: "Upload ou dados manuais" },
+  { title: "Cálculo do Drywall", description: "Dimensionamento automático" },
   { title: "Gerar Proposta", description: "Confirmar e criar proposta" }
 ]
 
@@ -151,6 +167,8 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
         return STEPS_ENERGIA_SOLAR;
       case 'telhas':
         return propostaData.entradaManual ? STEPS_TELHAS_MANUAL : STEPS_TELHAS_UPLOAD;
+      case 'divisorias':
+        return propostaData.entradaManual ? STEPS_DIVISORIAS_MANUAL : STEPS_DIVISORIAS_UPLOAD;
       default:
         return STEPS_DEFAULT;
     }
@@ -222,7 +240,17 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             />
           )}
 
-          {currentStep === 2 && !(propostaData.tipoProposta === 'telhas' && propostaData.entradaManual) && (
+          {currentStep === 2 && propostaData.tipoProposta === 'divisorias' && propostaData.entradaManual && (
+            <StepCalculoDivisorias
+              onDataChange={handleStepData}
+              onBack={handleBack}
+              onNext={handleNext}
+            />
+          )}
+
+          {currentStep === 2 && 
+           !(propostaData.tipoProposta === 'telhas' && propostaData.entradaManual) &&
+           !(propostaData.tipoProposta === 'divisorias' && propostaData.entradaManual) && (
             <StepProcessing
               propostaData={propostaData}
               isProcessing={isProcessing}
@@ -318,8 +346,10 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
           )}
 
           {/* Step Final: Gerar Proposta */}
-          {((currentStep === 4 && (!['energia-solar', 'telhas'].includes(propostaData.tipoProposta) || 
+          {((currentStep === 3 && propostaData.tipoProposta === 'divisorias' && propostaData.entradaManual) ||
+            (currentStep === 4 && (!['energia-solar', 'telhas', 'divisorias'].includes(propostaData.tipoProposta) || 
              (propostaData.tipoProposta === 'telhas' && propostaData.entradaManual))) || 
+            (currentStep === 4 && propostaData.tipoProposta === 'divisorias' && !propostaData.entradaManual) ||
             (currentStep === 5 && propostaData.tipoProposta === 'energia-solar') ||
             (currentStep === 5 && propostaData.tipoProposta === 'telhas' && !propostaData.entradaManual)) && (
             <StepGenerate
