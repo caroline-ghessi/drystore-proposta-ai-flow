@@ -67,6 +67,36 @@ serve(async (req) => {
         });
 
       console.log('Visualização registrada com sucesso para proposta:', proposta.id);
+
+      // Enviar email para o vendedor se houver
+      if (proposta.vendedor_id) {
+        try {
+          // Buscar email do vendedor
+          const { data: vendedor } = await supabase
+            .from('vendedores')
+            .select('email, nome')
+            .eq('id', proposta.vendedor_id)
+            .single();
+
+          if (vendedor?.email) {
+            await supabase.functions.invoke('notificar-email', {
+              body: {
+                destinatario: vendedor.email,
+                tipo_template: 'proposta_visualizada',
+                dados_proposta: {
+                  cliente_nome: proposta.cliente_nome,
+                  tipo_proposta: proposta.tipo_proposta,
+                  valor_total: proposta.valor_total,
+                  vendedor_nome: vendedor.nome
+                }
+              }
+            });
+            console.log('Email de visualização enviado para vendedor:', vendedor.email);
+          }
+        } catch (emailError) {
+          console.error('Erro ao enviar email de visualização:', emailError);
+        }
+      }
     }
 
     return new Response(JSON.stringify({ 

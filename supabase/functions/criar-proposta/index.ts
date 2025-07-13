@@ -98,10 +98,34 @@ serve(async (req) => {
 
     console.log('Proposta criada com sucesso:', proposta.id);
 
+    // Montar URL de acesso correta
+    const baseUrl = 'https://xjmuxtoichwikoquishz.supabase.co';
+    const urlAcesso = `${baseUrl.replace('.supabase.co', '.lovable.app')}/proposta-cliente?url=${proposta.url_unica}`;
+
+    // Enviar email para o cliente
+    try {
+      await supabase.functions.invoke('notificar-email', {
+        body: {
+          destinatario: dados.cliente_email,
+          tipo_template: 'proposta_criada',
+          dados_proposta: {
+            cliente_nome: dados.cliente_nome,
+            tipo_proposta: dados.tipo_proposta,
+            valor_total: dados.valor_total,
+            url_acesso: urlAcesso
+          }
+        }
+      });
+      console.log('Email de proposta criada enviado para:', dados.cliente_email);
+    } catch (emailError) {
+      console.error('Erro ao enviar email:', emailError);
+      // Não falha a criação da proposta se o email falhar
+    }
+
     // Retornar proposta com URL de acesso
     const resultado = {
       ...proposta,
-      url_acesso: `${Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '')}/proposta/${proposta.url_unica}`
+      url_acesso: urlAcesso
     };
 
     return new Response(JSON.stringify(resultado), {

@@ -193,37 +193,36 @@ export function usePropostas() {
     }
   }, []);
 
-  const aceitarProposta = useCallback(async (id: string): Promise<boolean> => {
+  const aceitarProposta = useCallback(async (id: string, formaPagamento?: string, observacoes?: string): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('propostas')
-        .update({ 
-          status: 'aceita',
-          data_aceitacao: new Date().toISOString()
-        })
-        .eq('id', id);
+      // Chamar edge function para aceitar proposta
+      const { data, error } = await supabase.functions.invoke('aceitar-proposta', {
+        body: {
+          proposta_id: id,
+          forma_pagamento: formaPagamento,
+          observacoes: observacoes
+        }
+      });
 
       if (error) {
         throw error;
       }
 
-      // Criar notificação de aceitação
-      await supabase
-        .from('notificacoes')
-        .insert({
-          proposta_id: id,
-          tipo: 'aceitacao',
-          mensagem: 'Proposta aceita pelo cliente'
-        });
+      if (!data?.success) {
+        throw new Error(data?.error || 'Erro ao aceitar proposta');
+      }
 
       toast({
         title: "Sucesso",
-        description: "Proposta aceita com sucesso!",
+        description: "Proposta aceita com sucesso! O vendedor foi notificado.",
       });
+
+      // Atualizar lista de propostas
+      await fetchPropostas();
 
       return true;
     } catch (err: any) {
-      const errorMessage = 'Erro ao aceitar proposta';
+      const errorMessage = err.message || 'Erro ao aceitar proposta';
       console.error('Erro ao aceitar proposta:', err);
       toast({
         title: "Erro",
@@ -232,7 +231,7 @@ export function usePropostas() {
       });
       return false;
     }
-  }, [toast]);
+  }, [toast, fetchPropostas]);
 
   useEffect(() => {
     fetchPropostas();
