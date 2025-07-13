@@ -387,7 +387,7 @@ const ProdutoEditDialog = ({ produto, open, onOpenChange, onSave }: ProdutoEditD
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Não se aplica</SelectItem>
+                  <SelectItem value="nao-aplica">Não se aplica</SelectItem>
                   {TIPOS_PLACA.map(tipo => (
                     <SelectItem key={tipo.value} value={tipo.value}>{tipo.label}</SelectItem>
                   ))}
