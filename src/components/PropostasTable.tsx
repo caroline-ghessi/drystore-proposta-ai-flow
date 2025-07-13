@@ -9,8 +9,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Calendar, Percent, Filter, Eye } from "lucide-react";
+import { MessageSquare, Calendar, Percent, Filter, Eye, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { FollowUpInteligente } from "./FollowUpInteligente";
 
 interface Proposta {
   id: string;
@@ -20,6 +21,7 @@ interface Proposta {
   tipo: string;
   data: string;
   url_unica?: string;
+  whatsapp?: string;
 }
 
 interface PropostasTableProps {
@@ -33,6 +35,8 @@ const PropostasTable = ({ propostas }: PropostasTableProps) => {
   const [followUpData, setFollowUpData] = useState({ proposta: "", mensagem: "" });
   const [lembreteData, setLembreteData] = useState({ proposta: "", data: "", observacao: "" });
   const [descontoData, setDescontoData] = useState({ proposta: "", percentual: "", motivo: "" });
+  const [followUpInteligenteOpen, setFollowUpInteligenteOpen] = useState(false);
+  const [propostaSelecionada, setPropostaSelecionada] = useState<Proposta | null>(null);
 
   const filteredPropostas = propostas.filter(proposta => 
     statusFilter === "todos" || proposta.status === statusFilter
@@ -54,6 +58,11 @@ const PropostasTable = ({ propostas }: PropostasTableProps) => {
       description: `Mensagem enviada via WhatsApp para a proposta ${followUpData.proposta}`,
     });
     setFollowUpData({ proposta: "", mensagem: "" });
+  };
+
+  const handleFollowUpInteligente = (proposta: Proposta) => {
+    setPropostaSelecionada(proposta);
+    setFollowUpInteligenteOpen(true);
   };
 
   const handleAgendar = () => {
@@ -142,7 +151,17 @@ const PropostasTable = ({ propostas }: PropostasTableProps) => {
                       <Eye className="h-4 w-4" />
                     </Button>
 
-                    {/* Follow-up Button */}
+                    {/* Follow-up IA Button */}
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleFollowUpInteligente(proposta)}
+                      className="gap-1"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                    </Button>
+
+                    {/* Follow-up Manual Button */}
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button size="sm" variant="outline" onClick={() => setFollowUpData({ ...followUpData, proposta: proposta.id })}>
@@ -261,6 +280,20 @@ const PropostasTable = ({ propostas }: PropostasTableProps) => {
           </TableBody>
         </Table>
       </CardContent>
+      
+      {/* Modal de Follow-up Inteligente */}
+      {propostaSelecionada && (
+        <FollowUpInteligente
+          isOpen={followUpInteligenteOpen}
+          onClose={() => {
+            setFollowUpInteligenteOpen(false);
+            setPropostaSelecionada(null);
+          }}
+          propostaId={propostaSelecionada.id}
+          clienteNome={propostaSelecionada.cliente}
+          clienteWhatsapp={propostaSelecionada.whatsapp}
+        />
+      )}
     </Card>
   );
 };

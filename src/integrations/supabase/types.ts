@@ -385,6 +385,42 @@ export type Database = {
         }
         Relationships: []
       }
+      conhecimento_vendas: {
+        Row: {
+          ativo: boolean | null
+          categoria: string
+          conteudo: string
+          created_at: string | null
+          id: string
+          prioridade: number | null
+          tags: string[] | null
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria: string
+          conteudo: string
+          created_at?: string | null
+          id?: string
+          prioridade?: number | null
+          tags?: string[] | null
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria?: string
+          conteudo?: string
+          created_at?: string | null
+          id?: string
+          prioridade?: number | null
+          tags?: string[] | null
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       energia_solar_calculos: {
         Row: {
           area_disponivel: number | null
@@ -542,6 +578,57 @@ export type Database = {
           vigencia_dias?: number | null
         }
         Relationships: []
+      }
+      followups_ia: {
+        Row: {
+          created_at: string | null
+          enviado: boolean | null
+          feedback_vendedor: number | null
+          id: string
+          mensagem_final: string | null
+          mensagem_gerada: string
+          prompt_melhoria: string | null
+          proposta_id: string | null
+          vendedor_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enviado?: boolean | null
+          feedback_vendedor?: number | null
+          id?: string
+          mensagem_final?: string | null
+          mensagem_gerada: string
+          prompt_melhoria?: string | null
+          proposta_id?: string | null
+          vendedor_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enviado?: boolean | null
+          feedback_vendedor?: number | null
+          id?: string
+          mensagem_final?: string | null
+          mensagem_gerada?: string
+          prompt_melhoria?: string | null
+          proposta_id?: string | null
+          vendedor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followups_ia_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "followups_ia_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "vendedores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       irradiacao_solar: {
         Row: {
