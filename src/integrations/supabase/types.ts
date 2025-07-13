@@ -352,6 +352,39 @@ export type Database = {
           },
         ]
       }
+      configuracoes_globais: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          chave: string
+          created_at: string
+          descricao: string | null
+          id: string
+          updated_at: string
+          valor: Json
+        }
+        Insert: {
+          ativo?: boolean
+          categoria: string
+          chave: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          valor?: Json
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          chave?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          valor?: Json
+        }
+        Relationships: []
+      }
       energia_solar_calculos: {
         Row: {
           area_disponivel: number | null

@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LayoutEditor } from "@/components/admin/LayoutEditor";
 import { LayoutStats } from "@/components/admin/LayoutStats";
+import { GlobalConfigEditor } from "@/components/admin/GlobalConfigEditor";
 
 const AdminLayoutsPropostas = () => {
   const navigate = useNavigate();
@@ -17,6 +18,8 @@ const AdminLayoutsPropostas = () => {
   const [editorAberto, setEditorAberto] = useState(false);
   const [statsAberto, setStatsAberto] = useState(false);
   const [layoutSelecionado, setLayoutSelecionado] = useState<string | null>(null);
+  const [globalConfigAberto, setGlobalConfigAberto] = useState(false);
+  const [categoriaGlobal, setCategoriaGlobal] = useState<string>('');
 
   useEffect(() => {
     carregarLayoutsConfiguracoes();
@@ -220,6 +223,16 @@ const AdminLayoutsPropostas = () => {
     carregarLayoutsConfiguracoes(); // Recarregar dados após salvar
   };
 
+  const handleAbrirGlobalConfig = (categoria: string) => {
+    setCategoriaGlobal(categoria);
+    setGlobalConfigAberto(true);
+  };
+
+  const handleFecharGlobalConfig = () => {
+    setGlobalConfigAberto(false);
+    setCategoriaGlobal('');
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -335,19 +348,35 @@ const AdminLayoutsPropostas = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid md:grid-cols-2 gap-4">
-                <Button variant="outline" className="justify-start">
+                <Button 
+                  variant="outline" 
+                  className="justify-start"
+                  onClick={() => handleAbrirGlobalConfig('identidade_visual')}
+                >
                   <Building2 className="h-4 w-4 mr-2" />
                   Logo e Identidade Visual
                 </Button>
-                <Button variant="outline" className="justify-start">
+                <Button 
+                  variant="outline" 
+                  className="justify-start"
+                  onClick={() => handleAbrirGlobalConfig('tipografia')}
+                >
                   <Palette className="h-4 w-4 mr-2" />
                   Cores e Tipografia
                 </Button>
-                <Button variant="outline" className="justify-start">
+                <Button 
+                  variant="outline" 
+                  className="justify-start"
+                  onClick={() => handleAbrirGlobalConfig('textos_padrao')}
+                >
                   <FileText className="h-4 w-4 mr-2" />
                   Textos Padrão e CTAs
                 </Button>
-                <Button variant="outline" className="justify-start">
+                <Button 
+                  variant="outline" 
+                  className="justify-start"
+                  onClick={() => handleAbrirGlobalConfig('metricas')}
+                >
                   <BarChart3 className="h-4 w-4 mr-2" />
                   Métricas de Conversão
                 </Button>
@@ -369,6 +398,12 @@ const AdminLayoutsPropostas = () => {
         layoutId={layoutSelecionado}
         isOpen={statsAberto}
         onClose={handleFecharStats}
+      />
+
+      <GlobalConfigEditor
+        isOpen={globalConfigAberto}
+        onClose={handleFecharGlobalConfig}
+        categoria={categoriaGlobal}
       />
     </SidebarProvider>
   );
