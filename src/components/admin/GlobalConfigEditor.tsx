@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Save, Upload, Palette, Type, MessageSquare, TrendingUp } from 'lucide-react';
+import { LogoUploadSection } from './LogoUploadSection';
+import { FaviconUpload } from './FaviconUpload';
 
 interface GlobalConfigEditorProps {
   isOpen: boolean;
@@ -94,41 +96,67 @@ export const GlobalConfigEditor: React.FC<GlobalConfigEditorProps> = ({
     }
   };
 
-  const renderIdentidadeVisual = () => (
-    <div className="space-y-6">
-      {configs.filter(c => c.categoria === 'identidade_visual').map(config => (
-        <Card key={config.id}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Palette className="h-5 w-5" />
-              {config.descricao}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {config.chave === 'logo_principal' && (
-              <div className="space-y-2">
-                <Label>URL do Logo</Label>
-                <Input
-                  value={config.valor?.url || ''}
-                  onChange={(e) => {
-                    const novoValor = { ...config.valor, url: e.target.value };
-                    salvarConfiguracao(config.chave, novoValor);
-                  }}
-                  placeholder="https://exemplo.com/logo.png"
-                />
-              </div>
-            )}
-            
-            {config.chave === 'cores_marca' && (
+  const renderIdentidadeVisual = () => {
+    const logoConfig = configs.find(c => c.chave === 'logo_principal');
+    const faviconConfig = configs.find(c => c.chave === 'favicon');
+    const coresConfig = configs.find(c => c.chave === 'cores_marca');
+
+    return (
+      <div className="space-y-6">
+        {/* Upload do Favicon */}
+        {faviconConfig && (
+          <FaviconUpload
+            currentFavicon={faviconConfig.valor?.url}
+            onFaviconUpdate={(url) => {
+              const novoValor = { ...faviconConfig.valor, url };
+              salvarConfiguracao(faviconConfig.chave, novoValor);
+            }}
+          />
+        )}
+
+        {/* Upload dos Logos */}
+        {logoConfig && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Logos da Empresa
+              </CardTitle>
+              <CardDescription>
+                Faça upload das versões do seu logo para diferentes fundos
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LogoUploadSection
+                logoVersions={logoConfig.valor?.versoes || {}}
+                onLogoUpdate={(versoes) => {
+                  const novoValor = { ...logoConfig.valor, versoes };
+                  salvarConfiguracao(logoConfig.chave, novoValor);
+                }}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Cores da Marca */}
+        {coresConfig && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                {coresConfig.descricao}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label>Cor Primária</Label>
                   <Input
                     type="color"
-                    value={config.valor?.primaria || '#0066CC'}
+                    value={coresConfig.valor?.primaria || '#0066CC'}
                     onChange={(e) => {
-                      const novoValor = { ...config.valor, primaria: e.target.value };
-                      salvarConfiguracao(config.chave, novoValor);
+                      const novoValor = { ...coresConfig.valor, primaria: e.target.value };
+                      salvarConfiguracao(coresConfig.chave, novoValor);
                     }}
                   />
                 </div>
@@ -136,10 +164,10 @@ export const GlobalConfigEditor: React.FC<GlobalConfigEditorProps> = ({
                   <Label>Cor Secundária</Label>
                   <Input
                     type="color"
-                    value={config.valor?.secundaria || '#FF6B35'}
+                    value={coresConfig.valor?.secundaria || '#FF6B35'}
                     onChange={(e) => {
-                      const novoValor = { ...config.valor, secundaria: e.target.value };
-                      salvarConfiguracao(config.chave, novoValor);
+                      const novoValor = { ...coresConfig.valor, secundaria: e.target.value };
+                      salvarConfiguracao(coresConfig.chave, novoValor);
                     }}
                   />
                 </div>
@@ -147,20 +175,20 @@ export const GlobalConfigEditor: React.FC<GlobalConfigEditorProps> = ({
                   <Label>Cor de Acento</Label>
                   <Input
                     type="color"
-                    value={config.valor?.acento || '#00CC66'}
+                    value={coresConfig.valor?.acento || '#00CC66'}
                     onChange={(e) => {
-                      const novoValor = { ...config.valor, acento: e.target.value };
-                      salvarConfiguracao(config.chave, novoValor);
+                      const novoValor = { ...coresConfig.valor, acento: e.target.value };
+                      salvarConfiguracao(coresConfig.chave, novoValor);
                     }}
                   />
                 </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };
 
   const renderTipografia = () => (
     <div className="space-y-6">
