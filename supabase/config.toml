@@ -30,3 +30,6 @@ verify_jwt = false
 
 [functions.processar-treinamento-ia]
 verify_jwt = false
+
+[functions.cleanup-treinamento-files]
+verify_jwt = false

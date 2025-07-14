@@ -104,6 +104,16 @@ serve(async (req) => {
 
   try {
     const { arquivoUrl, nomeArquivo } = await req.json();
+    
+    if (!arquivoUrl) {
+      return new Response(JSON.stringify({ 
+        sucesso: false, 
+        erro: 'URL do arquivo é obrigatória' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     console.log('Processando arquivo para treinamento IA:', nomeArquivo);
 
@@ -111,21 +121,13 @@ serve(async (req) => {
       throw new Error('Configuração do Dify para treinamento não encontrada. Verifique DIFY_TREINAMENTO_API_KEY e DIFY_TREINAMENTO_APP_ID');
     }
 
-    // Fazer download do arquivo do Supabase Storage
-    const { data: fileData, error: downloadError } = await supabase.storage
+    // Gerar URL pública para o arquivo
+    const { data: publicUrlData } = supabase.storage
       .from('documentos-propostas')
-      .download(arquivoUrl.replace('documentos-propostas/', ''));
+      .getPublicUrl(arquivoUrl);
 
-    if (downloadError) {
-      console.error('Erro ao baixar arquivo:', downloadError);
-      throw new Error('Erro ao baixar arquivo do storage');
-    }
-
-    // Converter para base64 para envio ao Dify
-    const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-
-    console.log('Enviando para Dify workflow de treinamento...');
+    const fileUrl = publicUrlData.publicUrl;
+    console.log('URL do arquivo para Dify:', fileUrl);
 
     // Chamar Dify API para processar o documento
     const difyResponse = await fetch(`https://api.dify.ai/v1/workflows/run`, {
@@ -136,7 +138,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         inputs: {
-          document_content: base64,
+          file_url: fileUrl,
           document_name: nomeArquivo,
           extraction_type: 'training_content'
         },
