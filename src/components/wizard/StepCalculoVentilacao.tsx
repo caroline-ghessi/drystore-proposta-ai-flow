@@ -58,36 +58,35 @@ const PRODUTOS_VENTILACAO: ProdutoVentilacao[] = [
   {
     id: 'inflow',
     nome: 'Inflow Owens Corning (1,22m)',
-    nfva: 0.0265,
+    nfva: 0.0935,
     unidade: 'peça',
     tipo: 'intake'
   },
   {
     id: 'grelha_beiral',
     nome: 'Beiral Ventilado - Grelha',
-    nfva: 0.0312,
+    nfva: 0.0780,
     unidade: 'peça',
     tipo: 'intake'
   },
   {
     id: 'beiral_lp',
     nome: 'Beiral Ventilado - LP',
-    nfva: null,
-    unidade: '-',
-    tipo: 'intake',
-    observacao: 'NFVA não disponível - consultar fabricante'
+    nfva: 0.0650,
+    unidade: 'peça',
+    tipo: 'intake'
   },
   {
     id: 'aerador',
     nome: 'Aerador Fabricação DryStore',
-    nfva: 0.0072,
+    nfva: 0.0520,
     unidade: 'peça',
     tipo: 'exhaust'
   },
   {
     id: 'cumeeira_ventilada',
     nome: 'Cumeeira Ventilada Fabricação DryStore',
-    nfva: 0.0142,
+    nfva: 0.0285,
     unidade: 'metro linear',
     tipo: 'exhaust',
     linear: true
@@ -166,6 +165,7 @@ export function StepCalculoVentilacao({ onVentilacaoComplete, onBack, areaTelhad
 
     let quantidade_intake = 0;
     let quantidade_exhaust = 0;
+    let alertas = [];
 
     if (produtoIntake?.nfva) {
       quantidade_intake = Math.ceil(dados.nfva_intake / produtoIntake.nfva);
@@ -176,8 +176,8 @@ export function StepCalculoVentilacao({ onVentilacaoComplete, onBack, areaTelhad
         // Para produtos lineares, verificar se o comprimento disponível é suficiente
         const comprimento_necessario = dados.nfva_exhaust / produtoExhaust.nfva;
         if (comprimento_necessario > dados.comprimento_linear_disponivel) {
-          toast({
-            title: "Atenção",
+          alertas.push({
+            title: "Comprimento Insuficiente",
             description: `Comprimento necessário (${comprimento_necessario.toFixed(2)}m) excede o disponível (${dados.comprimento_linear_disponivel}m). Considere mais camadas ou produtos adicionais.`,
             variant: "destructive"
           });
@@ -187,6 +187,62 @@ export function StepCalculoVentilacao({ onVentilacaoComplete, onBack, areaTelhad
         quantidade_exhaust = Math.ceil(dados.nfva_exhaust / produtoExhaust.nfva);
       }
     }
+
+    // Validações de quantidade excessiva
+    const densidadeIntake = quantidade_intake / dados.area_sotao;
+    const densidadeExhaust = quantidade_exhaust / dados.area_sotao;
+
+    // Validações específicas por produto
+    if (produtoIntake?.id === 'aerador' && quantidade_intake > dados.area_sotao * 0.2) {
+      alertas.push({
+        title: "Quantidade Excessiva - Aerador",
+        description: `${quantidade_intake} aeradores para ${dados.area_sotao.toFixed(2)}m² é excessivo. Recomendado máximo: ${Math.ceil(dados.area_sotao * 0.2)} unidades. Considere usar produtos com maior NFVA.`,
+        variant: "destructive"
+      });
+    }
+
+    if (produtoExhaust?.id === 'aerador' && quantidade_exhaust > dados.area_sotao * 0.2) {
+      alertas.push({
+        title: "Quantidade Excessiva - Aerador",
+        description: `${quantidade_exhaust} aeradores para ${dados.area_sotao.toFixed(2)}m² é excessivo. Recomendado máximo: ${Math.ceil(dados.area_sotao * 0.2)} unidades. Considere usar produtos com maior NFVA ou produtos lineares.`,
+        variant: "destructive"
+      });
+    }
+
+    // Alertas para altas densidades
+    if (densidadeIntake > 0.25) {
+      alertas.push({
+        title: "Alta Densidade - Intake",
+        description: `Densidade de ${densidadeIntake.toFixed(2)} peças/m² é alta. Considere produtos com maior NFVA ou verificar se a área do sótão está correta.`,
+        variant: "default"
+      });
+    }
+
+    if (densidadeExhaust > 0.25) {
+      alertas.push({
+        title: "Alta Densidade - Exhaust",
+        description: `Densidade de ${densidadeExhaust.toFixed(2)} peças/m² é alta. Considere produtos com maior NFVA ou verificar se a área do sótão está correta.`,
+        variant: "default"
+      });
+    }
+
+    // Sugestões de produtos alternativos para grandes áreas
+    if (dados.area_sotao > 100 && (quantidade_intake > 50 || quantidade_exhaust > 50)) {
+      alertas.push({
+        title: "Sugestão para Grandes Áreas",
+        description: "Para áreas grandes, considere combinar produtos lineares (cumeeira ventilada) com produtos pontuais para otimizar a instalação.",
+        variant: "default"
+      });
+    }
+
+    // Mostrar alertas
+    alertas.forEach(alerta => {
+      toast({
+        title: alerta.title,
+        description: alerta.description,
+        variant: alerta.variant
+      });
+    });
 
     setDados(prev => ({
       ...prev,
@@ -249,7 +305,34 @@ export function StepCalculoVentilacao({ onVentilacaoComplete, onBack, areaTelhad
           <div className="text-2xl font-bold text-primary">
             {dados.area_sotao.toFixed(2)} m²
           </div>
+          {areaTelhado > 0 && (
+            <div className="text-sm text-muted-foreground mt-1">
+              Área do telhado: {areaTelhado.toFixed(2)} m² | Proporção: {((dados.area_sotao / areaTelhado) * 100).toFixed(1)}%
+            </div>
+          )}
         </div>
+
+        {/* Alerta para área do sótão muito próxima da área do telhado */}
+        {areaTelhado > 0 && dados.area_sotao > 0 && (dados.area_sotao / areaTelhado) > 0.95 && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Atenção:</strong> A área do sótão está muito próxima da área do telhado ({((dados.area_sotao / areaTelhado) * 100).toFixed(1)}%). 
+              Verifique se as dimensões estão corretas - a área do sótão geralmente é 70-90% da área do telhado.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Alerta para área do sótão muito pequena */}
+        {areaTelhado > 0 && dados.area_sotao > 0 && (dados.area_sotao / areaTelhado) < 0.5 && (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Informação:</strong> A área do sótão ({((dados.area_sotao / areaTelhado) * 100).toFixed(1)}% da área do telhado) 
+              parece pequena. Verifique se as dimensões do sótão estão corretas.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="flex gap-2">
           <Button variant="outline" onClick={onBack}>
@@ -465,8 +548,10 @@ export function StepCalculoVentilacao({ onVentilacaoComplete, onBack, areaTelhad
           {dados.quantidade_intake > 0 && dados.quantidade_exhaust > 0 && (
             <div className="space-y-4">
               <Separator />
+              
+              {/* Resultados principais */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-blue-50 rounded-lg">
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="text-sm text-blue-600 mb-1">Recomendação Intake</div>
                   <div className="text-lg font-bold text-blue-600">
                     {dados.quantidade_intake} {produtoIntake?.unidade}
@@ -474,8 +559,11 @@ export function StepCalculoVentilacao({ onVentilacaoComplete, onBack, areaTelhad
                   <div className="text-sm text-blue-600">
                     {produtoIntake?.nome}
                   </div>
+                  <div className="text-xs text-blue-600 mt-1">
+                    NFVA: {produtoIntake?.nfva?.toFixed(4)} m²/peça
+                  </div>
                 </div>
-                <div className="p-4 bg-red-50 rounded-lg">
+                <div className="p-4 bg-red-50 rounded-lg border border-red-200">
                   <div className="text-sm text-red-600 mb-1">Recomendação Exhaust</div>
                   <div className="text-lg font-bold text-red-600">
                     {dados.quantidade_exhaust} {produtoExhaust?.unidade}
@@ -483,18 +571,59 @@ export function StepCalculoVentilacao({ onVentilacaoComplete, onBack, areaTelhad
                   <div className="text-sm text-red-600">
                     {produtoExhaust?.nome}
                   </div>
+                  <div className="text-xs text-red-600 mt-1">
+                    NFVA: {produtoExhaust?.nfva?.toFixed(4)} m²/peça
+                  </div>
                 </div>
               </div>
 
+              {/* Análise de densidade */}
+              <div className="p-4 bg-muted rounded-lg">
+                <h4 className="font-medium mb-2">Análise de Densidade</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Density Intake:</span>
+                    <span className={`ml-2 font-medium ${
+                      (dados.quantidade_intake / dados.area_sotao) > 0.25 ? 'text-orange-600' : 'text-green-600'
+                    }`}>
+                      {(dados.quantidade_intake / dados.area_sotao).toFixed(2)} peças/m²
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Density Exhaust:</span>
+                    <span className={`ml-2 font-medium ${
+                      (dados.quantidade_exhaust / dados.area_sotao) > 0.25 ? 'text-orange-600' : 'text-green-600'
+                    }`}>
+                      {(dados.quantidade_exhaust / dados.area_sotao).toFixed(2)} peças/m²
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  <strong>Referência:</strong> Densidade ideal {'<'} 0.25 peças/m² | Aeradores {'<'} 0.2 peças/m²
+                </div>
+              </div>
+
+              {/* Alertas visuais */}
+              {((dados.quantidade_intake / dados.area_sotao) > 0.25 || (dados.quantidade_exhaust / dados.area_sotao) > 0.25) && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Densidade Alta Detectada!</strong> Considere produtos com maior NFVA ou revisar área do sótão.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Informações adicionais */}
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Sugestões Adicionais:</strong>
+                  <strong>Sugestões Técnicas:</strong>
                   <ul className="mt-2 space-y-1">
+                    <li>• Área do sótão: {dados.area_sotao.toFixed(2)} m² (área do telhado: {areaTelhado.toFixed(2)} m²)</li>
+                    <li>• NFVA necessária: {dados.nfva_total.toFixed(4)} m²</li>
                     <li>• Garanta telas contra insetos e proteção contra chuva</li>
-                    <li>• Recomendado 40-50% exhaust no topo</li>
+                    <li>• Recomendado 40-50% exhaust no topo do telhado</li>
                     <li>• Ventilação inadequada pode causar condensação</li>
-                    <li>• Seguir normas técnicas de instalação</li>
                   </ul>
                 </AlertDescription>
               </Alert>
