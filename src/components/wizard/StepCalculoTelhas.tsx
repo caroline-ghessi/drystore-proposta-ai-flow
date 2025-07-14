@@ -115,6 +115,16 @@ export function StepCalculoTelhas({
   };
 
   const handleInputChange = (field: keyof DadosTelhas, value: any) => {
+    // Validar inclinação mínima para telhas shingle
+    if (field === 'inclinacao_telhado' && value > 0 && value < 18) {
+      toast({
+        title: "Inclinação inválida",
+        description: "Telhas shingle exigem inclinação mínima de 18%",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setDadosAjustados(prev => ({
       ...prev,
       [field]: value
@@ -154,16 +164,20 @@ export function StepCalculoTelhas({
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="inclinacao">Inclinação (%)</Label>
+                <Label htmlFor="inclinacao">Inclinação (%) *</Label>
                 <Input
                   id="inclinacao"
                   type="number"
                   step="1"
-                  min="0"
-                  max="100"
+                  min="18"
+                  max="85"
                   value={dadosAjustados.inclinacao_telhado}
                   onChange={(e) => handleInputChange('inclinacao_telhado', Number(e.target.value))}
+                  className={dadosAjustados.inclinacao_telhado > 0 && dadosAjustados.inclinacao_telhado < 18 ? 'border-red-500' : ''}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Mínimo: 18% | Máximo: 85%
+                </p>
               </div>
 
               <div className="space-y-2 sm:col-span-2">

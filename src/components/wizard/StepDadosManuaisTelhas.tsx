@@ -48,6 +48,9 @@ export function StepDadosManuaisTelhas({
     if (!formData.areaTelhado || formData.areaTelhado <= 0) {
       newErrors.areaTelhado = 'Área do telhado é obrigatória'
     }
+    if (formData.inclinacaoTelhado > 0 && formData.inclinacaoTelhado < 18) {
+      newErrors.inclinacaoTelhado = 'Inclinação mínima para telhas shingle é de 18%'
+    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -183,19 +186,23 @@ export function StepDadosManuaisTelhas({
               </div>
 
               <div>
-                <Label htmlFor="inclinacao">Inclinação (%)</Label>
+                <Label htmlFor="inclinacao">Inclinação (%) *</Label>
                 <Input
                   id="inclinacao"
                   type="number"
                   value={formData.inclinacaoTelhado || ''}
                   onChange={(e) => handleInputChange('inclinacaoTelhado', parseFloat(e.target.value) || 0)}
-                  placeholder="Ex: 30"
-                  min="0"
+                  placeholder="Mínimo: 18%"
+                  min="18"
                   max="100"
                   step="1"
+                  className={errors.inclinacaoTelhado ? 'border-red-500' : ''}
                 />
+                {errors.inclinacaoTelhado && (
+                  <p className="text-sm text-red-500 mt-1">{errors.inclinacaoTelhado}</p>
+                )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  Opcional - para correção da área
+                  Mínimo 18% - máximo 85% para telhas shingle
                 </p>
               </div>
 
@@ -242,7 +249,7 @@ export function StepDadosManuaisTelhas({
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• A área informada deve ser a área real do telhado</li>
                   <li>• A inclinação ajuda no cálculo mais preciso do material</li>
-                  <li>• As telhas shingle são indicadas para inclinações de 18% a 85%</li>
+                  <li>• <strong>Obrigatório:</strong> As telhas shingle exigem inclinação mínima de 18%</li>
                   <li>• O cálculo incluirá automaticamente margem de segurança de 5%</li>
                 </ul>
               </div>
