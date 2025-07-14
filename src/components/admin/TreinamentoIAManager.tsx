@@ -87,7 +87,8 @@ export function TreinamentoIAManager() {
           ...formData,
           titulo: data.titulo || 'Conhecimento extraído',
           conteudo: data.conteudo || '',
-          categoria: data.categoria || 'tecnico'
+          categoria: data.categoria || 'tecnico',
+          tags: data.tags ? data.tags.join(', ') : ''
         });
         setSelectedFile(null);
       } else {

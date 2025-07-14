@@ -15,6 +15,86 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// Função para gerar título baseado no conteúdo
+function gerarTitulo(conteudo: string, nomeArquivo: string): string {
+  // Tenta pegar as primeiras palavras do conteúdo para gerar um título
+  const primeiraLinha = conteudo.split('\n')[0];
+  if (primeiraLinha && primeiraLinha.length > 10 && primeiraLinha.length < 100) {
+    // Remove caracteres especiais e limita o tamanho
+    return primeiraLinha.replace(/[^\w\s]/gi, '').substring(0, 80).trim();
+  }
+  
+  // Fallback para nome do arquivo limpo
+  return nomeArquivo.replace('.pdf', '').replace(/[-_]/g, ' ').trim();
+}
+
+// Função para determinar categoria baseada no conteúdo
+function determinarCategoria(conteudo: string): string {
+  const conteudoLower = conteudo.toLowerCase();
+  
+  // Palavras-chave para cada categoria
+  const categorias = {
+    'energia-solar': ['solar', 'painel', 'inversor', 'fotovoltaico', 'energia', 'kwh', 'kwp', 'irradiação'],
+    'telhas': ['telha', 'shingle', 'cobertura', 'telhado', 'rufo', 'cumeeira', 'calha'],
+    'drywall': ['drywall', 'gesso', 'divisória', 'parede', 'placa', 'perfil', 'estrutura'],
+    'impermeabilizacao': ['impermeabilização', 'manta', 'primer', 'laje', 'fundação', 'vedação'],
+    'vendas': ['venda', 'cliente', 'proposta', 'orçamento', 'negociação', 'preço', 'contrato'],
+    'tecnico': ['instalação', 'montagem', 'técnico', 'procedimento', 'especificação', 'norma']
+  };
+  
+  for (const [categoria, palavras] of Object.entries(categorias)) {
+    const matches = palavras.filter(palavra => conteudoLower.includes(palavra));
+    if (matches.length >= 2) {
+      return categoria;
+    }
+  }
+  
+  return 'tecnico'; // Categoria padrão
+}
+
+// Função para gerar tags baseadas no conteúdo
+function gerarTags(conteudo: string, nomeArquivo: string): string[] {
+  const conteudoLower = conteudo.toLowerCase();
+  const tags = ['treinamento', 'pdf'];
+  
+  // Tags baseadas em palavras-chave
+  const tagsPalavasChave = {
+    'energia-solar': 'energia-solar',
+    'solar': 'energia-solar',
+    'painel': 'paineis-solares',
+    'inversor': 'inversores',
+    'telha': 'telhas',
+    'shingle': 'telhas-shingle',
+    'drywall': 'drywall',
+    'divisória': 'divisorias',
+    'impermeabilização': 'impermeabilizacao',
+    'manta': 'mantas',
+    'vendas': 'vendas',
+    'cliente': 'atendimento',
+    'instalação': 'instalacao',
+    'técnico': 'tecnico',
+    'procedimento': 'procedimentos',
+    'norma': 'normas'
+  };
+  
+  for (const [palavra, tag] of Object.entries(tagsPalavasChave)) {
+    if (conteudoLower.includes(palavra) && !tags.includes(tag)) {
+      tags.push(tag);
+    }
+  }
+  
+  // Adicionar tag baseada no nome do arquivo
+  const nomeArquivoLower = nomeArquivo.toLowerCase();
+  if (nomeArquivoLower.includes('manual') && !tags.includes('manual')) {
+    tags.push('manual');
+  }
+  if (nomeArquivoLower.includes('guia') && !tags.includes('guia')) {
+    tags.push('guia');
+  }
+  
+  return tags.slice(0, 8); // Limita a 8 tags
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -73,25 +153,20 @@ serve(async (req) => {
     const difyResult = await difyResponse.json();
     console.log('Resposta do Dify:', difyResult);
 
-    // Extrair informações do resultado do Dify
-    const outputs = difyResult.data?.outputs || {};
-    
-    const conteudoExtraido = outputs.extracted_content || 
-                            outputs.content || 
-                            outputs.text || 
+    // Extrair texto simples do resultado do Dify
+    const conteudoExtraido = difyResult.data?.outputs?.text || 
+                            difyResult.data?.outputs?.content || 
+                            difyResult.data?.outputs || 
                             'Conteúdo extraído do documento';
 
-    const titulo = outputs.title || 
-                  outputs.suggested_title || 
-                  nomeArquivo.replace('.pdf', '');
+    // Gerar título baseado no conteúdo ou nome do arquivo
+    const titulo = gerarTitulo(conteudoExtraido, nomeArquivo);
 
-    const categoria = outputs.category || 
-                     outputs.suggested_category || 
-                     'tecnico';
+    // Determinar categoria baseada no conteúdo
+    const categoria = determinarCategoria(conteudoExtraido);
 
-    const tags = outputs.tags || 
-                outputs.suggested_tags || 
-                ['treinamento', 'pdf'];
+    // Gerar tags automaticamente baseadas no conteúdo
+    const tags = gerarTags(conteudoExtraido, nomeArquivo);
 
     // Estruturar resposta
     const resultado = {
