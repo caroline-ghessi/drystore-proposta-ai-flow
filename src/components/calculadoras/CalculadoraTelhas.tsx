@@ -55,10 +55,12 @@ export const CalculadoraTelhas = () => {
         telhaId: telhas[0].codigo
       }));
     }
-  }, [telhas, configuracoes.telhaId]);
+  }, [telhas.length, configuracoes.telhaId]);
 
   // Validar formulário em tempo real
   useEffect(() => {
+    if (!configuracoes.telhaId) return;
+    
     const parametros: ParametrosCalculoShingle = {
       area_telhado: dimensoes.area,
       comprimento_cumeeira: dimensoes.comprimentoCumeeira,
