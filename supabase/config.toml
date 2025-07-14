@@ -1,3 +1,4 @@
+
 project_id = "xjmuxtoichwikoquishz"
 
 [functions.processar-documento]
@@ -25,4 +26,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.chatbot-vendas]
+verify_jwt = false
+
+[functions.processar-treinamento-ia]
 verify_jwt = false

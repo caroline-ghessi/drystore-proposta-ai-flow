@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -7,9 +8,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Configurações do Dify
-const difyApiKey = Deno.env.get('DIFY_API_KEY');
-const difyAppId = Deno.env.get('DIFY_APP_ID');
+// Configurações do Dify para treinamento
+const difyApiKey = Deno.env.get('DIFY_TREINAMENTO_API_KEY');
+const difyAppId = Deno.env.get('DIFY_TREINAMENTO_APP_ID');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -107,7 +108,7 @@ serve(async (req) => {
     console.log('Processando arquivo para treinamento IA:', nomeArquivo);
 
     if (!difyApiKey || !difyAppId) {
-      throw new Error('Configuração do Dify não encontrada');
+      throw new Error('Configuração do Dify para treinamento não encontrada. Verifique DIFY_TREINAMENTO_API_KEY e DIFY_TREINAMENTO_APP_ID');
     }
 
     // Fazer download do arquivo do Supabase Storage
@@ -124,7 +125,7 @@ serve(async (req) => {
     const arrayBuffer = await fileData.arrayBuffer();
     const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
-    console.log('Enviando para Dify...');
+    console.log('Enviando para Dify workflow de treinamento...');
 
     // Chamar Dify API para processar o documento
     const difyResponse = await fetch(`https://api.dify.ai/v1/workflows/run`, {
