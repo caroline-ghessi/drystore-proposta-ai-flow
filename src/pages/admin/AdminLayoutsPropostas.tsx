@@ -7,7 +7,7 @@ import { Eye, Edit, BarChart3, Palette, FileText, Building2, Sun, Hammer, Grid3X
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutEditor } from "@/components/admin/LayoutEditor";
+import { AdvancedLayoutEditor } from "@/components/admin/AdvancedLayoutEditor";
 import { LayoutStats } from "@/components/admin/LayoutStats";
 import { GlobalConfigEditor } from "@/components/admin/GlobalConfigEditor";
 
@@ -387,7 +387,7 @@ const AdminLayoutsPropostas = () => {
       </div>
 
       {/* Modais */}
-      <LayoutEditor
+      <AdvancedLayoutEditor
         layoutId={layoutSelecionado}
         isOpen={editorAberto}
         onClose={handleFecharEditor}

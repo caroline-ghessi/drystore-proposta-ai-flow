@@ -880,11 +880,16 @@ export type Database = {
           created_at: string
           created_by: string | null
           descricao: string | null
+          estilos_customizados: Json | null
           id: string
           nome: string
+          preview_screenshot: string | null
+          template_base: string | null
           tipo_proposta: string
           updated_at: string
+          variaveis_utilizadas: string[] | null
           versao: number
+          versao_editor: number | null
         }
         Insert: {
           ativo?: boolean
@@ -893,11 +898,16 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descricao?: string | null
+          estilos_customizados?: Json | null
           id?: string
           nome: string
+          preview_screenshot?: string | null
+          template_base?: string | null
           tipo_proposta: string
           updated_at?: string
+          variaveis_utilizadas?: string[] | null
           versao?: number
+          versao_editor?: number | null
         }
         Update: {
           ativo?: boolean
@@ -906,11 +916,16 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descricao?: string | null
+          estilos_customizados?: Json | null
           id?: string
           nome?: string
+          preview_screenshot?: string | null
+          template_base?: string | null
           tipo_proposta?: string
           updated_at?: string
+          variaveis_utilizadas?: string[] | null
           versao?: number
+          versao_editor?: number | null
         }
         Relationships: [
           {
@@ -1003,6 +1018,54 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "layout_estatisticas_layout_id_fkey"
+            columns: ["layout_id"]
+            isOneToOne: false
+            referencedRelation: "layout_configuracoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      layout_historico: {
+        Row: {
+          alterado_por: string | null
+          configuracao: Json
+          created_at: string
+          estilos_customizados: Json | null
+          id: string
+          layout_id: string
+          observacoes: string | null
+          versao: number
+        }
+        Insert: {
+          alterado_por?: string | null
+          configuracao?: Json
+          created_at?: string
+          estilos_customizados?: Json | null
+          id?: string
+          layout_id: string
+          observacoes?: string | null
+          versao: number
+        }
+        Update: {
+          alterado_por?: string | null
+          configuracao?: Json
+          created_at?: string
+          estilos_customizados?: Json | null
+          id?: string
+          layout_id?: string
+          observacoes?: string | null
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "layout_historico_alterado_por_fkey"
+            columns: ["alterado_por"]
+            isOneToOne: false
+            referencedRelation: "vendedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "layout_historico_layout_id_fkey"
             columns: ["layout_id"]
             isOneToOne: false
             referencedRelation: "layout_configuracoes"
