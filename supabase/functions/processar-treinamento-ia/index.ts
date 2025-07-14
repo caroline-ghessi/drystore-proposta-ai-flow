@@ -122,11 +122,20 @@ serve(async (req) => {
       throw new Error('Configuração do Dify para treinamento não encontrada. Verifique DIFY_TREINAMENTO_API_KEY e DIFY_TREINAMENTO_APP_ID');
     }
 
-    // Verificar se o arquivo existe no bucket
+    // Extrair o nome do arquivo do caminho completo
+    const nomeArquivoExtraido = arquivoUrl.split('/').pop() || nomeArquivo;
+    
+    console.log('Verificando arquivo:', {
+      arquivoUrl,
+      nomeArquivoExtraido,
+      bucketPath: 'documentos/'
+    });
+
+    // Verificar se o arquivo existe no bucket (na pasta documentos/)
     const { data: fileExists, error: checkError } = await supabase.storage
       .from('documentos-propostas')
-      .list('', { 
-        search: arquivoUrl.split('/').pop() 
+      .list('documentos', { 
+        search: nomeArquivoExtraido
       });
 
     if (checkError) {
@@ -135,9 +144,18 @@ serve(async (req) => {
     }
 
     if (!fileExists || fileExists.length === 0) {
-      console.error('Arquivo não encontrado no bucket:', arquivoUrl);
+      console.error('Arquivo não encontrado no bucket:', {
+        pasta: 'documentos/',
+        arquivo: nomeArquivoExtraido,
+        arquivoUrlOriginal: arquivoUrl
+      });
       throw new Error('Arquivo não encontrado no storage');
     }
+
+    console.log('Arquivo encontrado no storage:', {
+      arquivo: fileExists[0],
+      totalArquivos: fileExists.length
+    });
 
     // Gerar URL assinada temporária (6 horas) para permitir acesso do Dify
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
