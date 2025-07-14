@@ -116,51 +116,95 @@ serve(async (req) => {
     }
 
     console.log('Processando arquivo para treinamento IA:', nomeArquivo);
+    console.log('Caminho do arquivo:', arquivoUrl);
 
     if (!difyApiKey || !difyAppId) {
       throw new Error('Configuração do Dify para treinamento não encontrada. Verifique DIFY_TREINAMENTO_API_KEY e DIFY_TREINAMENTO_APP_ID');
     }
 
-    // Gerar URL pública para o arquivo
-    const { data: publicUrlData } = supabase.storage
+    // Verificar se o arquivo existe no bucket
+    const { data: fileExists, error: checkError } = await supabase.storage
       .from('documentos-propostas')
-      .getPublicUrl(arquivoUrl);
+      .list('', { 
+        search: arquivoUrl.split('/').pop() 
+      });
 
-    const fileUrl = publicUrlData.publicUrl;
-    console.log('URL do arquivo para Dify:', fileUrl);
-
-    // Chamar Dify API para processar o documento
-    const difyResponse = await fetch(`https://api.dify.ai/v1/workflows/run`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${difyApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        inputs: {
-          file_url: fileUrl,
-          document_name: nomeArquivo,
-          extraction_type: 'training_content'
-        },
-        response_mode: 'blocking',
-        user: 'admin-treinamento'
-      }),
-    });
-
-    if (!difyResponse.ok) {
-      const errorText = await difyResponse.text();
-      console.error('Erro na API do Dify:', difyResponse.status, errorText);
-      throw new Error(`Dify API error: ${difyResponse.status} - ${errorText}`);
+    if (checkError) {
+      console.error('Erro ao verificar arquivo:', checkError);
+      throw new Error('Erro ao verificar se o arquivo existe');
     }
 
-    const difyResult = await difyResponse.json();
-    console.log('Resposta do Dify:', difyResult);
+    if (!fileExists || fileExists.length === 0) {
+      console.error('Arquivo não encontrado no bucket:', arquivoUrl);
+      throw new Error('Arquivo não encontrado no storage');
+    }
 
-    // Extrair texto simples do resultado do Dify
-    const conteudoExtraido = difyResult.data?.outputs?.text || 
-                            difyResult.data?.outputs?.content || 
-                            difyResult.data?.outputs || 
-                            'Conteúdo extraído do documento';
+    // Gerar URL assinada temporária (6 horas) para permitir acesso do Dify
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from('documentos-propostas')
+      .createSignedUrl(arquivoUrl, 21600); // 6 horas em segundos
+
+    if (signedUrlError || !signedUrlData?.signedUrl) {
+      console.error('Erro ao gerar URL assinada:', signedUrlError);
+      throw new Error('Erro ao gerar URL temporária para o arquivo');
+    }
+
+    const fileUrl = signedUrlData.signedUrl;
+    console.log('URL assinada gerada para Dify (válida por 6h)');
+    console.log('URL:', fileUrl.substring(0, 100) + '...');
+
+    // Chamar Dify API para processar o documento (com timeout de 5 minutos)
+    const timeoutController = new AbortController();
+    const timeoutId = setTimeout(() => timeoutController.abort(), 5 * 60 * 1000); // 5 minutos
+
+    let conteudoExtraido: string;
+
+    try {
+      const difyResponse = await fetch(`https://api.dify.ai/v1/workflows/run`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${difyApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          inputs: {
+            file_url: fileUrl,
+            document_name: nomeArquivo,
+            extraction_type: 'training_content'
+          },
+          response_mode: 'blocking',
+          user: 'admin-treinamento'
+        }),
+        signal: timeoutController.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!difyResponse.ok) {
+        const errorText = await difyResponse.text();
+        console.error('Erro na API do Dify:', difyResponse.status, errorText);
+        throw new Error(`Dify API error: ${difyResponse.status} - ${errorText}`);
+      }
+
+      const difyResult = await difyResponse.json();
+      console.log('Resposta do Dify recebida com sucesso');
+      console.log('Tipo de saída:', typeof difyResult.data?.outputs);
+
+      // Extrair texto simples do resultado do Dify
+      conteudoExtraido = difyResult.data?.outputs?.text || 
+                         difyResult.data?.outputs?.content || 
+                         difyResult.data?.outputs || 
+                         'Conteúdo extraído do documento';
+
+      console.log('Conteúdo extraído (primeiros 200 chars):', 
+                  String(conteudoExtraido).substring(0, 200) + '...');
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('Timeout: O processamento do Dify demorou mais de 5 minutos');
+      }
+      throw error;
+    }
 
     // Gerar título baseado no conteúdo ou nome do arquivo
     const titulo = gerarTitulo(conteudoExtraido, nomeArquivo);
