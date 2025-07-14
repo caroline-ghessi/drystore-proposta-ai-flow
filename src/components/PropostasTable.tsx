@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Calendar, Percent, Filter, Eye, Sparkles } from "lucide-react";
+import { MessageSquare, Calendar, Percent, Filter, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FollowUpInteligente } from "./FollowUpInteligente";
 
@@ -32,7 +32,6 @@ const PropostasTable = ({ propostas }: PropostasTableProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>("todos");
-  const [followUpData, setFollowUpData] = useState({ proposta: "", mensagem: "" });
   const [lembreteData, setLembreteData] = useState({ proposta: "", data: "", observacao: "" });
   const [descontoData, setDescontoData] = useState({ proposta: "", percentual: "", motivo: "" });
   const [followUpInteligenteOpen, setFollowUpInteligenteOpen] = useState(false);
@@ -50,14 +49,6 @@ const PropostasTable = ({ propostas }: PropostasTableProps) => {
       case "expirada": return "destructive";
       default: return "secondary";
     }
-  };
-
-  const handleFollowUp = () => {
-    toast({
-      title: "Follow-up Enviado",
-      description: `Mensagem enviada via WhatsApp para a proposta ${followUpData.proposta}`,
-    });
-    setFollowUpData({ proposta: "", mensagem: "" });
   };
 
   const handleFollowUpInteligente = (proposta: Proposta) => {
@@ -151,46 +142,16 @@ const PropostasTable = ({ propostas }: PropostasTableProps) => {
                       <Eye className="h-4 w-4" />
                     </Button>
 
-                    {/* Follow-up IA Button */}
+                    {/* Follow-up Unificado */}
                     <Button 
                       size="sm" 
                       variant="outline"
                       onClick={() => handleFollowUpInteligente(proposta)}
                       className="gap-1"
                     >
-                      <Sparkles className="h-4 w-4" />
+                      <MessageSquare className="h-4 w-4" />
+                      Follow-up
                     </Button>
-
-                    {/* Follow-up Manual Button */}
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button size="sm" variant="outline" onClick={() => setFollowUpData({ ...followUpData, proposta: proposta.id })}>
-                          <MessageSquare className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Enviar Follow-up</DialogTitle>
-                          <DialogDescription>
-                            Envie uma mensagem via WhatsApp para {proposta.cliente}
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="mensagem">Mensagem</Label>
-                            <Textarea
-                              id="mensagem"
-                              value={followUpData.mensagem}
-                              onChange={(e) => setFollowUpData({ ...followUpData, mensagem: e.target.value })}
-                              placeholder="Digite sua mensagem..."
-                            />
-                          </div>
-                          <Button onClick={handleFollowUp} className="w-full">
-                            Enviar via WhatsApp
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
 
                     {/* Lembrete Button */}
                     <Dialog>

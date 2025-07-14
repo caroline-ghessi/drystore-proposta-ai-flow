@@ -587,6 +587,7 @@ export type Database = {
           id: string
           mensagem_final: string | null
           mensagem_gerada: string
+          modo: string
           prompt_melhoria: string | null
           proposta_id: string | null
           vendedor_id: string | null
@@ -598,6 +599,7 @@ export type Database = {
           id?: string
           mensagem_final?: string | null
           mensagem_gerada: string
+          modo?: string
           prompt_melhoria?: string | null
           proposta_id?: string | null
           vendedor_id?: string | null
@@ -609,6 +611,7 @@ export type Database = {
           id?: string
           mensagem_final?: string | null
           mensagem_gerada?: string
+          modo?: string
           prompt_melhoria?: string | null
           proposta_id?: string | null
           vendedor_id?: string | null
