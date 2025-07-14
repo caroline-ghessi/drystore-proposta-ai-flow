@@ -9,6 +9,7 @@ import { StepCalculoSolar } from "./wizard/StepCalculoSolar"
 import { StepCalculoTelhas } from "./wizard/StepCalculoTelhas"
 import { StepCalculoTelhasCompleto } from "./wizard/StepCalculoTelhasCompleto"
 import { StepDadosManuaisTelhas } from "./wizard/StepDadosManuaisTelhas"
+import { StepCalculoVentilacao } from "./wizard/StepCalculoVentilacao"
 import { StepGenerate } from "./wizard/StepGenerate"
 import { StepCalculoDivisorias } from "./wizard/StepCalculoDivisorias"
 
@@ -76,6 +77,7 @@ const STEPS_TELHAS_MANUAL = [
   { title: "Entrada de Dados", description: "Upload ou dados manuais" },
   { title: "Dados do Cliente", description: "Informações do projeto" },
   { title: "Cálculos de Cobertura", description: "Dimensionamento automático" },
+  { title: "Ventilação do Telhado", description: "Cálculo de acessórios de ventilação" },
   { title: "Gerar Proposta", description: "Confirmar e criar proposta" }
 ]
 
@@ -318,6 +320,23 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             />
           )}
 
+          {/* Step 4: Cálculo de Ventilação - fluxo manual telhas */}
+          {currentStep === 4 && propostaData.tipoProposta === 'telhas' && propostaData.entradaManual && (
+            <StepCalculoVentilacao
+              areaTelhado={propostaData.areaTelhado || 0}
+              onVentilacaoComplete={(dadosVentilacao) => {
+                handleStepData({
+                  dadosExtraidos: {
+                    ...propostaData.dadosExtraidos,
+                    ventilacao: dadosVentilacao
+                  }
+                });
+                handleNext();
+              }}
+              onBack={handleBack}
+            />
+          )}
+
           {/* Step 4: Cálculo Solar ou Telhas (fluxo normal) */}
           {currentStep === 4 && propostaData.tipoProposta === 'energia-solar' && (
             <StepCalculoSolar
@@ -347,10 +366,9 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
 
           {/* Step Final: Gerar Proposta */}
           {((currentStep === 3 && propostaData.tipoProposta === 'divisorias' && propostaData.entradaManual) ||
-            (currentStep === 4 && (!['energia-solar', 'telhas', 'divisorias'].includes(propostaData.tipoProposta) || 
-             (propostaData.tipoProposta === 'telhas' && propostaData.entradaManual))) || 
             (currentStep === 4 && propostaData.tipoProposta === 'divisorias' && !propostaData.entradaManual) ||
             (currentStep === 5 && propostaData.tipoProposta === 'energia-solar') ||
+            (currentStep === 5 && propostaData.tipoProposta === 'telhas' && propostaData.entradaManual) ||
             (currentStep === 5 && propostaData.tipoProposta === 'telhas' && !propostaData.entradaManual)) && (
             <StepGenerate
               propostaData={propostaData}
