@@ -18,12 +18,18 @@ import {
   Ruler,
   DollarSign,
   Info,
-  FileText 
+  FileText,
+  Edit,
+  Save,
+  X,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useProdutos, ProdutoShingleCompleto, ResumoOrcamentoShingle } from '@/hooks/useProdutos';
+import { useProdutos, ProdutoShingleCompleto, ResumoOrcamentoShingle, ItemCalculadoShingle } from '@/hooks/useProdutos';
 import { useToast } from '@/hooks/use-toast';
 import { TelhaSelectionCard } from './TelhaSelectionCard';
+import { ItemAdicionarModal } from '@/components/admin/ItemAdicionarModal';
 
 interface DimensoesTelhadoCompleto {
   area_total_m2: number;
@@ -75,6 +81,11 @@ export function StepCalculoTelhasCompleto({
     detalhamento: false
   });
 
+  // Estados para edição da composição
+  const [modoEdicao, setModoEdicao] = useState(false);
+  const [itensEditaveis, setItensEditaveis] = useState<ItemCalculadoShingle[]>([]);
+  const [showAdicionarModal, setShowAdicionarModal] = useState(false);
+
   const { canViewMargins } = useUserRole();
   const { 
     produtosShingleCompletos, 
@@ -121,6 +132,7 @@ export function StepCalculoTelhasCompleto({
       );
 
       setOrcamento(resultado);
+      setItensEditaveis(resultado.itens); // Inicializar itens editáveis
       onCalculoComplete(resultado);
       setExpandedSections(prev => ({ ...prev, resultados: true }));
       
@@ -157,6 +169,82 @@ export function StepCalculoTelhasCompleto({
       style: 'currency',
       currency: 'BRL'
     }).format(value);
+  };
+
+  // Funções para edição da composição
+  const iniciarEdicao = () => {
+    setModoEdicao(true);
+    setExpandedSections(prev => ({ ...prev, detalhamento: true }));
+  };
+
+  const cancelarEdicao = () => {
+    setModoEdicao(false);
+    if (orcamento) {
+      setItensEditaveis(orcamento.itens); // Restaurar itens originais
+    }
+  };
+
+  const salvarEdicao = () => {
+    if (!orcamento) return;
+
+    // Recalcular resumo com os itens editados
+    const novoResumo: ResumoOrcamentoShingle = {
+      valorTelhas: 0,
+      valorAcessorios: 0,
+      valorCalhas: 0,
+      valorComplementos: 0,
+      valorTotal: 0,
+      valorPorM2: 0,
+      itens: itensEditaveis
+    };
+
+    itensEditaveis.forEach(item => {
+      switch(item.tipo_item) {
+        case 'TELHA':
+          novoResumo.valorTelhas += item.valor_total;
+          break;
+        case 'CUMEEIRA':
+        case 'RUFO_LATERAL':
+        case 'RUFO_CAPA':
+          novoResumo.valorAcessorios += item.valor_total;
+          break;
+        case 'CALHA':
+          novoResumo.valorCalhas += item.valor_total;
+          break;
+        case 'PREGO':
+        case 'MANTA_STARTER':
+          novoResumo.valorComplementos += item.valor_total;
+          break;
+      }
+      novoResumo.valorTotal += item.valor_total;
+    });
+
+    novoResumo.valorPorM2 = novoResumo.valorTotal / dimensoes.area_total_m2;
+
+    setOrcamento(novoResumo);
+    onCalculoComplete(novoResumo);
+    setModoEdicao(false);
+
+    toast({
+      title: "Composição salva",
+      description: "As alterações foram aplicadas ao orçamento.",
+    });
+  };
+
+  const editarQuantidadeItem = (index: number, novaQuantidade: number) => {
+    const novosItens = [...itensEditaveis];
+    novosItens[index].quantidade_final = novaQuantidade;
+    novosItens[index].valor_total = novaQuantidade * novosItens[index].preco_unitario;
+    setItensEditaveis(novosItens);
+  };
+
+  const removerItem = (index: number) => {
+    const novosItens = itensEditaveis.filter((_, i) => i !== index);
+    setItensEditaveis(novosItens);
+  };
+
+  const adicionarItem = (novoItem: ItemCalculadoShingle) => {
+    setItensEditaveis(prev => [...prev, novoItem]);
   };
 
   return (
@@ -549,13 +637,59 @@ export function StepCalculoTelhasCompleto({
             <CollapsibleTrigger asChild>
               <CardHeader className="cursor-pointer">
                 <CardTitle className="flex items-center justify-between">
-                  <span>Detalhamento dos Itens</span>
-                  {expandedSections.detalhamento ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  <div className="flex items-center gap-2">
+                    <span>Detalhamento dos Itens</span>
+                    {modoEdicao && <Badge variant="secondary">Modo Edição</Badge>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!modoEdicao && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          iniciarEdicao();
+                        }}
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Editar
+                      </Button>
+                    )}
+                    {expandedSections.detalhamento ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </div>
                 </CardTitle>
               </CardHeader>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent>
+                {modoEdicao && (
+                  <div className="flex gap-2 mb-4">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setShowAdicionarModal(true)}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Adicionar Item
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={cancelarEdicao}
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Cancelar
+                    </Button>
+                    <Button 
+                      size="sm"
+                      onClick={salvarEdicao}
+                    >
+                      <Save className="w-4 h-4 mr-1" />
+                      Salvar Alterações
+                    </Button>
+                  </div>
+                )}
+                
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -568,11 +702,12 @@ export function StepCalculoTelhasCompleto({
                         <th className="text-right">Qtd Final</th>
                         <th className="text-right">Preço Unit.</th>
                         <th className="text-right">Total</th>
+                        {modoEdicao && <th className="text-center">Ações</th>}
                       </tr>
                     </thead>
                     <tbody>
-                      {orcamento.itens.map((item, idx) => (
-                        <tr key={idx} className="border-b hover:bg-muted/30">
+                      {(modoEdicao ? itensEditaveis : orcamento.itens).map((item, idx) => (
+                        <tr key={idx} className={`border-b hover:bg-muted/30 ${modoEdicao ? 'bg-blue-50/30' : ''}`}>
                           <td className="py-2">
                             <div>
                               <p className="font-medium">{item.descricao}</p>
@@ -592,7 +727,17 @@ export function StepCalculoTelhasCompleto({
                             {item.quantidade_calculada.toFixed(2)}
                           </td>
                           <td className="text-right font-medium">
-                            {item.quantidade_final} {item.unidade_venda}
+                            {modoEdicao ? (
+                              <Input
+                                type="number"
+                                value={item.quantidade_final}
+                                onChange={(e) => editarQuantidadeItem(idx, Number(e.target.value) || 0)}
+                                className="w-20 h-8 text-right"
+                                min="0"
+                              />
+                            ) : (
+                              <span>{item.quantidade_final} {item.unidade_venda}</span>
+                            )}
                           </td>
                           <td className="text-right">
                             {formatCurrency(item.preco_unitario)}
@@ -600,6 +745,18 @@ export function StepCalculoTelhasCompleto({
                           <td className="text-right font-medium">
                             {formatCurrency(item.valor_total)}
                           </td>
+                          {modoEdicao && (
+                            <td className="text-center">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removerItem(idx)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -610,6 +767,14 @@ export function StepCalculoTelhasCompleto({
           </Card>
         </Collapsible>
       )}
+
+      {/* Modal de Adição */}
+      <ItemAdicionarModal
+        open={showAdicionarModal}
+        onOpenChange={setShowAdicionarModal}
+        produtos={produtosShingleCompletos}
+        onAdicionarItem={adicionarItem}
+      />
 
       {/* Navegação */}
       <div className="flex justify-between">
