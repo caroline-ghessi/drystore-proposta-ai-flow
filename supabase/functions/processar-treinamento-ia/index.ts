@@ -167,10 +167,10 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          app_id: difyAppId,
           inputs: {
-            file_url: fileUrl,
-            document_name: nomeArquivo,
-            extraction_type: 'training_content'
+            pdf_file: fileUrl,
+            nome_arquivo: nomeArquivo
           },
           response_mode: 'blocking',
           user: 'admin-treinamento'
