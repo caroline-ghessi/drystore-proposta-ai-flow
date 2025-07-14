@@ -27,6 +27,7 @@ import { VariableProtectedEditor } from './VariableProtectedEditor';
 import { ColorPicker } from './ColorPicker';
 import { StyleEditor } from './StyleEditor';
 import { LayoutPreview } from './LayoutPreview';
+import { SectionEditor } from './SectionEditor';
 
 interface LayoutConfig {
   id: string;
@@ -57,6 +58,8 @@ export function AdvancedLayoutEditor({ layoutId, isOpen, onClose, onSave }: Adva
   const [saving, setSaving] = useState(false);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [showHistory, setShowHistory] = useState(false);
+  const [sectionEditorOpen, setSectionEditorOpen] = useState(false);
+  const [currentSection, setCurrentSection] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -220,6 +223,28 @@ export function AdvancedLayoutEditor({ layoutId, isOpen, onClose, onSave }: Adva
     }));
   };
 
+  const handleOpenSectionEditor = (sectionName: string) => {
+    setCurrentSection(sectionName);
+    setSectionEditorOpen(true);
+  };
+
+  const handleSaveSectionConfig = (sectionConfig: any) => {
+    updateConfig(currentSection, 'config', sectionConfig);
+    setSectionEditorOpen(false);
+  };
+
+  const getCurrentSectionConfig = () => {
+    return config[currentSection]?.config || {
+      visivel: true,
+      ordem: 1,
+      titulo: '',
+      subtitulo: '',
+      descricao: '',
+      cor_fundo: '',
+      cor_texto: '',
+    };
+  };
+
   if (!layout) {
     return null;
   }
@@ -335,12 +360,7 @@ export function AdvancedLayoutEditor({ layoutId, isOpen, onClose, onSave }: Adva
                                 <Button 
                                   variant="outline" 
                                   size="sm"
-                                  onClick={() => {
-                                    toast({
-                                      title: `Configurar ${secao}`,
-                                      description: "Editor específico da seção em desenvolvimento",
-                                    });
-                                  }}
+                                  onClick={() => handleOpenSectionEditor(secao)}
                                 >
                                   <Settings className="h-4 w-4" />
                                 </Button>
@@ -501,6 +521,16 @@ export function AdvancedLayoutEditor({ layoutId, isOpen, onClose, onSave }: Adva
           </Button>
         </div>
       </DialogContent>
+
+      {/* Editor de Seção Individual */}
+      <SectionEditor
+        isOpen={sectionEditorOpen}
+        onClose={() => setSectionEditorOpen(false)}
+        onSave={handleSaveSectionConfig}
+        sectionName={currentSection}
+        sectionConfig={getCurrentSectionConfig()}
+        tipoProposta={layout?.tipo_proposta || ''}
+      />
     </Dialog>
   );
 }
