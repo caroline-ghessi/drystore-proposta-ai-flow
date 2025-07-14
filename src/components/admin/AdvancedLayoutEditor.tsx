@@ -226,8 +226,8 @@ export function AdvancedLayoutEditor({ layoutId, isOpen, onClose, onSave }: Adva
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden">
-        <DialogHeader>
+      <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Layout className="h-5 w-5" />
             Editor Avançado - {layout.nome}
@@ -242,9 +242,9 @@ export function AdvancedLayoutEditor({ layoutId, isOpen, onClose, onSave }: Adva
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : (
-          <div className="flex h-[calc(100vh-200px)]">
+          <div className="flex flex-1 min-h-0">
             {/* Painel Esquerdo - Editor */}
-            <div className="w-1/2 border-r">
+            <div className="w-1/2 border-r flex flex-col">
               <div className="p-4 border-b bg-muted/30">
                 <div className="flex items-center justify-between">
                   <div className="flex gap-2">
@@ -276,7 +276,7 @@ export function AdvancedLayoutEditor({ layoutId, isOpen, onClose, onSave }: Adva
                 </div>
               </div>
               
-              <ScrollArea className="h-full">
+              <ScrollArea className="flex-1">
                 <div className="p-4">
                   <Tabs defaultValue="estrutura" className="w-full">
                     <TabsList className="grid w-full grid-cols-6">
@@ -332,7 +332,16 @@ export function AdvancedLayoutEditor({ layoutId, isOpen, onClose, onSave }: Adva
                                     {secao === 'footer' && 'Rodapé com contatos'}
                                   </div>
                                 </div>
-                                <Button variant="outline" size="sm">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => {
+                                    toast({
+                                      title: `Configurar ${secao}`,
+                                      description: "Editor específico da seção em desenvolvimento",
+                                    });
+                                  }}
+                                >
                                   <Settings className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -461,15 +470,15 @@ export function AdvancedLayoutEditor({ layoutId, isOpen, onClose, onSave }: Adva
             </div>
 
             {/* Painel Direito - Preview */}
-            <div className="w-1/2">
-              <div className="p-4 border-b bg-muted/30">
+            <div className="w-1/2 bg-muted/20 flex flex-col">
+              <div className="p-4 border-b bg-muted/30 shrink-0">
                 <h3 className="font-medium">Preview Live</h3>
                 <p className="text-sm text-muted-foreground">
                   Visualização em tempo real das alterações
                 </p>
               </div>
               
-              <div className="h-full bg-background">
+              <div className="flex-1 overflow-hidden">
                 <LayoutPreview
                   config={config}
                   estilos={estilosCustomizados}
@@ -482,8 +491,8 @@ export function AdvancedLayoutEditor({ layoutId, isOpen, onClose, onSave }: Adva
         )}
 
         {/* Botões de Ação */}
-        <div className="flex justify-between p-4 border-t">
-          <Button variant="outline" onClick={onClose}>
+        <div className="flex justify-between p-4 border-t bg-background shrink-0 relative z-50">
+          <Button variant="outline" onClick={onClose} disabled={saving}>
             Cancelar
           </Button>
           <Button onClick={salvarLayout} disabled={saving}>
