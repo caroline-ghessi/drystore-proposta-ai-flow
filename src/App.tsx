@@ -27,6 +27,7 @@ import AdminUsuarios from "./pages/admin/AdminUsuarios";
 import AdminProdutos from "./pages/admin/AdminProdutos";
 import AdminLayoutsPropostas from "./pages/admin/AdminLayoutsPropostas";
 import AdminConfiguracoes from "./pages/admin/AdminConfiguracoes";
+import AdminTreinamentoIA from "./pages/admin/AdminTreinamentoIA";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
           <Route path="/admin/produtos" element={<ProtectedRoute requiredRoles={['administrador']}><AdminProdutos /></ProtectedRoute>} />
           <Route path="/admin/layouts-propostas" element={<ProtectedRoute requiredRoles={['administrador']}><AdminLayoutsPropostas /></ProtectedRoute>} />
           <Route path="/admin/configuracoes" element={<ProtectedRoute requiredRoles={['administrador']}><AdminConfiguracoes /></ProtectedRoute>} />
+          <Route path="/admin/treinamento-ia" element={<ProtectedRoute requiredRoles={['administrador']}><AdminTreinamentoIA /></ProtectedRoute>} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

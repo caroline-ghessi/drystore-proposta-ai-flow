@@ -14,7 +14,8 @@ import {
   ChevronRight,
   Zap,
   Shield,
-  Trophy
+  Trophy,
+  Bot
 } from "lucide-react"
 import {
   Sidebar,
@@ -52,6 +53,7 @@ const adminItems = [
   { title: "Usuários", url: "/admin/usuarios", icon: Users },
   { title: "Produtos", url: "/admin/produtos", icon: Building2 },
   { title: "Layouts", url: "/admin/layouts-propostas", icon: Zap },
+  { title: "Treinamento IA", url: "/admin/treinamento-ia", icon: Bot },
   { title: "Configurações", url: "/admin/configuracoes", icon: Shield },
 ]
 
