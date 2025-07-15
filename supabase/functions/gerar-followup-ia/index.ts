@@ -112,27 +112,65 @@ INSTRUÇÕES:
     let response, data;
     
     if (grokApiKey) {
-      // Usar Grok AI (modelo que funciona no chatbot)
+      // Usar Grok AI (modelo correto 2025)
       console.log('Usando Grok AI...');
-      response = await fetch('https://api.x.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${grokApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'grok-4-0709',
-          messages: [
-            { role: 'system', content: sistemaPrompt },
-            { role: 'user', content: userPrompt }
-          ],
-          temperature: 0.3,
-          max_tokens: 200,
-        }),
-      });
+      console.log('API Key presente:', !!grokApiKey);
+      
+      try {
+        response = await fetch('https://api.x.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${grokApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'grok-3',
+            messages: [
+              { role: 'system', content: sistemaPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            temperature: 0.3,
+            max_tokens: 200,
+          }),
+        });
+        
+        console.log('Resposta Grok status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Grok API Error:', response.status, errorText);
+          throw new Error(`Grok API falhou: ${response.status} - ${errorText}`);
+        }
+        
+      } catch (grokError) {
+        console.error('Erro ao usar Grok, tentando OpenAI como fallback:', grokError);
+        
+        if (!openAIApiKey) {
+          throw new Error('Grok falhou e OpenAI não está configurado: ' + grokError.message);
+        }
+        
+        // Fallback para OpenAI se Grok falhar
+        console.log('Usando OpenAI como fallback...');
+        response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: sistemaPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 200,
+          }),
+        });
+      }
     } else {
-      // Fallback para OpenAI
-      console.log('Usando OpenAI como fallback...');
+      // Usar OpenAI se Grok não estiver configurado
+      console.log('Usando OpenAI (Grok não configurado)...');
       response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -140,7 +178,7 @@ INSTRUÇÕES:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'gpt-4o-mini',
           messages: [
             { role: 'system', content: sistemaPrompt },
             { role: 'user', content: userPrompt }
