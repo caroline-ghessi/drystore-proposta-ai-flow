@@ -131,9 +131,9 @@ serve(async (req) => {
       bucketPath: 'documentos/'
     });
 
-    // Verificar se o arquivo existe no bucket (na pasta documentos/)
+    // Verificar se o arquivo existe no bucket de treinamento (na pasta documentos/)
     const { data: fileExists, error: checkError } = await supabase.storage
-      .from('documentos-propostas')
+      .from('treinamento-ia')
       .list('documentos', { 
         search: nomeArquivoExtraido
       });
@@ -145,6 +145,7 @@ serve(async (req) => {
 
     if (!fileExists || fileExists.length === 0) {
       console.error('Arquivo não encontrado no bucket:', {
+        bucket: 'treinamento-ia',
         pasta: 'documentos/',
         arquivo: nomeArquivoExtraido,
         arquivoUrlOriginal: arquivoUrl
@@ -153,13 +154,14 @@ serve(async (req) => {
     }
 
     console.log('Arquivo encontrado no storage:', {
+      bucket: 'treinamento-ia',
       arquivo: fileExists[0],
       totalArquivos: fileExists.length
     });
 
-    // Gerar URL pública para acesso do Dify (como nas outras funções)
+    // Gerar URL pública para acesso do Dify (bucket público)
     const { data: publicUrlData } = supabase.storage
-      .from('documentos-propostas')
+      .from('treinamento-ia')
       .getPublicUrl(arquivoUrl);
 
     if (!publicUrlData?.publicUrl) {

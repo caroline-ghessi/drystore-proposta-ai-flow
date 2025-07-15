@@ -18,6 +18,12 @@ export class UploadService {
 
   async uploadDocumento(file: File, propostaId?: string): Promise<UploadResult> {
     try {
+      // Validar arquivo
+      const validation = this.validateFile(file);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
+
       // Gerar nome único para o arquivo
       const timestamp = Date.now();
       const extension = file.name.split('.').pop();
@@ -30,9 +36,15 @@ export class UploadService {
       const contentType = this.getContentType(file.name);
       console.log('Upload com Content-Type:', contentType);
 
-      // Upload para o bucket documentos-propostas
+      // Determinar bucket baseado no tipo de upload
+      const isTrainingUpload = propostaId === 'treinamento-ia';
+      const bucketName = isTrainingUpload ? 'treinamento-ia' : 'documentos-propostas';
+      
+      console.log('Upload para bucket:', bucketName);
+
+      // Upload para o bucket apropriado
       const { data, error } = await supabase.storage
-        .from('documentos-propostas')
+        .from(bucketName)
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false,
@@ -43,16 +55,32 @@ export class UploadService {
         throw new Error(`Erro no upload: ${error.message}`);
       }
 
-      // Gerar URL assinada temporária (válida por 24 horas) para acesso público
+      // Para arquivos de treinamento (bucket público), usar URL pública diretamente
+      if (isTrainingUpload) {
+        const { data: urlData } = supabase.storage
+          .from(bucketName)
+          .getPublicUrl(data.path);
+
+        const result: UploadResult = {
+          url: urlData.publicUrl,
+          path: data.path,
+          fullUrl: urlData.publicUrl
+        };
+
+        console.log('Upload de treinamento concluído com URL pública:', result);
+        return result;
+      }
+
+      // Para propostas (bucket privado), usar URL assinada temporária (válida por 24 horas)
       const { data: signedUrlData, error: signedError } = await supabase.storage
-        .from('documentos-propostas')
+        .from(bucketName)
         .createSignedUrl(data.path, 86400); // 24 horas
 
       if (signedError) {
         console.warn('Erro ao gerar URL assinada, usando URL pública:', signedError);
         // Fallback para URL pública
         const { data: urlData } = supabase.storage
-          .from('documentos-propostas')
+          .from(bucketName)
           .getPublicUrl(data.path);
 
         const result: UploadResult = {
@@ -80,10 +108,11 @@ export class UploadService {
     }
   }
 
-  async getDocumentoUrl(path: string): Promise<string> {
+  async getDocumentoUrl(path: string, isTraining: boolean = false): Promise<string> {
     try {
+      const bucketName = isTraining ? 'treinamento-ia' : 'documentos-propostas';
       const { data } = supabase.storage
-        .from('documentos-propostas')
+        .from(bucketName)
         .getPublicUrl(path);
 
       return data.publicUrl;
@@ -93,10 +122,11 @@ export class UploadService {
     }
   }
 
-  async deleteDocumento(path: string): Promise<void> {
+  async deleteDocumento(path: string, isTraining: boolean = false): Promise<void> {
     try {
+      const bucketName = isTraining ? 'treinamento-ia' : 'documentos-propostas';
       const { error } = await supabase.storage
-        .from('documentos-propostas')
+        .from(bucketName)
         .remove([path]);
 
       if (error) {
