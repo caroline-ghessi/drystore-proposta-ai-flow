@@ -42,6 +42,79 @@ serve(async (req) => {
       throw new Error('Proposta não encontrada');
     }
 
+    // Buscar dados técnicos específicos por tipo de proposta
+    let dadosTecnicos = null;
+    
+    console.log(`Buscando dados técnicos para proposta ${proposta.tipo_proposta}`);
+    
+    if (proposta.tipo_proposta === 'energia-solar') {
+      const { data: calculoSolar } = await supabase
+        .from('energia_solar_calculos')
+        .select(`
+          potencia_sistema_kwp,
+          quantidade_paineis,
+          economia_mensal_estimada,
+          economia_anual_estimada,
+          payback_simples_anos,
+          geracao_estimada_mensal_kwh,
+          valor_total
+        `)
+        .eq('proposta_id', propostaId)
+        .single();
+      
+      dadosTecnicos = calculoSolar;
+      console.log('Dados técnicos energia solar:', calculoSolar);
+    } 
+    else if (proposta.tipo_proposta === 'telhas') {
+      const { data: calculoTelhas } = await supabase
+        .from('orcamentos_telhado_shingle')
+        .select(`
+          area_telhado,
+          valor_total,
+          valor_por_m2,
+          telha_codigo,
+          comprimento_cumeeira,
+          perimetro_telhado
+        `)
+        .eq('proposta_id', propostaId)
+        .single();
+      
+      dadosTecnicos = calculoTelhas;
+      console.log('Dados técnicos telhas:', calculoTelhas);
+    }
+    else if (proposta.tipo_proposta === 'divisorias') {
+      const { data: calculoDrywall } = await supabase
+        .from('orcamentos_drywall')
+        .select(`
+          area_parede,
+          valor_total,
+          valor_por_m2,
+          tipo_parede,
+          composicao_nome
+        `)
+        .eq('proposta_id', propostaId)
+        .single();
+      
+      dadosTecnicos = calculoDrywall;
+      console.log('Dados técnicos drywall:', calculoDrywall);
+    }
+    else if (proposta.tipo_proposta === 'impermeabilizacao') {
+      const { data: calculoImpermeabilizacao } = await supabase
+        .from('calculos_impermeabilizacao')
+        .select(`
+          area_aplicacao,
+          valor_total,
+          valor_por_m2,
+          sistema_impermeabilizacao,
+          tipo_superficie
+        `)
+        .eq('proposta_id', propostaId)
+        .single();
+      
+      dadosTecnicos = calculoImpermeabilizacao;
+      console.log('Dados técnicos impermeabilização:', calculoImpermeabilizacao);
+    }
+
     // Calcular dias desde criação
     const diasAbertas = Math.floor((new Date().getTime() - new Date(proposta.created_at).getTime()) / (1000 * 60 * 60 * 24));
     
@@ -115,7 +188,7 @@ serve(async (req) => {
       }
     }
 
-    // Contexto da proposta
+    // Criar contexto enriquecido com dados técnicos
     const contexto = {
       clienteNome: proposta.cliente_nome,
       valorTotal: proposta.valor_total,
@@ -124,8 +197,64 @@ serve(async (req) => {
       diasAbertas,
       vendedorNome: proposta.vendedores?.nome,
       dataVisualizacao: proposta.data_visualizacao,
-      dataVencimento: proposta.data_vencimento
+      dataVencimento: proposta.data_vencimento,
+      dadosTecnicos: dadosTecnicos,
+      dadosExtraidos: proposta.dados_extraidos
     };
+
+    // Criar contexto específico baseado no tipo de proposta
+    let contextoEspecifico = "";
+    
+    if (proposta.tipo_proposta === 'energia-solar' && dadosTecnicos) {
+      const economiaAnual = dadosTecnicos.economia_anual_estimada;
+      const economiaMensal = dadosTecnicos.economia_mensal_estimada;
+      const payback = dadosTecnicos.payback_simples_anos;
+      const paineis = dadosTecnicos.quantidade_paineis;
+      const potencia = dadosTecnicos.potencia_sistema_kwp;
+      
+      contextoEspecifico = `
+DADOS TÉCNICOS ENERGIA SOLAR:
+- Sistema: ${paineis} painéis de ${potencia}kWp
+- Economia mensal: R$ ${economiaMensal?.toLocaleString('pt-BR') || 'N/A'}
+- Economia anual: R$ ${economiaAnual?.toLocaleString('pt-BR') || 'N/A'}
+- Payback: ${payback ? `${payback} anos` : 'N/A'}
+- Valor investimento: R$ ${contexto.valorTotal?.toLocaleString('pt-BR') || 'N/A'}`;
+    }
+    else if (proposta.tipo_proposta === 'telhas' && dadosTecnicos) {
+      const area = dadosTecnicos.area_telhado;
+      const valorM2 = dadosTecnicos.valor_por_m2;
+      
+      contextoEspecifico = `
+DADOS TÉCNICOS TELHAS:
+- Área do telhado: ${area}m²
+- Valor por m²: R$ ${valorM2?.toLocaleString('pt-BR') || 'N/A'}
+- Garantia: 25 anos
+- Resistência: 200+ km/h vento`;
+    }
+    else if (proposta.tipo_proposta === 'divisorias' && dadosTecnicos) {
+      const area = dadosTecnicos.area_parede;
+      const valorM2 = dadosTecnicos.valor_por_m2;
+      const tipo = dadosTecnicos.tipo_parede;
+      
+      contextoEspecifico = `
+DADOS TÉCNICOS DIVISÓRIAS:
+- Área das paredes: ${area}m²
+- Tipo: ${tipo}
+- Valor por m²: R$ ${valorM2?.toLocaleString('pt-BR') || 'N/A'}
+- Instalação rápida: 3-5 dias`;
+    }
+    else if (proposta.tipo_proposta === 'impermeabilizacao' && dadosTecnicos) {
+      const area = dadosTecnicos.area_aplicacao;
+      const sistema = dadosTecnicos.sistema_impermeabilizacao;
+      const valorM2 = dadosTecnicos.valor_por_m2;
+      
+      contextoEspecifico = `
+DADOS TÉCNICOS IMPERMEABILIZAÇÃO:
+- Área: ${area}m²
+- Sistema: ${sistema || 'N/A'}
+- Valor por m²: R$ ${valorM2?.toLocaleString('pt-BR') || 'N/A'}
+- Vida útil: 10+ anos`;
+    }
 
     // Preparar prompt para Grok
     const sistemaPrompt = `Você é um especialista em vendas consultivas que gera mensagens de follow-up personalizadas para WhatsApp.
@@ -149,13 +278,20 @@ CONTEXTO DA PROPOSTA:
 - Visualizada: ${contexto.dataVisualizacao ? 'Sim' : 'Não'}
 - Vence em: ${contexto.dataVencimento || 'Não definido'}
 
+${contextoEspecifico}
+
 INSTRUÇÕES:
 1. Gere uma mensagem de follow-up personalizada de até 200 caracteres
 2. Use o nome do cliente
-3. Seja específico sobre a proposta
-4. Inclua call-to-action claro
-5. Use emojis apropriadamente (máximo 2)
-6. Mantenha tom profissional mas amigável`;
+3. Seja específico sobre a proposta, use os dados técnicos quando disponíveis
+4. Inclua números específicos (economia, área, benefícios quantificados)
+5. Inclua call-to-action claro e urgente
+6. Use emojis apropriadamente (máximo 2)
+7. Mantenha tom profissional mas amigável
+8. Para energia solar: mencione economia mensal/payback
+9. Para telhas: mencione área e durabilidade
+10. Para divisórias: mencione rapidez da instalação
+11. Para impermeabilização: mencione vida útil`;
 
     const userPrompt = promptMelhoria 
       ? `Melhore a mensagem seguindo esta orientação: ${promptMelhoria}`
