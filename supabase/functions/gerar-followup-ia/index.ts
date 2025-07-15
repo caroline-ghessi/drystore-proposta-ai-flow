@@ -53,13 +53,67 @@ serve(async (req) => {
       else categoria = 'terceiro-followup';
     }
 
-    // Buscar conhecimento relevante da base
-    const { data: conhecimento } = await supabase
+    // Buscar conhecimento relevante com busca hierárquica
+    console.log(`Buscando conhecimento para categoria: ${categoria}, proposta: ${proposta.tipo_proposta}`);
+    
+    let conhecimento = [];
+    
+    // 1º: Buscar por tag específica (primeiro-contato, segundo-followup, etc.)
+    const { data: conhecimentoEspecifico } = await supabase
       .from('conhecimento_vendas')
       .select('*')
       .eq('ativo', true)
       .contains('tags', [categoria])
-      .order('prioridade', { ascending: false });
+      .order('prioridade', { ascending: false })
+      .limit(3);
+    
+    console.log(`Conhecimento específico encontrado: ${conhecimentoEspecifico?.length || 0} itens`);
+    
+    if (conhecimentoEspecifico && conhecimentoEspecifico.length > 0) {
+      conhecimento = conhecimentoEspecifico;
+    } else {
+      // 2º: Buscar por tags genéricas (followup, venda, objeções)
+      const { data: conhecimentoGenerico } = await supabase
+        .from('conhecimento_vendas')
+        .select('*')
+        .eq('ativo', true)
+        .or(`tags.cs.{followup},tags.cs.{venda},tags.cs.{objecoes},tags.cs.{persuasao}`)
+        .order('prioridade', { ascending: false })
+        .limit(3);
+      
+      console.log(`Conhecimento genérico encontrado: ${conhecimentoGenerico?.length || 0} itens`);
+      
+      if (conhecimentoGenerico && conhecimentoGenerico.length > 0) {
+        conhecimento = conhecimentoGenerico;
+      } else {
+        // 3º: Buscar por categoria
+        const { data: conhecimentoCategoria } = await supabase
+          .from('conhecimento_vendas')
+          .select('*')
+          .eq('ativo', true)
+          .in('categoria', ['followup', 'objecoes', 'tecnicas-vendas'])
+          .order('prioridade', { ascending: false })
+          .limit(3);
+        
+        console.log(`Conhecimento por categoria encontrado: ${conhecimentoCategoria?.length || 0} itens`);
+        
+        if (conhecimentoCategoria && conhecimentoCategoria.length > 0) {
+          conhecimento = conhecimentoCategoria;
+        } else {
+          // 4º: Buscar por tipo de proposta
+          const { data: conhecimentoProposta } = await supabase
+            .from('conhecimento_vendas')
+            .select('*')
+            .eq('ativo', true)
+            .contains('tags', [proposta.tipo_proposta])
+            .order('prioridade', { ascending: false })
+            .limit(2);
+          
+          console.log(`Conhecimento por tipo de proposta encontrado: ${conhecimentoProposta?.length || 0} itens`);
+          conhecimento = conhecimentoProposta || [];
+        }
+      }
+    }
 
     // Contexto da proposta
     const contexto = {
