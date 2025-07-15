@@ -232,12 +232,12 @@ serve(async (req) => {
           pdf_file: fileId 
             ? { 
                 transfer_method: "local_file", 
-                type: "application/pdf", 
+                type: "document", 
                 upload_file_id: fileId 
               } 
             : { 
                 transfer_method: "remote_url", 
-                type: "application/pdf", 
+                type: "document", 
                 url: fileUrl 
               },
           nome_arquivo: nomeArquivo
