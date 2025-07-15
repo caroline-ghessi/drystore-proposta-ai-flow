@@ -54,6 +54,11 @@ async function uploadFileToDify(arquivoUrl: string, apiKey: string): Promise<str
 
 // Função para gerar título baseado no conteúdo
 function gerarTitulo(conteudo: string, nomeArquivo: string): string {
+  // Validação de tipo - garantir que conteudo seja string
+  if (typeof conteudo !== 'string') {
+    conteudo = String(conteudo);
+  }
+  
   // Tenta pegar as primeiras palavras do conteúdo para gerar um título
   const primeiraLinha = conteudo.split('\n')[0];
   if (primeiraLinha && primeiraLinha.length > 10 && primeiraLinha.length < 100) {
@@ -67,6 +72,11 @@ function gerarTitulo(conteudo: string, nomeArquivo: string): string {
 
 // Função para determinar categoria baseada no conteúdo
 function determinarCategoria(conteudo: string): string {
+  // Validação de tipo - garantir que conteudo seja string
+  if (typeof conteudo !== 'string') {
+    conteudo = String(conteudo);
+  }
+  
   const conteudoLower = conteudo.toLowerCase();
   
   // Palavras-chave para cada categoria
@@ -91,6 +101,11 @@ function determinarCategoria(conteudo: string): string {
 
 // Função para gerar tags baseadas no conteúdo
 function gerarTags(conteudo: string, nomeArquivo: string): string[] {
+  // Validação de tipo - garantir que conteudo seja string
+  if (typeof conteudo !== 'string') {
+    conteudo = String(conteudo);
+  }
+  
   const conteudoLower = conteudo.toLowerCase();
   const tags = ['treinamento', 'pdf'];
   
@@ -271,14 +286,30 @@ serve(async (req) => {
       console.log('Resposta do Dify recebida com sucesso');
       console.log('Tipo de saída:', typeof difyResult.data?.outputs);
 
-      // Extrair texto simples do resultado do Dify
-      conteudoExtraido = difyResult.data?.outputs?.text || 
-                         difyResult.data?.outputs?.content || 
-                         difyResult.data?.outputs || 
-                         'Conteúdo extraído do documento';
+      // Extrair e converter para string
+      let conteudoBruto = difyResult.data?.outputs?.text || 
+                          difyResult.data?.outputs?.content || 
+                          difyResult.data?.outputs;
 
-      console.log('Conteúdo extraído (primeiros 200 chars):', 
-                  String(conteudoExtraido).substring(0, 200) + '...');
+      console.log('Tipo de dados extraído:', typeof conteudoBruto);
+      console.log('Conteúdo bruto:', conteudoBruto);
+
+      // Conversão defensiva para string
+      if (typeof conteudoBruto === 'object') {
+        conteudoExtraido = JSON.stringify(conteudoBruto);
+      } else if (typeof conteudoBruto !== 'string') {
+        conteudoExtraido = String(conteudoBruto);
+      } else {
+        conteudoExtraido = conteudoBruto;
+      }
+
+      // Fallback se ainda não é string válida
+      if (!conteudoExtraido || conteudoExtraido === 'null' || conteudoExtraido === 'undefined') {
+        conteudoExtraido = 'Conteúdo extraído do documento';
+      }
+
+      console.log('Conteúdo final (string, primeiros 200 chars):', 
+                  conteudoExtraido.substring(0, 200) + '...');
     } catch (error) {
       clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
