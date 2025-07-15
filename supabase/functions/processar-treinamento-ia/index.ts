@@ -178,21 +178,33 @@ serve(async (req) => {
     let conteudoExtraido: string;
 
     try {
+      // Preparar payload no formato correto que o Dify espera
+      const difyPayload = {
+        app_id: difyAppId,
+        inputs: {
+          pdf_file: [  // Array obrigatório conforme erro do Dify
+            {
+              transfer_method: "remote_url",
+              url: fileUrl,
+              type: "application/pdf", 
+              filename: nomeArquivo
+            }
+          ],
+          nome_arquivo: nomeArquivo
+        },
+        response_mode: 'blocking',
+        user: 'admin-treinamento'
+      };
+      
+      console.log('Payload enviado para Dify:', JSON.stringify(difyPayload, null, 2));
+      
       const difyResponse = await fetch(`https://api.dify.ai/v1/workflows/run`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${difyApiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          app_id: difyAppId,
-          inputs: {
-            pdf_file: fileUrl,
-            nome_arquivo: nomeArquivo
-          },
-          response_mode: 'blocking',
-          user: 'admin-treinamento'
-        }),
+        body: JSON.stringify(difyPayload),
         signal: timeoutController.signal
       });
 
