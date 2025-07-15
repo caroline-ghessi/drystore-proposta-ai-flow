@@ -178,18 +178,16 @@ serve(async (req) => {
     let conteudoExtraido: string;
 
     try {
-      // Preparar payload no formato correto que o Dify espera
+      // Preparar payload no formato correto que o Dify espera - arquivo único (não array)
       const difyPayload = {
         app_id: difyAppId,
         inputs: {
-          pdf_file: [  // Array obrigatório conforme erro do Dify
-            {
-              transfer_method: "remote_url",
-              url: fileUrl,
-              type: "application/pdf", 
-              filename: nomeArquivo
-            }
-          ],
+          pdf_file: {
+            transfer_method: "remote_url",
+            url: fileUrl,
+            type: "application/pdf",
+            filename: nomeArquivo
+          },
           nome_arquivo: nomeArquivo
         },
         response_mode: 'blocking',
