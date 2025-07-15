@@ -157,19 +157,19 @@ serve(async (req) => {
       totalArquivos: fileExists.length
     });
 
-    // Gerar URL assinada temporária (6 horas) para permitir acesso do Dify
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+    // Gerar URL pública para acesso do Dify (como nas outras funções)
+    const { data: publicUrlData } = supabase.storage
       .from('documentos-propostas')
-      .createSignedUrl(arquivoUrl, 21600); // 6 horas em segundos
+      .getPublicUrl(arquivoUrl);
 
-    if (signedUrlError || !signedUrlData?.signedUrl) {
-      console.error('Erro ao gerar URL assinada:', signedUrlError);
-      throw new Error('Erro ao gerar URL temporária para o arquivo');
+    if (!publicUrlData?.publicUrl) {
+      console.error('Erro ao gerar URL pública para o arquivo');
+      throw new Error('Erro ao gerar URL pública para o arquivo');
     }
 
-    const fileUrl = signedUrlData.signedUrl;
-    console.log('URL assinada gerada para Dify (válida por 6h)');
-    console.log('URL:', fileUrl.substring(0, 100) + '...');
+    const fileUrl = publicUrlData.publicUrl;
+    console.log('URL pública gerada para Dify:', fileUrl);
+    console.log('Arquivo acessível via URL pública');
 
     // Chamar Dify API para processar o documento (com timeout de 5 minutos)
     const timeoutController = new AbortController();
