@@ -16,6 +16,42 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// Nova função: Upload do arquivo para Dify (estratégia primária)
+async function uploadFileToDify(arquivoUrl: string, apiKey: string): Promise<string> {
+  console.log('[UPLOAD] Baixando arquivo original...', arquivoUrl);
+  
+  const fileResponse = await fetch(arquivoUrl);
+  if (!fileResponse.ok) {
+    throw new Error(`Erro ao baixar arquivo: ${fileResponse.status} ${fileResponse.statusText}`);
+  }
+  
+  const fileBlob = await fileResponse.blob();
+  console.log('[UPLOAD] Arquivo baixado. Tamanho:', fileBlob.size, 'bytes, Tipo:', fileBlob.type);
+  
+  const formData = new FormData();
+  formData.append('file', new File([fileBlob], 'document.pdf', { type: 'application/pdf' }));
+  formData.append('user', 'admin-treinamento');
+  
+  console.log('[UPLOAD] Enviando para Dify API...');
+  const uploadResponse = await fetch('https://api.dify.ai/v1/files/upload', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: formData
+  });
+  
+  if (!uploadResponse.ok) {
+    const errorText = await uploadResponse.text();
+    console.error('[UPLOAD] Erro:', uploadResponse.status, errorText);
+    throw new Error(`Upload falhou: ${uploadResponse.status} - ${errorText}`);
+  }
+  
+  const uploadResult = await uploadResponse.json();
+  console.log('[UPLOAD] Sucesso, file_id:', uploadResult.id);
+  return uploadResult.id;
+}
+
 // Função para gerar título baseado no conteúdo
 function gerarTitulo(conteudo: string, nomeArquivo: string): string {
   // Tenta pegar as primeiras palavras do conteúdo para gerar um título
@@ -180,20 +216,37 @@ serve(async (req) => {
     let conteudoExtraido: string;
 
     try {
-      // Preparar payload no formato correto que o Dify espera - apenas campos obrigatórios
+      // Tentar upload para Dify primeiro (estratégia primária)
+      let fileId: string | null = null;
+      try {
+        fileId = await uploadFileToDify(fileUrl, difyApiKey);
+        console.log('[ESTRATÉGIA PRIMÁRIA] Upload direto bem-sucedido, usando local_file');
+      } catch (uploadError) {
+        console.error('[ESTRATÉGIA PRIMÁRIA] Falha no upload para Dify, usando fallback remote_url:', uploadError.message);
+      }
+      
+      // Preparar payload com estratégia dupla (upload direto ou remote URL melhorada)
       const difyPayload = {
         app_id: difyAppId,
         inputs: {
-          pdf_file: {
-            transfer_method: "remote_url",
-            url: fileUrl
-          },
+          pdf_file: fileId 
+            ? { 
+                transfer_method: "local_file", 
+                type: "application/pdf", 
+                upload_file_id: fileId 
+              } 
+            : { 
+                transfer_method: "remote_url", 
+                type: "application/pdf", 
+                url: fileUrl 
+              },
           nome_arquivo: nomeArquivo
         },
         response_mode: 'blocking',
         user: 'admin-treinamento'
       };
       
+      console.log('Estratégia utilizada:', fileId ? 'local_file (upload direto)' : 'remote_url (fallback)');
       console.log('Payload enviado para Dify:', JSON.stringify(difyPayload, null, 2));
       
       const difyResponse = await fetch(`https://api.dify.ai/v1/workflows/run`, {
