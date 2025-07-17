@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { TipoPropostaMapeamentos } from "./TipoPropostaMapeamentos";
 
 interface ProdutoMestre {
   id: string;
@@ -359,6 +360,7 @@ export function ProdutosMestreManager() {
         <TabsList>
           <TabsTrigger value="produtos">Produtos ({produtos.length})</TabsTrigger>
           <TabsTrigger value="composicoes">Composições ({composicoes.length})</TabsTrigger>
+          <TabsTrigger value="mapeamentos">Mapeamentos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="produtos">
@@ -511,8 +513,12 @@ export function ProdutosMestreManager() {
               </Table>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+
+          <TabsContent value="mapeamentos">
+            <TipoPropostaMapeamentos />
+          </TabsContent>
+        </Tabs>
     </div>
   );
 }

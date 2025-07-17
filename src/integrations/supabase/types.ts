@@ -1828,6 +1828,50 @@ export type Database = {
         }
         Relationships: []
       }
+      tipo_proposta_composicoes: {
+        Row: {
+          ativo: boolean
+          composicao_id: string
+          created_at: string
+          fator_aplicacao: number
+          id: string
+          obrigatorio: boolean
+          ordem_calculo: number
+          tipo_proposta: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          composicao_id: string
+          created_at?: string
+          fator_aplicacao?: number
+          id?: string
+          obrigatorio?: boolean
+          ordem_calculo?: number
+          tipo_proposta: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          composicao_id?: string
+          created_at?: string
+          fator_aplicacao?: number
+          id?: string
+          obrigatorio?: boolean
+          ordem_calculo?: number
+          tipo_proposta?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tipo_proposta_composicoes_composicao_id_fkey"
+            columns: ["composicao_id"]
+            isOneToOne: false
+            referencedRelation: "composicoes_mestre"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendedores: {
         Row: {
           ativo: boolean
