@@ -6,13 +6,11 @@ import { Separator } from "@/components/ui/separator"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Calculator, CheckCircle, Loader2, Sun, Zap, Clock, TrendingUp, Edit3, RotateCcw, Eye, EyeOff, ShieldCheck, Wrench, Settings } from "lucide-react"
+import { Calculator, CheckCircle, Loader2, Sun, Zap, Edit3, RotateCcw } from "lucide-react"
 import { PropostaData } from "../PropostaWizard"
 import { DadosContaLuz } from "@/services/difyService"
 import { useCalculoMapeamento } from "@/hooks/useCalculoMapeamento"
 import { useProdutos } from "@/hooks/useProdutos"
-import { useUserRole } from "@/hooks/useUserRole"
 import { useToast } from "@/hooks/use-toast"
 
 interface StepCalculoSolarProps {
@@ -29,8 +27,7 @@ export function StepCalculoSolar({
   onNext 
 }: StepCalculoSolarProps) {
   const { calcularPorMapeamento, obterResumoOrcamento, isLoading, error } = useCalculoMapeamento()
-  const { paineis, inversores, buscarInversores, buscarProduto } = useProdutos()
-  const { canViewMargins } = useUserRole()
+  const { paineis, inversores, buscarProduto } = useProdutos()
   const { toast } = useToast()
   
   // Parâmetros para o cálculo
@@ -57,8 +54,6 @@ export function StepCalculoSolar({
       handleCalcular()
     }
   }, [dadosContaLuz])
-
-  // Remover useEffect de equipamentos pois agora usamos mapeamento
 
   const handleCalcular = async () => {
     if (!dadosContaLuz?.consumo_atual) {
@@ -115,7 +110,7 @@ export function StepCalculoSolar({
   }
 
   const recalcularComEquipamentos = async () => {
-    if (!painelSelecionado || !quantidadePaineis || !inversorSelecionado || !calculoCompleto) {
+    if (!painelSelecionado || !quantidadePaineis || !inversorSelecionado) {
       toast({
         title: "Erro",
         description: "Selecione todos os equipamentos",
@@ -125,69 +120,35 @@ export function StepCalculoSolar({
     }
 
     try {
-      const painelProduto = await buscarProduto(painelSelecionado)
-      const inversorProduto = await buscarProduto(inversorSelecionado)
+      // Recalcular usando mapeamento com equipamentos específicos
+      const areaBase = dadosContaLuz.consumo_atual * 8 / 1000;
       
-      if (!painelProduto || !inversorProduto) {
-        throw new Error("Produtos não encontrados")
-      }
-
-      const potenciaSistema = (quantidadePaineis * (painelProduto.potencia_wp || 0)) / 1000
-
-      // Usar funções Supabase para recalcular
-      const dadosEntrada: DadosEntradaSolar = {
-        consumo_mensal_kwh: dadosContaLuz.consumo_atual,
-        cidade: dadosContaLuz.endereco?.split(',')[0]?.trim() || 'São Paulo',
-        estado: 'SP',
-        tipo_instalacao: tipoInstalacao,
-        tipo_telha: tipoTelha,
-        area_disponivel: areaDisponivel,
-        tarifa_energia: tarifaEnergia
-      }
-
-      const resultado = await calcularSistemaCompleto(dadosEntrada)
+      const itens = await calcularPorMapeamento('energia-solar', areaBase, {
+        consumo_kwh: dadosContaLuz.consumo_atual,
+        painel_id: painelSelecionado,
+        quantidade_paineis: quantidadePaineis,
+        inversor_id: inversorSelecionado
+      });
       
-      // Substituir equipamentos pelos selecionados
-      resultado.equipamentos.painel = {
-        id: painelProduto.id,
-        modelo: painelProduto.nome,
-        fabricante: painelProduto.fabricante || '',
-        quantidade: quantidadePaineis,
-        potencia_unitaria: painelProduto.potencia_wp || 0,
-        potencia_total: potenciaSistema * 1000,
-        preco_unitario: painelProduto.preco_unitario || 0,
-        preco_total: (painelProduto.preco_unitario || 0) * quantidadePaineis
-      }
-
-      resultado.equipamentos.inversor = {
-        id: inversorProduto.id,
-        modelo: inversorProduto.nome,
-        fabricante: inversorProduto.fabricante || '',
-        potencia: inversorProduto.potencia_wp || 0,
-        preco: inversorProduto.preco_unitario || 0
-      }
-
-      // Recalcular orçamento
-      resultado.orcamento.equipamentos.paineis = resultado.equipamentos.painel.preco_total
-      resultado.orcamento.equipamentos.inversor = resultado.equipamentos.inversor.preco
-      resultado.orcamento.subtotal = resultado.orcamento.equipamentos.paineis + resultado.orcamento.equipamentos.inversor + resultado.orcamento.instalacao
-      resultado.orcamento.valor_total = resultado.orcamento.subtotal * (1 + resultado.orcamento.margem_aplicada / 100)
-
-      setCalculoCompleto(resultado)
-      setEditandoEquipamentos(false)
+      const resumo = await obterResumoOrcamento('energia-solar', areaBase);
+      
+      setResultadoMapeamento(itens);
+      setResumoOrcamento(resumo);
+      setEditandoEquipamentos(false);
       
       // Atualizar valor total da proposta
       onDataChange({ 
-        valorTotal: resultado.orcamento.valor_total,
+        valorTotal: resumo?.valor_total || 0,
         dadosExtraidos: {
           ...dadosContaLuz,
-          calculo_solar: resultado
+          itens_orcamento: itens,
+          resumo_orcamento: resumo
         }
       })
 
       toast({
         title: "Recálculo realizado!",
-        description: `Novo valor: ${formatCurrency(resultado.orcamento.valor_total)}`,
+        description: `Novo valor: ${formatCurrency(resumo?.valor_total || 0)}`,
       })
     } catch (err) {
       toast({
@@ -343,12 +304,41 @@ export function StepCalculoSolar({
             </CardContent>
           </Card>
 
-          {/* Equipamentos */}
+          {/* Detalhamento dos Itens */}
+          {resultadoMapeamento && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-blue-600" />
+                  Itens do Orçamento
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {resultadoMapeamento.map((item: any, index: number) => (
+                    <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                      <div>
+                        <p className="font-medium">{item.item_descricao}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {item.composicao_nome} • Qty: {Math.ceil(item.quantidade_com_quebra)}
+                        </p>
+                      </div>
+                      <p className="font-semibold text-green-600">
+                        {formatCurrency(item.valor_total)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Equipamentos Editáveis */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Zap className="h-5 w-5 text-blue-600" />
-                Equipamentos Selecionados
+                Equipamentos Customizáveis
                 <Button
                   variant="outline"
                   size="sm"
@@ -356,42 +346,12 @@ export function StepCalculoSolar({
                   className="ml-auto"
                 >
                   <Edit3 className="w-4 h-4 mr-1" />
-                  {editandoEquipamentos ? 'Cancelar' : 'Editar'}
+                  {editandoEquipamentos ? 'Cancelar' : 'Personalizar'}
                 </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {!editandoEquipamentos ? (
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">Painéis Solares</h4>
-                    <div className="bg-muted p-3 rounded-lg">
-                      <p className="font-medium">{calculoCompleto.equipamentos.painel.modelo}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {calculoCompleto.equipamentos.painel.fabricante} • 
-                        {calculoCompleto.equipamentos.painel.potencia_unitaria}W • 
-                        Qty: {calculoCompleto.equipamentos.painel.quantidade}
-                      </p>
-                      <p className="text-sm font-medium text-green-600">
-                        {formatCurrency(calculoCompleto.equipamentos.painel.preco_total)}
-                      </p>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-2">Inversor</h4>
-                    <div className="bg-muted p-3 rounded-lg">
-                      <p className="font-medium">{calculoCompleto.equipamentos.inversor.modelo}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {calculoCompleto.equipamentos.inversor.fabricante} • 
-                        {calculoCompleto.equipamentos.inversor.potencia}W
-                      </p>
-                      <p className="text-sm font-medium text-green-600">
-                        {formatCurrency(calculoCompleto.equipamentos.inversor.preco)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
+              {editandoEquipamentos ? (
                 <div className="space-y-4">
                   <div>
                     <Label>Painéis Solares</Label>
@@ -434,308 +394,14 @@ export function StepCalculoSolar({
                   </div>
                   <Button onClick={recalcularComEquipamentos} className="w-full">
                     <RotateCcw className="w-4 h-4 mr-2" />
-                    Recalcular com Novos Equipamentos
+                    Recalcular com Equipamentos Selecionados
                   </Button>
                 </div>
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  <p>Clique em "Personalizar" para escolher equipamentos específicos</p>
+                </div>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Análise Financeira */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-                Análise Financeira
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">
-                    {formatCurrency(calculoCompleto.orcamento.valor_total)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Investimento Total</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600">
-                    {formatCurrency(calculoCompleto.dimensionamento.economia_mensal_estimada)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Economia Mensal</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-600">
-                    {calculoCompleto.analise_financeira.payback_simples_anos} anos
-                  </p>
-                  <p className="text-sm text-muted-foreground">Payback</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-purple-600">
-                    {calculoCompleto.resumo_proposta.economia_percentual}%
-                  </p>
-                  <p className="text-sm text-muted-foreground">Economia</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Breakdown Detalhado - Somente para Admins */}
-          {canViewMargins() && (
-            <Card className="border-orange-200 bg-orange-50/50">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-orange-600" />
-                  Breakdown Detalhado
-                  <Badge variant="secondary" className="ml-auto bg-orange-100 text-orange-800">
-                    ADMIN
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Accordion type="single" collapsible className="w-full">
-                  {/* Equipamentos DC */}
-                  <AccordionItem value="equipamentos-dc">
-                    <AccordionTrigger className="flex items-center gap-2">
-                      <Sun className="h-4 w-4 text-blue-600" />
-                      Equipamentos DC (Corrente Contínua)
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                          <div>
-                            <p className="font-medium">{calculoCompleto.equipamentos.painel.modelo}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Qty: {calculoCompleto.equipamentos.painel.quantidade} x {formatCurrency(calculoCompleto.equipamentos.painel.preco_unitario)}
-                            </p>
-                          </div>
-                          <p className="font-semibold text-green-600">
-                            {formatCurrency(calculoCompleto.equipamentos.painel.preco_total)}
-                          </p>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                          <div>
-                            <p className="font-medium">String Box, DPS DC, Fusíveis</p>
-                            <p className="text-sm text-muted-foreground">Proteções DC</p>
-                          </div>
-                          <p className="font-semibold text-green-600">
-                            {formatCurrency(calculoCompleto.dimensionamento.potencia_necessaria_kwp * 150)}
-                          </p>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                          <div>
-                            <p className="font-medium">Cabos DC, Conectores MC4</p>
-                            <p className="text-sm text-muted-foreground">Cabeamento DC</p>
-                          </div>
-                          <p className="font-semibold text-green-600">
-                            {formatCurrency(calculoCompleto.equipamentos.painel.quantidade * 25 * 0.6)}
-                          </p>
-                        </div>
-                        <Separator />
-                        <div className="flex justify-between items-center font-semibold">
-                          <span>Subtotal Equipamentos DC:</span>
-                          <span className="text-blue-600">
-                            {formatCurrency(
-                              calculoCompleto.equipamentos.painel.preco_total + 
-                              (calculoCompleto.dimensionamento.potencia_necessaria_kwp * 150) +
-                              (calculoCompleto.equipamentos.painel.quantidade * 25 * 0.6)
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  {/* Equipamentos CA */}
-                  <AccordionItem value="equipamentos-ca">
-                    <AccordionTrigger className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-green-600" />
-                      Equipamentos CA (Corrente Alternada)
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                          <div>
-                            <p className="font-medium">{calculoCompleto.equipamentos.inversor.modelo}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {calculoCompleto.equipamentos.inversor.fabricante} • {calculoCompleto.equipamentos.inversor.potencia}W
-                            </p>
-                          </div>
-                          <p className="font-semibold text-green-600">
-                            {formatCurrency(calculoCompleto.equipamentos.inversor.preco)}
-                          </p>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                          <div>
-                            <p className="font-medium">DPS CA, Disjuntor, Medidor</p>
-                            <p className="text-sm text-muted-foreground">Proteções CA</p>
-                          </div>
-                          <p className="font-semibold text-green-600">
-                            {formatCurrency(450)}
-                          </p>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                          <div>
-                            <p className="font-medium">Cabos CA, Eletrodutos</p>
-                            <p className="text-sm text-muted-foreground">Cabeamento CA</p>
-                          </div>
-                          <p className="font-semibold text-green-600">
-                            {formatCurrency(calculoCompleto.equipamentos.painel.quantidade * 25 * 0.4)}
-                          </p>
-                        </div>
-                        <Separator />
-                        <div className="flex justify-between items-center font-semibold">
-                          <span>Subtotal Equipamentos CA:</span>
-                          <span className="text-green-600">
-                            {formatCurrency(
-                              calculoCompleto.equipamentos.inversor.preco + 
-                              450 +
-                              (calculoCompleto.equipamentos.painel.quantidade * 25 * 0.4)
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  {/* Estrutura de Fixação */}
-                  <AccordionItem value="estrutura">
-                    <AccordionTrigger className="flex items-center gap-2">
-                      <Wrench className="h-4 w-4 text-gray-600" />
-                      Estrutura de Fixação
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                          <div>
-                            <p className="font-medium">Trilhos de Alumínio</p>
-                            <p className="text-sm text-muted-foreground">Estrutura principal</p>
-                          </div>
-                          <p className="font-semibold text-green-600">
-                            {formatCurrency(calculoCompleto.equipamentos.painel.quantidade * 120 * 0.6)}
-                          </p>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                          <div>
-                            <p className="font-medium">Ganchos, Parafusos, End-clamps</p>
-                            <p className="text-sm text-muted-foreground">Fixadores e acessórios</p>
-                          </div>
-                          <p className="font-semibold text-green-600">
-                            {formatCurrency(calculoCompleto.equipamentos.painel.quantidade * 120 * 0.4)}
-                          </p>
-                        </div>
-                        <Separator />
-                        <div className="flex justify-between items-center font-semibold">
-                          <span>Subtotal Estrutura:</span>
-                          <span className="text-gray-600">
-                            {formatCurrency(calculoCompleto.equipamentos.painel.quantidade * 120)}
-                          </span>
-                        </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  {/* Instalação */}
-                  <AccordionItem value="instalacao">
-                    <AccordionTrigger className="flex items-center gap-2">
-                      <Settings className="h-4 w-4 text-purple-600" />
-                      Instalação e Comissionamento
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                          <div>
-                            <p className="font-medium">Mão de Obra Especializada</p>
-                            <p className="text-sm text-muted-foreground">
-                              Instalação completa • R$ 1,50/Wp
-                            </p>
-                          </div>
-                          <p className="font-semibold text-green-600">
-                            {formatCurrency(calculoCompleto.orcamento.instalacao)}
-                          </p>
-                        </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-
-                {/* Resumo Financeiro Admin */}
-                <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
-                  <h4 className="font-semibold mb-3 text-orange-800">Resumo Financeiro</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Subtotal Equipamentos:</span>
-                      <span className="font-medium">
-                        {formatCurrency(
-                          calculoCompleto.equipamentos.painel.preco_total + 
-                          calculoCompleto.equipamentos.inversor.preco +
-                          (calculoCompleto.dimensionamento.potencia_necessaria_kwp * 150) +
-                          (calculoCompleto.equipamentos.painel.quantidade * 25) +
-                          (calculoCompleto.equipamentos.painel.quantidade * 120) +
-                          450
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Subtotal Instalação:</span>
-                      <span className="font-medium">{formatCurrency(calculoCompleto.orcamento.instalacao)}</span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between font-medium">
-                      <span>Subtotal Geral:</span>
-                      <span>{formatCurrency(calculoCompleto.orcamento.subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between text-orange-700 font-semibold">
-                      <span>Margem Comercial ({calculoCompleto.orcamento.margem_aplicada}%):</span>
-                      <span>
-                        {formatCurrency(calculoCompleto.orcamento.valor_total - calculoCompleto.orcamento.subtotal)}
-                      </span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between text-lg font-bold text-orange-800">
-                      <span>Valor Total:</span>
-                      <span>{formatCurrency(calculoCompleto.orcamento.valor_total)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Valor por kWp:</span>
-                      <span>{formatCurrency(calculoCompleto.orcamento.valor_kwp_instalado)}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Resumo da Proposta */}
-          <Card className="bg-primary/5 border-primary/20">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-2">
-                <h4 className="font-semibold text-lg">Resumo da Proposta Solar</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Sistema:</span>
-                    <p className="font-medium">
-                      {calculoCompleto.dimensionamento.potencia_necessaria_kwp}kWp • 
-                      {calculoCompleto.equipamentos.painel.quantidade} painéis
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Área ocupada:</span>
-                    <p className="font-medium">{calculoCompleto.equipamentos.resumo.area_estimada}m²</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Economia anual:</span>
-                    <p className="font-medium text-green-600">
-                      {formatCurrency(calculoCompleto.dimensionamento.economia_anual_estimada)}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">VPL (25 anos):</span>
-                    <p className="font-medium text-green-600">
-                      {formatCurrency(calculoCompleto.analise_financeira.vpl_25_anos)}
-                    </p>
-                  </div>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>

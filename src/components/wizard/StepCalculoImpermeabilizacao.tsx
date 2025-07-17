@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Calculator, ArrowLeft, Shield, Package, AlertCircle, Layers } from 'lucide-react'
 import { useCalculoMapeamento } from '@/hooks/useCalculoMapeamento'
+import { useToast } from '@/hooks/use-toast'
 
 interface StepCalculoImpermeabilizacaoProps {
   dadosExtraidos?: any;
@@ -64,6 +65,7 @@ export function StepCalculoImpermeabilizacao({
   onNext 
 }: StepCalculoImpermeabilizacaoProps) {
   const { calcularPorMapeamento, obterResumoOrcamento, isLoading, error } = useCalculoMapeamento();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   
@@ -84,36 +86,8 @@ export function StepCalculoImpermeabilizacao({
   const [areaImpermeabilizar, setAreaImpermeabilizar] = useState(0);
 
   useEffect(() => {
-    carregarProdutos();
-  }, []);
-
-  useEffect(() => {
     calcularAreaTotal();
   }, [areaTotal, perimetro, alturaRodape]);
-
-  async function carregarProdutos() {
-    const { data, error } = await supabase
-      .from('produtos_impermeabilizacao')
-      .select('*')
-      .eq('ativo', true)
-      .order('tipo')
-      .order('nome');
-
-    if (data) {
-      setProdutos(data);
-      
-      // Selecionar produto padrão baseado no tipo de aplicação
-      const impermeabilizante = data.find(p => 
-        p.categoria === 'IMPERMEABILIZANTE' && 
-        (p.aplicacoes.includes(tipoAplicacao.toLowerCase()) || p.aplicacoes.includes('universal'))
-      );
-      
-      if (impermeabilizante) {
-        setProdutoImpermeabilizante(impermeabilizante.id);
-      }
-    }
-    setLoading(false);
-  }
 
   function calcularAreaTotal() {
     const areaVertical = perimetro * alturaRodape;
@@ -146,7 +120,7 @@ export function StepCalculoImpermeabilizacao({
           produto_id: item.item_id,
           produto_codigo: item.item_codigo,
           produto_nome: item.item_descricao,
-          tipo: item.composicao_categoria || 'IMPERMEABILIZANTE',
+          tipo: item.categoria || 'IMPERMEABILIZANTE',
           funcao: item.composicao_nome,
           consumo_m2: item.consumo_por_m2,
           area_aplicacao: item.area_aplicacao,
@@ -188,11 +162,12 @@ export function StepCalculoImpermeabilizacao({
     }
   };
 
-  // Filtrar produtos por categoria
-  const produtosImpermeabilizantes = produtos.filter(p => 
-    p.categoria === 'IMPERMEABILIZANTE' && 
-    (p.aplicacoes.includes(tipoAplicacao.toLowerCase()) || p.aplicacoes.includes('universal'))
-  );
+  // Produtos disponíveis (simplificado para usar mapeamento)
+  const produtosImpermeabilizantes = [
+    { id: '1', nome: 'Impermeabilizante Acrílico', preco_unitario: 45.90, unidade_venda: 'balde' },
+    { id: '2', nome: 'Impermeabilizante Cimentício', preco_unitario: 32.50, unidade_venda: 'saco' },
+    { id: '3', nome: 'Manta Asfáltica', preco_unitario: 28.90, unidade_venda: 'rolo' }
+  ];
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
