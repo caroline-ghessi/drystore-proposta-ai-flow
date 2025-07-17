@@ -393,456 +393,543 @@ export function StepCalculoTelhasCompleto({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Coluna 1: Dimensões do Telhado */}
-        <Card>
-          <Collapsible
-            open={expandedSections.dimensoes}
-            onOpenChange={() => toggleSection('dimensoes')}
-          >
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer">
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Ruler className="w-5 h-5" />
-                    Dimensões do Telhado
-                  </span>
-                  {expandedSections.dimensoes ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </CardTitle>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="area">Área Total (m²)</Label>
-                    <Input
-                      id="area"
-                      type="number"
-                      step="0.01"
-                      value={dimensoes.area_total_m2}
-                      onChange={(e) => handleDimensaoChange('area_total_m2', Number(e.target.value))}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="cumeeira">Cumeeira (m)</Label>
-                    <Input
-                      id="cumeeira"
-                      type="number"
-                      step="0.01"
-                      value={dimensoes.comprimento_cumeeira}
-                      onChange={(e) => handleDimensaoChange('comprimento_cumeeira', Number(e.target.value))}
-                    />
-                  </div>
+      {/* Layout responsivo: 2 colunas em desktop, 1 em mobile */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        {/* Seção Esquerda: Dimensões e Configurações */}
+        <div className="space-y-6">
+          {/* Dimensões do Telhado */}
+          <Card className="shadow-lg">
+            <Collapsible
+              open={expandedSections.dimensoes}
+              onOpenChange={() => toggleSection('dimensoes')}
+            >
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="flex items-center justify-between text-lg">
+                    <span className="flex items-center gap-3">
+                      <Ruler className="w-6 h-6 text-primary" />
+                      Dimensões do Telhado
+                    </span>
+                    {expandedSections.dimensoes ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-6 pt-6">
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="space-y-3">
+                      <Label htmlFor="area" className="text-base font-medium">Área Total (m²)</Label>
+                      <Input
+                        id="area"
+                        type="number"
+                        step="0.01"
+                        value={dimensoes.area_total_m2}
+                        onChange={(e) => handleDimensaoChange('area_total_m2', Number(e.target.value))}
+                        className="text-lg h-12"
+                      />
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <Label htmlFor="cumeeira" className="text-base font-medium">Cumeeira (m)</Label>
+                      <Input
+                        id="cumeeira"
+                        type="number"
+                        step="0.01"
+                        value={dimensoes.comprimento_cumeeira}
+                        onChange={(e) => handleDimensaoChange('comprimento_cumeeira', Number(e.target.value))}
+                        className="text-lg h-12"
+                      />
+                    </div>
 
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="perimetro">Perímetro Total (m)</Label>
-                    <Input
-                      id="perimetro"
-                      type="number"
-                      step="0.01"
-                      value={dimensoes.perimetro_telhado}
-                      onChange={(e) => handleDimensaoChange('perimetro_telhado', Number(e.target.value))}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Soma de todos os lados do telhado
-                    </p>
+                    <div className="space-y-3 sm:col-span-2">
+                      <Label htmlFor="perimetro" className="text-base font-medium">Perímetro Total (m)</Label>
+                      <Input
+                        id="perimetro"
+                        type="number"
+                        step="0.01"
+                        value={dimensoes.perimetro_telhado}
+                        onChange={(e) => handleDimensaoChange('perimetro_telhado', Number(e.target.value))}
+                        className="text-lg h-12"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Soma de todos os lados do telhado
+                      </p>
+                    </div>
                   </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
 
-                </div>
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
-
-        {/* Coluna 2: Configurações de Produtos */}
-        <Card>
-          <Collapsible
-            open={expandedSections.configuracoes}
-            onOpenChange={() => toggleSection('configuracoes')}
-          >
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer">
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Package className="w-5 h-5" />
-                    Configurações
-                  </span>
-                  {expandedSections.configuracoes ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </CardTitle>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="space-y-4">
-                {/* Seleção de Composições */}
-                <div className="space-y-3">
-                  <Label>Escolha o tipo de sistema Shingle</Label>
-                  {composicoesDisponiveis.length > 0 ? (
-                    <div className="space-y-2">
-                       {composicoesDisponiveis.map((composicao) => (
-                         <div key={composicao.composicao_id} className="space-y-2">
-                           <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                             <Checkbox
-                               id={`composicao-${composicao.composicao_id}`}
-                               checked={composicoesSelecionadas.includes(composicao.composicao_id)}
-                               onCheckedChange={() => toggleComposicao(composicao.composicao_id)}
-                             />
-                             <div className="flex-1 min-w-0">
-                               <Label
-                                 htmlFor={`composicao-${composicao.composicao_id}`}
-                                 className="text-sm font-medium cursor-pointer"
-                               >
-                                 {composicao.composicao_nome}
-                               </Label>
-                               <p className="text-xs text-muted-foreground">
-                                 {composicao.composicao_codigo}
-                               </p>
+          {/* Configurações de Produtos */}
+          <Card className="shadow-lg">
+            <Collapsible
+              open={expandedSections.configuracoes}
+              onOpenChange={() => toggleSection('configuracoes')}
+            >
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="flex items-center justify-between text-lg">
+                    <span className="flex items-center gap-3">
+                      <Package className="w-6 h-6 text-primary" />
+                      Configurações
+                    </span>
+                    {expandedSections.configuracoes ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-6 pt-6">
+                  {/* Seleção de Composições */}
+                  <div className="space-y-4">
+                    <Label className="text-base font-medium">Escolha o tipo de sistema Shingle</Label>
+                    {composicoesDisponiveis.length > 0 ? (
+                      <div className="space-y-4">
+                         {composicoesDisponiveis.map((composicao) => (
+                           <div key={composicao.composicao_id} className="border border-border rounded-lg overflow-hidden">
+                             <div className="flex items-center space-x-4 p-4 hover:bg-muted/30 transition-colors">
+                               <Checkbox
+                                 id={`composicao-${composicao.composicao_id}`}
+                                 checked={composicoesSelecionadas.includes(composicao.composicao_id)}
+                                 onCheckedChange={() => toggleComposicao(composicao.composicao_id)}
+                                 className="scale-125"
+                               />
+                               <div className="flex-1 min-w-0">
+                                 <Label
+                                   htmlFor={`composicao-${composicao.composicao_id}`}
+                                   className="text-base font-medium cursor-pointer block"
+                                 >
+                                   {composicao.composicao_nome}
+                                 </Label>
+                                 <p className="text-sm text-muted-foreground">
+                                   {composicao.composicao_codigo}
+                                 </p>
+                               </div>
+                               <div className="text-right">
+                                 <span className="text-base font-semibold text-primary">
+                                   {formatCurrency(composicao.valor_por_m2)}/m²
+                                 </span>
+                               </div>
                              </div>
-                             <div className="text-right">
-                               <span className="text-sm font-medium text-primary">
-                                 {formatCurrency(composicao.valor_por_m2)}/m²
-                               </span>
+                            
+                             {/* Produtos desta composição */}
+                             {composicoesSelecionadas.includes(composicao.composicao_id) && (
+                               <div className="px-4 pb-4">
+                                 <div className="bg-muted/30 rounded-lg p-4 border-l-4 border-primary/30">
+                                   <p className="text-sm font-medium text-foreground mb-3">Produtos desta composição:</p>
+                                   {loadingItens[composicao.composicao_id] ? (
+                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                       <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                                       Carregando produtos...
+                                     </div>
+                                   ) : itensComposicoes[composicao.composicao_id]?.length > 0 ? (
+                                     <div className="grid gap-3 sm:grid-cols-2">
+                                       {itensComposicoes[composicao.composicao_id].slice(0, 6).map((item, idx) => (
+                                         <div key={idx} className="bg-background/60 rounded-lg p-3 border">
+                                           <div className="flex justify-between items-start">
+                                             <div className="flex-1 min-w-0">
+                                               <p className="text-sm font-medium text-foreground truncate">
+                                                 {item.item_descricao}
+                                               </p>
+                                               <p className="text-xs text-muted-foreground mt-1">
+                                                 ~{item.consumo_por_m2.toFixed(2)} {item.item_codigo.includes('M2') ? 'm²' : item.item_codigo.includes('KG') ? 'kg' : 'un'}/m²
+                                               </p>
+                                             </div>
+                                             <div className="text-right ml-3">
+                                               <span className="text-sm font-semibold text-primary">
+                                                 {formatCurrency(item.preco_unitario)}
+                                               </span>
+                                             </div>
+                                           </div>
+                                         </div>
+                                       ))}
+                                       {itensComposicoes[composicao.composicao_id].length > 6 && (
+                                         <div className="col-span-full">
+                                           <p className="text-sm text-muted-foreground text-center italic">
+                                             + {itensComposicoes[composicao.composicao_id].length - 6} outros produtos...
+                                           </p>
+                                         </div>
+                                       )}
+                                     </div>
+                                   ) : (
+                                     <p className="text-sm text-muted-foreground">Nenhum produto encontrado</p>
+                                   )}
+                                 </div>
+                               </div>
+                             )}
+                           </div>
+                         ))}
+                       </div>
+                     ) : (
+                       <div className="text-center text-muted-foreground py-8">
+                         <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                         <p className="text-base">Carregando composições disponíveis...</p>
+                       </div>
+                     )}
+                     {composicoesSelecionadas.length === 0 && composicoesDisponiveis.length > 0 && (
+                       <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                         <p className="text-sm text-orange-700 font-medium">
+                           ⚠️ Selecione pelo menos uma composição para calcular o orçamento.
+                         </p>
+                       </div>
+                     )}
+                   </div>
+
+                   <Button 
+                     onClick={calcular} 
+                     disabled={isCalculating || dimensoes.area_total_m2 <= 0 || composicoesSelecionadas.length === 0}
+                     className="w-full"
+                     size="lg"
+                   >
+                     <Calculator className="w-5 h-5 mr-2" />
+                     {isCalculating ? 'Calculando...' : 'Calcular Orçamento'}
+                   </Button>
+
+                   {/* Info do sistema de composições */}
+                   <Card className="bg-blue-50 border-blue-200">
+                     <CardContent className="p-4">
+                       <div className="flex gap-3">
+                         <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                         <div className="text-sm text-blue-800">
+                           <p className="font-medium mb-2">Sistema de Composições Shingle:</p>
+                           <p>Os cálculos incluem telhas, OSB, cumeeiras e todos os componentes necessários para a instalação, baseados nas dimensões informadas e nas composições selecionadas.</p>
+                         </div>
+                       </div>
+                     </CardContent>
+                   </Card>
+                 </CardContent>
+               </CollapsibleContent>
+             </Collapsible>
+           </Card>
+         </div>
+
+         {/* Seção Direita: Resultados */}
+         <div className="space-y-6">
+           <Card className="shadow-lg">
+             <Collapsible
+               open={expandedSections.resultados}
+               onOpenChange={() => toggleSection('resultados')}
+             >
+               <CollapsibleTrigger asChild>
+                 <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                   <CardTitle className="flex items-center justify-between text-lg">
+                     <span className="flex items-center gap-3">
+                       <DollarSign className="w-6 h-6 text-primary" />
+                       Resultado do Orçamento
+                       {isCalculating && <Badge variant="secondary" className="ml-2">Calculando...</Badge>}
+                     </span>
+                     {expandedSections.resultados ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                   </CardTitle>
+                 </CardHeader>
+               </CollapsibleTrigger>
+               <CollapsibleContent>
+                 <CardContent className="space-y-6 pt-6">
+                   {orcamento && (
+                     <>
+                       {/* Resumo por categoria */}
+                       <div className="space-y-4">
+                         {[
+                           { label: 'Telhas', value: orcamento.valorTelhas, show: true },
+                           { label: 'Acessórios', value: orcamento.valorAcessorios, show: true },
+                           { label: 'Calhas', value: orcamento.valorCalhas, show: orcamento.valorCalhas > 0 },
+                           { label: 'Complementos', value: orcamento.valorComplementos, show: true }
+                         ].filter(item => item.show).map((item, idx) => (
+                           <div key={idx} className="flex justify-between items-center py-2 border-b border-border/50">
+                             <span className="text-base">{item.label}:</span>
+                             <span className="text-base font-semibold">{formatCurrency(item.value)}</span>
+                           </div>
+                         ))}
+                         
+                         <Separator className="my-4" />
+                         
+                         <div className="space-y-3">
+                           <div className="flex justify-between items-center py-2">
+                             <span className="text-lg font-medium">Valor por m²:</span>
+                             <span className="text-lg font-bold text-primary">
+                               {formatCurrency(orcamento.valorPorM2)}
+                             </span>
+                           </div>
+                           <div className="flex justify-between items-center py-3 bg-primary/5 rounded-lg px-4">
+                             <span className="text-xl font-bold">Total Geral:</span>
+                             <span className="text-2xl font-bold text-primary">
+                               {formatCurrency(orcamento.valorTotal)}
+                             </span>
+                           </div>
+                         </div>
+                       </div>
+
+                       <Separator />
+
+                       {/* Ações */}
+                       <div className="space-y-3">
+                         <Button 
+                           variant="outline" 
+                           className="w-full"
+                           size="lg"
+                           onClick={() => toggleSection('detalhamento')}
+                         >
+                           <FileText className="w-5 h-5 mr-2" />
+                           Ver Detalhamento
+                         </Button>
+                         <Button 
+                           className="w-full"
+                           size="lg"
+                           onClick={onNext}
+                           disabled={!orcamento}
+                         >
+                           Continuar
+                         </Button>
+                       </div>
+                     </>
+                   )}
+
+                   {!orcamento && !isCalculating && (
+                     <div className="text-center text-muted-foreground py-12">
+                       <Building className="w-16 h-16 mx-auto mb-4 opacity-40" />
+                       <p className="text-lg">Configure as dimensões e clique em calcular</p>
+                       <p className="text-sm mt-2">O resultado aparecerá aqui após o cálculo</p>
+                     </div>
+                   )}
+                 </CardContent>
+               </CollapsibleContent>
+             </Collapsible>
+           </Card>
+         </div>
+       </div>
+
+       {/* Tabela Detalhada - Full Width */}
+       {orcamento && (
+         <Collapsible
+           open={expandedSections.detalhamento}
+           onOpenChange={() => toggleSection('detalhamento')}
+         >
+           <Card className="shadow-lg">
+             <CollapsibleTrigger asChild>
+               <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                 <CardTitle className="flex items-center justify-between text-lg">
+                   <div className="flex items-center gap-3">
+                     <FileText className="w-6 h-6 text-primary" />
+                     <span>Detalhamento dos Itens</span>
+                     {modoEdicao && <Badge variant="secondary">Modo Edição</Badge>}
+                   </div>
+                   <div className="flex items-center gap-2">
+                     {!modoEdicao && (
+                       <Button 
+                         variant="outline" 
+                         size="sm"
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           iniciarEdicao();
+                         }}
+                       >
+                         <Edit className="w-4 h-4 mr-1" />
+                         Editar
+                       </Button>
+                     )}
+                     {expandedSections.detalhamento ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                   </div>
+                 </CardTitle>
+               </CardHeader>
+             </CollapsibleTrigger>
+             <CollapsibleContent>
+               <CardContent className="pt-6">
+                 {modoEdicao && (
+                   <div className="flex gap-2 mb-6">
+                     <Button 
+                       variant="outline" 
+                       size="sm"
+                       onClick={() => setShowAdicionarModal(true)}
+                     >
+                       <Plus className="w-4 h-4 mr-1" />
+                       Adicionar Item
+                     </Button>
+                     <Button 
+                       variant="outline" 
+                       size="sm"
+                       onClick={cancelarEdicao}
+                     >
+                       <X className="w-4 h-4 mr-1" />
+                       Cancelar
+                     </Button>
+                     <Button 
+                       size="sm"
+                       onClick={salvarEdicao}
+                     >
+                       <Save className="w-4 h-4 mr-1" />
+                       Salvar Alterações
+                     </Button>
+                   </div>
+                 )}
+                 
+                 {/* Versão Mobile - Cards */}
+                 <div className="block lg:hidden space-y-4">
+                   {(modoEdicao ? itensEditaveis : orcamento.itens).map((item, idx) => (
+                     <Card key={idx} className={`${modoEdicao ? 'bg-blue-50/30' : ''}`}>
+                       <CardContent className="p-4">
+                         <div className="space-y-3">
+                           <div>
+                             <p className="font-semibold">{item.descricao}</p>
+                             <p className="text-sm text-muted-foreground">{item.tipo_item}</p>
+                           </div>
+                           
+                           <div className="grid grid-cols-2 gap-3 text-sm">
+                             <div>
+                               <span className="text-muted-foreground">Dimensão:</span>
+                               <p className="font-medium">{item.dimensao_base.toFixed(2)} {item.unidade_dimensao}</p>
+                             </div>
+                             <div>
+                               <span className="text-muted-foreground">Fator:</span>
+                               <p className="font-medium">{item.fator_conversao.toFixed(3)}</p>
+                             </div>
+                             <div>
+                               <span className="text-muted-foreground">Quebra:</span>
+                               <p className="font-medium">{item.quebra_percentual}%</p>
+                             </div>
+                             <div>
+                               <span className="text-muted-foreground">Qtd Final:</span>
+                               {modoEdicao ? (
+                                 <Input
+                                   type="number"
+                                   value={item.quantidade_final}
+                                   onChange={(e) => editarQuantidadeItem(idx, Number(e.target.value) || 0)}
+                                   className="h-8 mt-1"
+                                   min="0"
+                                 />
+                               ) : (
+                                 <p className="font-medium">{item.quantidade_final} {item.unidade_venda}</p>
+                               )}
                              </div>
                            </div>
                            
-                           {/* Produtos desta composição */}
-                           {composicoesSelecionadas.includes(composicao.composicao_id) && (
-                             <div className="ml-6 p-3 bg-muted/30 rounded-lg border-l-2 border-primary/30">
-                               <p className="text-xs font-medium text-muted-foreground mb-2">Produtos desta composição:</p>
-                               {loadingItens[composicao.composicao_id] ? (
-                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                   <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-                                   Carregando produtos...
-                                 </div>
-                               ) : itensComposicoes[composicao.composicao_id]?.length > 0 ? (
-                                 <div className="space-y-1">
-                                   {itensComposicoes[composicao.composicao_id].slice(0, 5).map((item, idx) => (
-                                     <div key={idx} className="flex justify-between items-center text-xs">
-                                       <span className="text-muted-foreground">
-                                         • {item.item_descricao}
-                                       </span>
-                                       <div className="text-right">
-                                         <span className="text-muted-foreground">
-                                           ~{item.consumo_por_m2.toFixed(2)} {item.item_codigo.includes('M2') ? 'm²' : item.item_codigo.includes('KG') ? 'kg' : 'un'}/m²
-                                         </span>
-                                         <span className="ml-2 font-medium text-primary">
-                                           {formatCurrency(item.preco_unitario)}
-                                         </span>
-                                       </div>
-                                     </div>
-                                   ))}
-                                   {itensComposicoes[composicao.composicao_id].length > 5 && (
-                                     <p className="text-xs text-muted-foreground italic">
-                                       + {itensComposicoes[composicao.composicao_id].length - 5} outros produtos...
-                                     </p>
-                                   )}
-                                 </div>
-                               ) : (
-                                 <p className="text-xs text-muted-foreground">Nenhum produto encontrado</p>
-                               )}
+                           <div className="flex justify-between pt-2 border-t">
+                             <span className="text-muted-foreground">Preço Unit.:</span>
+                             <span className="font-medium">{formatCurrency(item.preco_unitario)}</span>
+                           </div>
+                           
+                           <div className="flex justify-between items-center pt-1">
+                             <span className="font-semibold">Total:</span>
+                             <span className="font-bold text-primary text-lg">{formatCurrency(item.valor_total)}</span>
+                           </div>
+                           
+                           {modoEdicao && (
+                             <div className="pt-2">
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 onClick={() => removerItem(idx)}
+                                 className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                               >
+                                 <Trash2 className="w-4 h-4 mr-1" />
+                                 Remover Item
+                               </Button>
                              </div>
                            )}
                          </div>
+                       </CardContent>
+                     </Card>
+                   ))}
+                 </div>
+                 
+                 {/* Versão Desktop - Tabela */}
+                 <div className="hidden lg:block overflow-x-auto">
+                   <table className="w-full">
+                     <thead>
+                       <tr className="border-b-2 border-border">
+                         <th className="text-left py-4 px-2 font-semibold">Item</th>
+                         <th className="text-right py-4 px-2 font-semibold">Dimensão</th>
+                         <th className="text-right py-4 px-2 font-semibold">Fator</th>
+                         <th className="text-right py-4 px-2 font-semibold">Quebra</th>
+                         <th className="text-right py-4 px-2 font-semibold">Qtd Calc.</th>
+                         <th className="text-right py-4 px-2 font-semibold">Qtd Final</th>
+                         <th className="text-right py-4 px-2 font-semibold">Preço Unit.</th>
+                         <th className="text-right py-4 px-2 font-semibold">Total</th>
+                         {modoEdicao && <th className="text-center py-4 px-2 font-semibold">Ações</th>}
+                       </tr>
+                     </thead>
+                     <tbody>
+                       {(modoEdicao ? itensEditaveis : orcamento.itens).map((item, idx) => (
+                         <tr key={idx} className={`border-b hover:bg-muted/30 transition-colors ${modoEdicao ? 'bg-blue-50/30' : ''}`}>
+                           <td className="py-4 px-2">
+                             <div>
+                               <p className="font-medium text-base">{item.descricao}</p>
+                               <p className="text-sm text-muted-foreground">{item.tipo_item}</p>
+                             </div>
+                           </td>
+                           <td className="text-right py-4 px-2">
+                             <span className="text-base">{item.dimensao_base.toFixed(2)} {item.unidade_dimensao}</span>
+                           </td>
+                           <td className="text-right py-4 px-2">
+                             <span className="text-base">{item.fator_conversao.toFixed(3)}</span>
+                           </td>
+                           <td className="text-right py-4 px-2">
+                             <span className="text-base">{item.quebra_percentual}%</span>
+                           </td>
+                           <td className="text-right py-4 px-2">
+                             <span className="text-base">{item.quantidade_calculada.toFixed(2)}</span>
+                           </td>
+                           <td className="text-right py-4 px-2">
+                             {modoEdicao ? (
+                               <Input
+                                 type="number"
+                                 value={item.quantidade_final}
+                                 onChange={(e) => editarQuantidadeItem(idx, Number(e.target.value) || 0)}
+                                 className="w-24 h-10 text-right"
+                                 min="0"
+                               />
+                             ) : (
+                               <span className="text-base font-medium">{item.quantidade_final} {item.unidade_venda}</span>
+                             )}
+                           </td>
+                           <td className="text-right py-4 px-2">
+                             <span className="text-base">{formatCurrency(item.preco_unitario)}</span>
+                           </td>
+                           <td className="text-right py-4 px-2">
+                             <span className="text-base font-semibold text-primary">{formatCurrency(item.valor_total)}</span>
+                           </td>
+                           {modoEdicao && (
+                             <td className="text-center py-4 px-2">
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 onClick={() => removerItem(idx)}
+                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                               >
+                                 <Trash2 className="w-4 h-4" />
+                               </Button>
+                             </td>
+                           )}
+                         </tr>
                        ))}
-                    </div>
-                  ) : (
-                    <div className="text-center text-muted-foreground py-4">
-                      <Package className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Carregando composições disponíveis...</p>
-                    </div>
-                  )}
-                  {composicoesSelecionadas.length === 0 && composicoesDisponiveis.length > 0 && (
-                    <p className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
-                      Selecione pelo menos uma composição para calcular o orçamento.
-                    </p>
-                  )}
-                </div>
+                     </tbody>
+                   </table>
+                 </div>
+               </CardContent>
+             </CollapsibleContent>
+           </Card>
+         </Collapsible>
+       )}
 
-                <Button 
-                  onClick={calcular} 
-                  disabled={isCalculating || dimensoes.area_total_m2 <= 0 || composicoesSelecionadas.length === 0}
-                  className="w-full"
-                  size="lg"
-                >
-                  <Calculator className="w-4 h-4 mr-2" />
-                  {isCalculating ? 'Calculando...' : 'Calcular Orçamento'}
-                </Button>
+       {/* Modal de Adição */}
+       <ItemAdicionarModal
+         open={showAdicionarModal}
+         onOpenChange={setShowAdicionarModal}
+         produtos={produtosShingleCompletos}
+         onAdicionarItem={adicionarItem}
+       />
 
-                {/* Info do sistema de composições */}
-                <Card className="bg-blue-50 border-blue-200">
-                  <CardContent className="p-3">
-                    <div className="flex gap-2">
-                      <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                      <div className="text-xs text-blue-800">
-                        <p className="font-medium mb-1">Sistema de Composições Shingle:</p>
-                        <p>Os cálculos incluem telhas, OSB, cumeeiras e todos os componentes necessários para a instalação, baseados nas dimensões informadas e nas composições selecionadas.</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
-
-        {/* Coluna 3: Resultados */}
-        <Card>
-          <Collapsible
-            open={expandedSections.resultados}
-            onOpenChange={() => toggleSection('resultados')}
-          >
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer">
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <DollarSign className="w-5 h-5" />
-                    Resultado do Orçamento
-                    {isCalculating && <Badge variant="secondary">Calculando...</Badge>}
-                  </span>
-                  {expandedSections.resultados ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </CardTitle>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="space-y-4">
-                {orcamento && (
-                  <>
-                    {/* Resumo por categoria */}
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span>Telhas:</span>
-                        <span className="font-medium">{formatCurrency(orcamento.valorTelhas)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Acessórios:</span>
-                        <span className="font-medium">{formatCurrency(orcamento.valorAcessorios)}</span>
-                      </div>
-                      {orcamento.valorCalhas > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span>Calhas:</span>
-                          <span className="font-medium">{formatCurrency(orcamento.valorCalhas)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-sm">
-                        <span>Complementos:</span>
-                        <span className="font-medium">{formatCurrency(orcamento.valorComplementos)}</span>
-                      </div>
-                      
-                      <Separator />
-                      
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="font-medium">Valor por m²:</span>
-                          <span className="font-bold">
-                            {formatCurrency(orcamento.valorPorM2)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-lg">
-                          <span className="font-bold">Total Geral:</span>
-                          <span className="font-bold text-primary">
-                            {formatCurrency(orcamento.valorTotal)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    {/* Ações */}
-                    <div className="space-y-2">
-                      <Button 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => toggleSection('detalhamento')}
-                      >
-                        <FileText className="w-4 h-4 mr-2" />
-                        Ver Detalhamento
-                      </Button>
-                      <Button 
-                        className="w-full"
-                        onClick={onNext}
-                        disabled={!orcamento}
-                      >
-                        Continuar
-                      </Button>
-                    </div>
-                  </>
-                )}
-
-                {!orcamento && !isCalculating && (
-                  <div className="text-center text-muted-foreground py-8">
-                    <Building className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>Configure as dimensões e clique em calcular</p>
-                  </div>
-                )}
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
-      </div>
-
-      {/* Tabela Detalhada */}
-      {orcamento && (
-        <Collapsible
-          open={expandedSections.detalhamento}
-          onOpenChange={() => toggleSection('detalhamento')}
-        >
-          <Card>
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer">
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span>Detalhamento dos Itens</span>
-                    {modoEdicao && <Badge variant="secondary">Modo Edição</Badge>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!modoEdicao && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          iniciarEdicao();
-                        }}
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Editar
-                      </Button>
-                    )}
-                    {expandedSections.detalhamento ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </div>
-                </CardTitle>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent>
-                {modoEdicao && (
-                  <div className="flex gap-2 mb-4">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setShowAdicionarModal(true)}
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Adicionar Item
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={cancelarEdicao}
-                    >
-                      <X className="w-4 h-4 mr-1" />
-                      Cancelar
-                    </Button>
-                    <Button 
-                      size="sm"
-                      onClick={salvarEdicao}
-                    >
-                      <Save className="w-4 h-4 mr-1" />
-                      Salvar Alterações
-                    </Button>
-                  </div>
-                )}
-                
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-2">Item</th>
-                        <th className="text-right">Dimensão</th>
-                        <th className="text-right">Fator</th>
-                        <th className="text-right">Quebra</th>
-                        <th className="text-right">Qtd Calc.</th>
-                        <th className="text-right">Qtd Final</th>
-                        <th className="text-right">Preço Unit.</th>
-                        <th className="text-right">Total</th>
-                        {modoEdicao && <th className="text-center">Ações</th>}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(modoEdicao ? itensEditaveis : orcamento.itens).map((item, idx) => (
-                        <tr key={idx} className={`border-b hover:bg-muted/30 ${modoEdicao ? 'bg-blue-50/30' : ''}`}>
-                          <td className="py-2">
-                            <div>
-                              <p className="font-medium">{item.descricao}</p>
-                              <p className="text-xs text-muted-foreground">{item.tipo_item}</p>
-                            </div>
-                          </td>
-                          <td className="text-right">
-                            {item.dimensao_base.toFixed(2)} {item.unidade_dimensao}
-                          </td>
-                          <td className="text-right">
-                            {item.fator_conversao.toFixed(3)}
-                          </td>
-                          <td className="text-right">
-                            {item.quebra_percentual}%
-                          </td>
-                          <td className="text-right">
-                            {item.quantidade_calculada.toFixed(2)}
-                          </td>
-                          <td className="text-right font-medium">
-                            {modoEdicao ? (
-                              <Input
-                                type="number"
-                                value={item.quantidade_final}
-                                onChange={(e) => editarQuantidadeItem(idx, Number(e.target.value) || 0)}
-                                className="w-20 h-8 text-right"
-                                min="0"
-                              />
-                            ) : (
-                              <span>{item.quantidade_final} {item.unidade_venda}</span>
-                            )}
-                          </td>
-                          <td className="text-right">
-                            {formatCurrency(item.preco_unitario)}
-                          </td>
-                          <td className="text-right font-medium">
-                            {formatCurrency(item.valor_total)}
-                          </td>
-                          {modoEdicao && (
-                            <td className="text-center">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removerItem(idx)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-      )}
-
-      {/* Modal de Adição */}
-      <ItemAdicionarModal
-        open={showAdicionarModal}
-        onOpenChange={setShowAdicionarModal}
-        produtos={produtosShingleCompletos}
-        onAdicionarItem={adicionarItem}
-      />
-
-      {/* Navegação */}
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={onBack}>
-          Voltar
-        </Button>
-        <Button 
-          onClick={onNext}
-          disabled={!orcamento}
-        >
-          Continuar
-        </Button>
-      </div>
-    </div>
-  );
-}
+       {/* Navegação */}
+       <div className="flex justify-between pt-6">
+         <Button variant="outline" onClick={onBack} size="lg">
+           Voltar
+         </Button>
+         <Button 
+           onClick={onNext}
+           disabled={!orcamento}
+           size="lg"
+         >
+           Continuar
+         </Button>
+       </div>
+     </div>
+   );
+ }
