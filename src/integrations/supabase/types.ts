@@ -305,6 +305,45 @@ export type Database = {
           },
         ]
       }
+      composicoes_mestre: {
+        Row: {
+          aplicacao: string | null
+          ativo: boolean
+          categoria: string
+          codigo: string
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string
+          valor_total_m2: number
+        }
+        Insert: {
+          aplicacao?: string | null
+          ativo?: boolean
+          categoria: string
+          codigo: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+          valor_total_m2: number
+        }
+        Update: {
+          aplicacao?: string | null
+          ativo?: boolean
+          categoria?: string
+          codigo?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+          valor_total_m2?: number
+        }
+        Relationships: []
+      }
       composicoes_shingle: {
         Row: {
           base_calculo: string
@@ -803,6 +842,60 @@ export type Database = {
             columns: ["produto_id"]
             isOneToOne: false
             referencedRelation: "produtos_impermeabilizacao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      itens_composicao: {
+        Row: {
+          composicao_id: string
+          consumo_por_m2: number
+          created_at: string
+          fator_correcao: number
+          id: string
+          ordem: number
+          produto_id: string
+          quebra_aplicada: number
+          valor_por_m2: number
+          valor_unitario: number
+        }
+        Insert: {
+          composicao_id: string
+          consumo_por_m2: number
+          created_at?: string
+          fator_correcao?: number
+          id?: string
+          ordem?: number
+          produto_id: string
+          quebra_aplicada?: number
+          valor_por_m2: number
+          valor_unitario: number
+        }
+        Update: {
+          composicao_id?: string
+          consumo_por_m2?: number
+          created_at?: string
+          fator_correcao?: number
+          id?: string
+          ordem?: number
+          produto_id?: string
+          quebra_aplicada?: number
+          valor_por_m2?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_composicao_composicao_id_fkey"
+            columns: ["composicao_id"]
+            isOneToOne: false
+            referencedRelation: "composicoes_mestre"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_composicao_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos_mestre"
             referencedColumns: ["id"]
           },
         ]
@@ -1439,6 +1532,54 @@ export type Database = {
           unidade_medida?: string
           unidade_venda?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      produtos_mestre: {
+        Row: {
+          aplicacao: string | null
+          ativo: boolean
+          categoria: string
+          codigo: string
+          created_at: string
+          descricao: string
+          icms_percentual: number | null
+          id: string
+          preco_unitario: number
+          quantidade_embalagem: number
+          quebra_padrao: number
+          unidade_medida: string
+          updated_at: string
+        }
+        Insert: {
+          aplicacao?: string | null
+          ativo?: boolean
+          categoria: string
+          codigo: string
+          created_at?: string
+          descricao: string
+          icms_percentual?: number | null
+          id?: string
+          preco_unitario: number
+          quantidade_embalagem?: number
+          quebra_padrao?: number
+          unidade_medida: string
+          updated_at?: string
+        }
+        Update: {
+          aplicacao?: string | null
+          ativo?: boolean
+          categoria?: string
+          codigo?: string
+          created_at?: string
+          descricao?: string
+          icms_percentual?: number | null
+          id?: string
+          preco_unitario?: number
+          quantidade_embalagem?: number
+          quebra_padrao?: number
+          unidade_medida?: string
+          updated_at?: string
         }
         Relationships: []
       }
