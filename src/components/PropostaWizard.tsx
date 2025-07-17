@@ -292,7 +292,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
           )}
 
           {/* Step 3: Cálculo Telhas Completo - fluxo manual */}
-          {currentStep === 3 && propostaData.tipoProposta === 'telhas' && propostaData.entradaManual && (
+          {currentStep === 3 && propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual && (
             <StepCalculoTelhasCompleto
               dadosExtraidos={{
                 area_total_m2: propostaData.areaTelhado || 0,
@@ -321,7 +321,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
           )}
 
           {/* Step 4: Cálculo de Ventilação - fluxo manual telhas */}
-          {currentStep === 4 && propostaData.tipoProposta === 'telhas' && propostaData.entradaManual && (
+          {currentStep === 4 && propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual && (
             <StepCalculoVentilacao
               areaTelhado={propostaData.areaTelhado || 0}
               onVentilacaoComplete={(dadosVentilacao) => {
@@ -347,7 +347,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             />
           )}
 
-          {currentStep === 4 && propostaData.tipoProposta === 'telhas' && !propostaData.entradaManual && (
+          {currentStep === 4 && propostaData.tipoProposta === 'telhas-shingle' && !propostaData.entradaManual && (
             <StepCalculoTelhasCompleto
               dadosExtraidos={propostaData.dadosExtraidos}
               onCalculoComplete={(orcamento) => {
@@ -368,8 +368,8 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
           {((currentStep === 3 && propostaData.tipoProposta === 'divisorias' && propostaData.entradaManual) ||
             (currentStep === 4 && propostaData.tipoProposta === 'divisorias' && !propostaData.entradaManual) ||
             (currentStep === 5 && propostaData.tipoProposta === 'energia-solar') ||
-            (currentStep === 5 && propostaData.tipoProposta === 'telhas' && propostaData.entradaManual) ||
-            (currentStep === 5 && propostaData.tipoProposta === 'telhas' && !propostaData.entradaManual)) && (
+            (currentStep === 5 && propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual) ||
+            (currentStep === 5 && propostaData.tipoProposta === 'telhas-shingle' && !propostaData.entradaManual)) && (
             <StepGenerate
               propostaData={propostaData}
               onBack={handleBack}

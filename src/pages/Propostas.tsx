@@ -100,7 +100,7 @@ export function Propostas() {
   const formatTipoProposta = (tipo: TipoProposta) => {
     switch (tipo) {
       case "energia-solar": return "Energia Solar"
-      case "telhas": return "Telhas"
+      case "telhas-shingle": return "Telhas Shingle"
       case "divisorias": return "Divisórias"
       case "pisos": return "Pisos"
       case "forros": return "Forros"
