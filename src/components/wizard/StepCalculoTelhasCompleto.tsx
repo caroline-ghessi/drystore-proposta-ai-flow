@@ -87,6 +87,10 @@ export function StepCalculoTelhasCompleto({
   const [composicoesDisponiveis, setComposicoesDisponiveis] = useState<ComposicaoMapeada[]>([]);
   const [composicoesSelecionadas, setComposicoesSelecionadas] = useState<string[]>([]);
   const [usarMapeamento, setUsarMapeamento] = useState(false);
+  
+  // Estados para exibir produtos das composições
+  const [itensComposicoes, setItensComposicoes] = useState<{ [composicaoId: string]: any[] }>({});
+  const [loadingItens, setLoadingItens] = useState<{ [composicaoId: string]: boolean }>({});
 
   const { canViewMargins } = useUserRole();
   const { 
@@ -335,13 +339,46 @@ export function StepCalculoTelhasCompleto({
     setItensEditaveis(prev => [...prev, novoItem]);
   };
 
-  const toggleComposicao = (composicaoId: string) => {
+  const toggleComposicao = async (composicaoId: string) => {
     setComposicoesSelecionadas(prev => 
       prev.includes(composicaoId) 
         ? prev.filter(id => id !== composicaoId)
         : [...prev, composicaoId]
     );
+    
+    // Buscar itens da composição para mostrar ao usuário
+    if (!itensComposicoes[composicaoId]) {
+      await buscarItensComposicao(composicaoId);
+    }
   };
+
+  const buscarItensComposicao = async (composicaoId: string) => {
+    setLoadingItens(prev => ({ ...prev, [composicaoId]: true }));
+    
+    try {
+      // Buscar itens usando área base de 1m² para mostrar consumos unitários
+      const itens = await calcularPorMapeamento('telhas-shingle', 1, {});
+      const itensComposicao = itens.filter(item => item.composicao_id === composicaoId);
+      
+      setItensComposicoes(prev => ({
+        ...prev,
+        [composicaoId]: itensComposicao
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar itens da composição:', error);
+    } finally {
+      setLoadingItens(prev => ({ ...prev, [composicaoId]: false }));
+    }
+  };
+
+  // Buscar itens das composições selecionadas quando carregarem
+  useEffect(() => {
+    composicoesSelecionadas.forEach(composicaoId => {
+      if (!itensComposicoes[composicaoId]) {
+        buscarItensComposicao(composicaoId);
+      }
+    });
+  }, [composicoesSelecionadas]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -443,31 +480,71 @@ export function StepCalculoTelhasCompleto({
                   <Label>Escolha o tipo de sistema Shingle</Label>
                   {composicoesDisponiveis.length > 0 ? (
                     <div className="space-y-2">
-                      {composicoesDisponiveis.map((composicao) => (
-                        <div key={composicao.composicao_id} className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                          <Checkbox
-                            id={`composicao-${composicao.composicao_id}`}
-                            checked={composicoesSelecionadas.includes(composicao.composicao_id)}
-                            onCheckedChange={() => toggleComposicao(composicao.composicao_id)}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <Label
-                              htmlFor={`composicao-${composicao.composicao_id}`}
-                              className="text-sm font-medium cursor-pointer"
-                            >
-                              {composicao.composicao_nome}
-                            </Label>
-                            <p className="text-xs text-muted-foreground">
-                              {composicao.composicao_codigo}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-sm font-medium text-primary">
-                              {formatCurrency(composicao.valor_por_m2)}/m²
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                       {composicoesDisponiveis.map((composicao) => (
+                         <div key={composicao.composicao_id} className="space-y-2">
+                           <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                             <Checkbox
+                               id={`composicao-${composicao.composicao_id}`}
+                               checked={composicoesSelecionadas.includes(composicao.composicao_id)}
+                               onCheckedChange={() => toggleComposicao(composicao.composicao_id)}
+                             />
+                             <div className="flex-1 min-w-0">
+                               <Label
+                                 htmlFor={`composicao-${composicao.composicao_id}`}
+                                 className="text-sm font-medium cursor-pointer"
+                               >
+                                 {composicao.composicao_nome}
+                               </Label>
+                               <p className="text-xs text-muted-foreground">
+                                 {composicao.composicao_codigo}
+                               </p>
+                             </div>
+                             <div className="text-right">
+                               <span className="text-sm font-medium text-primary">
+                                 {formatCurrency(composicao.valor_por_m2)}/m²
+                               </span>
+                             </div>
+                           </div>
+                           
+                           {/* Produtos desta composição */}
+                           {composicoesSelecionadas.includes(composicao.composicao_id) && (
+                             <div className="ml-6 p-3 bg-muted/30 rounded-lg border-l-2 border-primary/30">
+                               <p className="text-xs font-medium text-muted-foreground mb-2">Produtos desta composição:</p>
+                               {loadingItens[composicao.composicao_id] ? (
+                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                   <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                                   Carregando produtos...
+                                 </div>
+                               ) : itensComposicoes[composicao.composicao_id]?.length > 0 ? (
+                                 <div className="space-y-1">
+                                   {itensComposicoes[composicao.composicao_id].slice(0, 5).map((item, idx) => (
+                                     <div key={idx} className="flex justify-between items-center text-xs">
+                                       <span className="text-muted-foreground">
+                                         • {item.item_descricao}
+                                       </span>
+                                       <div className="text-right">
+                                         <span className="text-muted-foreground">
+                                           ~{item.consumo_por_m2.toFixed(2)} {item.item_codigo.includes('M2') ? 'm²' : item.item_codigo.includes('KG') ? 'kg' : 'un'}/m²
+                                         </span>
+                                         <span className="ml-2 font-medium text-primary">
+                                           {formatCurrency(item.preco_unitario)}
+                                         </span>
+                                       </div>
+                                     </div>
+                                   ))}
+                                   {itensComposicoes[composicao.composicao_id].length > 5 && (
+                                     <p className="text-xs text-muted-foreground italic">
+                                       + {itensComposicoes[composicao.composicao_id].length - 5} outros produtos...
+                                     </p>
+                                   )}
+                                 </div>
+                               ) : (
+                                 <p className="text-xs text-muted-foreground">Nenhum produto encontrado</p>
+                               )}
+                             </div>
+                           )}
+                         </div>
+                       ))}
                     </div>
                   ) : (
                     <div className="text-center text-muted-foreground py-4">
