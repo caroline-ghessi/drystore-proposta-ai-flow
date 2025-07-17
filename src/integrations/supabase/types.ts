@@ -2158,7 +2158,7 @@ export type Database = {
         | "vencimento"
       tipo_proposta_enum:
         | "energia-solar"
-        | "telhas"
+        | "telhas-shingle"
         | "divisorias"
         | "pisos"
         | "forros"
@@ -2168,7 +2168,6 @@ export type Database = {
         | "argamassa-silentfloor"
         | "light-steel-frame"
         | "impermeabilizacao"
-        | "telhas-shingle"
       tipo_usuario_enum: "administrador" | "vendedor" | "representante"
     }
     CompositeTypes: {
@@ -2312,7 +2311,7 @@ export const Constants = {
       ],
       tipo_proposta_enum: [
         "energia-solar",
-        "telhas",
+        "telhas-shingle",
         "divisorias",
         "pisos",
         "forros",
@@ -2322,7 +2321,6 @@ export const Constants = {
         "argamassa-silentfloor",
         "light-steel-frame",
         "impermeabilizacao",
-        "telhas-shingle",
       ],
       tipo_usuario_enum: ["administrador", "vendedor", "representante"],
     },
