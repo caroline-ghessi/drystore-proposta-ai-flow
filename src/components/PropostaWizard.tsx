@@ -13,7 +13,7 @@ import { StepCalculoVentilacao } from "./wizard/StepCalculoVentilacao"
 import { StepGenerate } from "./wizard/StepGenerate"
 import { StepCalculoDivisorias } from "./wizard/StepCalculoDivisorias"
 
-export type TipoProposta = 'energia-solar' | 'telhas' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao' | 'tintas-texturas' | 'verga-fibra' | 'argamassa-silentfloor' | 'light-steel-frame' | 'impermeabilizacao'
+export type TipoProposta = 'energia-solar' | 'telhas-shingle' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao' | 'tintas-texturas' | 'verga-fibra' | 'argamassa-silentfloor' | 'light-steel-frame' | 'impermeabilizacao'
 
 export interface PropostaData {
   tipoProposta: TipoProposta;
@@ -167,7 +167,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
     switch (propostaData.tipoProposta) {
       case 'energia-solar':
         return STEPS_ENERGIA_SOLAR;
-      case 'telhas':
+      case 'telhas-shingle':
         return propostaData.entradaManual ? STEPS_TELHAS_MANUAL : STEPS_TELHAS_UPLOAD;
       case 'divisorias':
         return propostaData.entradaManual ? STEPS_DIVISORIAS_MANUAL : STEPS_DIVISORIAS_UPLOAD;
@@ -233,7 +233,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
           )}
 
           {/* Step 2: Processing ou Dados Manuais */}
-          {currentStep === 2 && propostaData.tipoProposta === 'telhas' && propostaData.entradaManual && (
+          {currentStep === 2 && propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual && (
             <StepDadosManuaisTelhas
               data={propostaData}
               onDataChange={handleStepData}
@@ -251,7 +251,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
           )}
 
           {currentStep === 2 && 
-           !(propostaData.tipoProposta === 'telhas' && propostaData.entradaManual) &&
+           !(propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual) &&
            !(propostaData.tipoProposta === 'divisorias' && propostaData.entradaManual) && (
             <StepProcessing
               propostaData={propostaData}
@@ -265,7 +265,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
           )}
 
           {/* Step 3: Review - fluxo normal ou após processing */}
-          {currentStep === 3 && !(propostaData.tipoProposta === 'telhas' && propostaData.entradaManual) && (
+          {currentStep === 3 && !(propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual) && (
             <StepReview
               propostaData={propostaData}
               onDataChange={handleStepData}

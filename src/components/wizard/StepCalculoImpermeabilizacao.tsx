@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Calculator, ArrowLeft, Shield, Package, AlertCircle, Layers } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Calculator, ArrowLeft, Shield, Package, AlertCircle, Layers, Settings } from 'lucide-react'
 import { useCalculoMapeamento } from '@/hooks/useCalculoMapeamento'
 import { useToast } from '@/hooks/use-toast'
+import { useMapeamentosStatus } from '@/hooks/useMapeamentosStatus'
 
 interface StepCalculoImpermeabilizacaoProps {
   dadosExtraidos?: any;
@@ -66,6 +68,7 @@ export function StepCalculoImpermeabilizacao({
 }: StepCalculoImpermeabilizacaoProps) {
   const { calcularPorMapeamento, obterResumoOrcamento, isLoading, error } = useCalculoMapeamento();
   const { toast } = useToast();
+  const { status, isLoading: statusLoading, podeCalcular, obterMensagemStatus } = useMapeamentosStatus();
   const [loading, setLoading] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   
@@ -187,6 +190,9 @@ export function StepCalculoImpermeabilizacao({
     );
   }
 
+  // Verificar se há produtos configurados
+  const podeFazerCalculo = podeCalcular('impermeabilizacao');
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="text-center">
@@ -198,6 +204,22 @@ export function StepCalculoImpermeabilizacao({
           Configure os parâmetros para calcular o orçamento de impermeabilização
         </p>
       </div>
+
+      {/* Aviso quando não há produtos configurados */}
+      {!statusLoading && !podeFazerCalculo && (
+        <Alert>
+          <Settings className="h-4 w-4" />
+          <AlertTitle>Sistemas de impermeabilização não configurados</AlertTitle>
+          <AlertDescription>
+            Os produtos e composições para impermeabilização ainda não foram totalmente configurados no sistema. 
+            Você pode continuar o processo, mas os cálculos automáticos de custos podem não estar disponíveis.
+            <br />
+            <span className="text-sm text-muted-foreground mt-2 block">
+              Status atual: {obterMensagemStatus('impermeabilizacao')}
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Coluna 1: Dados do Projeto */}

@@ -7,10 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp, Calculator, Building, Palette, Shield, Package, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { ChevronDown, ChevronUp, Calculator, Building, Palette, Shield, Package, AlertCircle, Settings } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProdutos, TelhaShingle } from '@/hooks/useProdutos';
 import { useToast } from '@/hooks/use-toast';
+import { useMapeamentosStatus } from '@/hooks/useMapeamentosStatus';
 
 interface DadosTelhas {
   area_total_m2: number;
@@ -69,6 +71,7 @@ export function StepCalculoTelhas({
   const { canViewMargins } = useUserRole();
   const { telhasShingle, buscarTelhasShingle, calcularOrcamentoShingle, loading } = useProdutos();
   const { toast } = useToast();
+  const { status, isLoading: statusLoading, podeCalcular, obterMensagemStatus } = useMapeamentosStatus();
 
   useEffect(() => {
     buscarTelhasShingle();
@@ -134,12 +137,31 @@ export function StepCalculoTelhas({
   const telhasPorLinha = (linha: 'SUPREME' | 'DURATION') => 
     telhasShingle.filter(t => t.linha === linha);
 
+  // Verificar se há produtos configurados
+  const podeFazerCalculo = podeCalcular('telhas-shingle');
+
   return (
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold">Cálculo de Telhas Shingle</h2>
         <p className="text-muted-foreground">Configure os parâmetros e visualize o orçamento detalhado</p>
       </div>
+
+      {/* Aviso quando não há produtos configurados */}
+      {!statusLoading && !podeFazerCalculo && (
+        <Alert>
+          <Settings className="h-4 w-4" />
+          <AlertTitle>Composições de telhas shingle não configuradas</AlertTitle>
+          <AlertDescription>
+            Os produtos e composições para telhas shingle ainda não foram mapeados no sistema. 
+            Você pode continuar o processo, mas não haverá cálculos automáticos de custos.
+            <br />
+            <span className="text-sm text-muted-foreground mt-2 block">
+              Status atual: {obterMensagemStatus('telhas-shingle')}
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Parâmetros de Entrada */}

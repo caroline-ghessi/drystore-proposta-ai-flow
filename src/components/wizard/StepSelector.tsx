@@ -1,7 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Zap, Building, Layers, Square, CreditCard, Palette, Drill, Volume2, Home, Shield } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Zap, Building, Layers, Square, CreditCard, Palette, Drill, Volume2, Home, Shield, CheckCircle, AlertCircle, XCircle, Loader } from "lucide-react"
 import { TipoProposta } from "../PropostaWizard"
+import { useMapeamentosStatus } from "@/hooks/useMapeamentosStatus"
 
 interface StepSelectorProps {
   tipoProposta: TipoProposta;
@@ -19,7 +22,7 @@ const TIPOS_PROPOSTA = [
     detalhes: 'Cálculo automático baseado no consumo'
   },
   {
-    tipo: 'telhas' as TipoProposta,
+    tipo: 'telhas-shingle' as TipoProposta,
     titulo: 'Telhas Shingle',
     descricao: 'Cobertura e telhas para telhados',
     icone: Building,
@@ -93,66 +96,146 @@ const TIPOS_PROPOSTA = [
 ]
 
 export function StepSelector({ tipoProposta, onSelect, onNext }: StepSelectorProps) {
+  const { status, isLoading, obterMensagemStatus, podeCalcular } = useMapeamentosStatus();
+
+  const getStatusIcon = (tipo: string) => {
+    if (isLoading) return <Loader className="h-4 w-4 animate-spin" />;
+    
+    const statusTipo = status[tipo];
+    if (!statusTipo) return <XCircle className="h-4 w-4 text-muted-foreground" />;
+
+    switch (statusTipo.status) {
+      case 'completo':
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'parcial':
+        return <AlertCircle className="h-4 w-4 text-yellow-600" />;
+      case 'vazio':
+        return <XCircle className="h-4 w-4 text-red-600" />;
+      default:
+        return <XCircle className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
+  const getStatusBadge = (tipo: string) => {
+    if (isLoading) return null;
+    
+    const statusTipo = status[tipo];
+    if (!statusTipo) return (
+      <Badge variant="secondary" className="text-xs">
+        Não mapeado
+      </Badge>
+    );
+
+    switch (statusTipo.status) {
+      case 'completo':
+        return (
+          <Badge variant="default" className="text-xs bg-green-100 text-green-800 hover:bg-green-100">
+            Configurado
+          </Badge>
+        );
+      case 'parcial':
+        return (
+          <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+            Parcial
+          </Badge>
+        );
+      case 'vazio':
+        return (
+          <Badge variant="secondary" className="text-xs bg-red-100 text-red-800 hover:bg-red-100">
+            Não configurado
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="secondary" className="text-xs">
+            Indefinido
+          </Badge>
+        );
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h3 className="text-lg font-semibold mb-2">Selecione o tipo de proposta</h3>
-        <p className="text-muted-foreground">
-          Escolha o grupo de produtos para criar a proposta
-        </p>
-      </div>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="text-center">
+          <h3 className="text-lg font-semibold mb-2">Selecione o tipo de proposta</h3>
+          <p className="text-muted-foreground">
+            Escolha o grupo de produtos para criar a proposta
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {TIPOS_PROPOSTA.map((item) => {
-          const IconComponent = item.icone
-          const isSelected = tipoProposta === item.tipo
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {TIPOS_PROPOSTA.map((item) => {
+            const IconComponent = item.icone;
+            const isSelected = tipoProposta === item.tipo;
+            const podeSelecionar = podeCalcular(item.tipo) || item.tipo === 'energia-solar';
+            const statusMessage = obterMensagemStatus(item.tipo);
 
-          return (
-            <Card
-              key={item.tipo}
-              className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
-                isSelected ? 'ring-2 ring-primary border-primary' : ''
-              }`}
-              onClick={() => onSelect(item.tipo)}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                  <div className={`
-                    p-2 rounded-lg 
-                    ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted'}
-                  `}>
-                    <IconComponent className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-base">{item.titulo}</CardTitle>
-                    <CardDescription className="text-sm">
-                      {item.descricao}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-2">
-                  <div className="text-sm">
-                    <span className="font-medium text-muted-foreground">Documento:</span>
-                    <p className="text-xs">{item.documento}</p>
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium text-muted-foreground">Processamento:</span>
-                    <p className="text-xs">{item.detalhes}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+            return (
+              <Tooltip key={item.tipo}>
+                <TooltipTrigger asChild>
+                  <Card
+                    className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+                      isSelected ? 'ring-2 ring-primary border-primary' : ''
+                    } ${!podeSelecionar ? 'opacity-75' : ''}`}
+                    onClick={() => onSelect(item.tipo)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`
+                          p-2 rounded-lg 
+                          ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted'}
+                        `}>
+                          <IconComponent className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-base">{item.titulo}</CardTitle>
+                            {getStatusIcon(item.tipo)}
+                          </div>
+                          <CardDescription className="text-sm">
+                            {item.descricao}
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-muted-foreground">Status:</span>
+                          {getStatusBadge(item.tipo)}
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-medium text-muted-foreground">Documento:</span>
+                          <p className="text-xs">{item.documento}</p>
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-medium text-muted-foreground">Processamento:</span>
+                          <p className="text-xs">{item.detalhes}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{statusMessage}</p>
+                  {!podeSelecionar && item.tipo !== 'energia-solar' && (
+                    <p className="text-xs text-yellow-600 mt-1">
+                      Produtos não configurados. Você pode continuar, mas não haverá cálculos automáticos.
+                    </p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            )
+          })}
+        </div>
 
-      <div className="flex justify-end pt-4">
-        <Button onClick={onNext} disabled={!tipoProposta}>
-          Continuar
-        </Button>
+        <div className="flex justify-end pt-4">
+          <Button onClick={onNext} disabled={!tipoProposta}>
+            Continuar
+          </Button>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   )
 }
