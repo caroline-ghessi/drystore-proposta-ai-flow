@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Upload, Download, Edit, Trash2 } from "lucide-react";
+import { Search, Plus, Upload, Download, Edit, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -41,6 +41,19 @@ interface ComposicaoMestre {
   ativo: boolean;
   created_at: string;
   updated_at: string;
+}
+
+interface ItemComposicao {
+  id: string;
+  composicao_id: string;
+  produto_id: string;
+  consumo_por_m2: number;
+  quebra_aplicada: number;
+  fator_correcao: number;
+  ordem: number;
+  valor_unitario: number;
+  valor_por_m2: number;
+  produtos_mestre?: ProdutoMestre;
 }
 
 const CATEGORIAS_PRODUTOS = [
@@ -452,7 +465,7 @@ export function ProdutosMestreManager() {
                       Nova Composição
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
+                  <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
                     <CompositionForm
                       composition={editingComposition}
                       onSave={handleSaveComposition}
@@ -691,6 +704,7 @@ function CompositionForm({
     aplicacao: composition?.aplicacao || '',
     ativo: composition?.ativo ?? true
   });
+  const [activeTab, setActiveTab] = useState("dados-gerais");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -698,87 +712,569 @@ function CompositionForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-4">
       <DialogHeader>
         <DialogTitle>{composition ? 'Editar Composição' : 'Nova Composição'}</DialogTitle>
       </DialogHeader>
       
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="codigo">Código</Label>
-          <Input
-            id="codigo"
-            value={formData.codigo}
-            onChange={(e) => setFormData(prev => ({ ...prev, codigo: e.target.value }))}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="categoria">Categoria</Label>
-          <Select 
-            value={formData.categoria} 
-            onValueChange={(value) => setFormData(prev => ({ ...prev, categoria: value }))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione a categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              {CATEGORIAS_COMPOSICOES.map(categoria => (
-                <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="dados-gerais">Dados Gerais</TabsTrigger>
+          <TabsTrigger value="itens-composicao" disabled={!composition}>
+            Itens da Composição
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="dados-gerais">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="codigo">Código</Label>
+                <Input
+                  id="codigo"
+                  value={formData.codigo}
+                  onChange={(e) => setFormData(prev => ({ ...prev, codigo: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="categoria">Categoria</Label>
+                <Select 
+                  value={formData.categoria} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, categoria: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIAS_COMPOSICOES.map(categoria => (
+                      <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="nome">Nome</Label>
+              <Input
+                id="nome"
+                value={formData.nome}
+                onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="valor_total_m2">Valor Total/m² (calculado automaticamente)</Label>
+              <Input
+                id="valor_total_m2"
+                type="number"
+                step="0.01"
+                value={formData.valor_total_m2}
+                onChange={(e) => setFormData(prev => ({ ...prev, valor_total_m2: parseFloat(e.target.value) }))}
+                disabled={composition && composition.id ? true : false}
+                placeholder={composition ? "Calculado pelos itens da composição" : "Valor manual"}
+              />
+              {composition && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Este valor é calculado automaticamente baseado nos itens da composição
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="descricao">Descrição</Label>
+              <Textarea
+                id="descricao"
+                value={formData.descricao}
+                onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="aplicacao">Aplicação</Label>
+              <Textarea
+                id="aplicacao"
+                value={formData.aplicacao}
+                onChange={(e) => setFormData(prev => ({ ...prev, aplicacao: e.target.value }))}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Cancelar
+              </Button>
+              <Button type="submit">
+                {composition ? 'Atualizar' : 'Criar'} Composição
+              </Button>
+            </div>
+          </form>
+        </TabsContent>
+
+        <TabsContent value="itens-composicao">
+          {composition && (
+            <CompositionItemsManager 
+              compositionId={composition.id}
+              onValueUpdate={(newValue) => setFormData(prev => ({ ...prev, valor_total_m2: newValue }))}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function CompositionItemsManager({ 
+  compositionId, 
+  onValueUpdate 
+}: { 
+  compositionId: string;
+  onValueUpdate: (value: number) => void;
+}) {
+  const [items, setItems] = useState<ItemComposicao[]>([]);
+  const [products, setProducts] = useState<ProdutoMestre[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddItem, setShowAddItem] = useState(false);
+  const [editingItem, setEditingItem] = useState<ItemComposicao | null>(null);
+  const { toast } = useToast();
+
+  const [newItem, setNewItem] = useState({
+    produto_id: '',
+    consumo_por_m2: 1.0,
+    quebra_aplicada: 5.0,
+    fator_correcao: 1.0,
+    ordem: 1
+  });
+
+  useEffect(() => {
+    fetchItems();
+    fetchProducts();
+  }, [compositionId]);
+
+  const fetchItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('itens_composicao')
+        .select(`
+          *,
+          produtos_mestre (*)
+        `)
+        .eq('composicao_id', compositionId)
+        .order('ordem');
+      
+      if (error) throw error;
+      setItems(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar itens:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar itens da composição",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('produtos_mestre')
+        .select('*')
+        .eq('ativo', true)
+        .order('codigo');
+      
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar produtos:', error);
+    }
+  };
+
+  const calculateItemValue = (consumo: number, quebra: number, fator: number, precoUnitario: number) => {
+    return consumo * (1 + quebra / 100) * fator * precoUnitario;
+  };
+
+  const recalculateCompositionValue = async () => {
+    try {
+      const { data, error } = await supabase.rpc('recalcular_composicao', {
+        p_composicao_id: compositionId
+      });
+      
+      if (error) throw error;
+      onValueUpdate(data);
+      toast({
+        title: "Sucesso",
+        description: "Valor da composição recalculado automaticamente",
+      });
+    } catch (error) {
+      console.error('Erro ao recalcular:', error);
+    }
+  };
+
+  const handleAddItem = async () => {
+    try {
+      const selectedProduct = products.find(p => p.id === newItem.produto_id);
+      if (!selectedProduct) return;
+
+      const valorPorM2 = calculateItemValue(
+        newItem.consumo_por_m2,
+        newItem.quebra_aplicada,
+        newItem.fator_correcao,
+        selectedProduct.preco_unitario
+      );
+
+      const { error } = await supabase
+        .from('itens_composicao')
+        .insert([{
+          composicao_id: compositionId,
+          produto_id: newItem.produto_id,
+          consumo_por_m2: newItem.consumo_por_m2,
+          quebra_aplicada: newItem.quebra_aplicada,
+          fator_correcao: newItem.fator_correcao,
+          ordem: newItem.ordem,
+          valor_unitario: selectedProduct.preco_unitario,
+          valor_por_m2: valorPorM2
+        }]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Item adicionado com sucesso",
+      });
+      
+      await fetchItems();
+      await recalculateCompositionValue();
+      setShowAddItem(false);
+      setNewItem({
+        produto_id: '',
+        consumo_por_m2: 1.0,
+        quebra_aplicada: 5.0,
+        fator_correcao: 1.0,
+        ordem: Math.max(...items.map(i => i.ordem), 0) + 1
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar item:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao adicionar item",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleUpdateItem = async (item: ItemComposicao, updates: Partial<ItemComposicao>) => {
+    try {
+      const updatedItem = { ...item, ...updates };
+      const valorPorM2 = calculateItemValue(
+        updatedItem.consumo_por_m2,
+        updatedItem.quebra_aplicada,
+        updatedItem.fator_correcao,
+        updatedItem.valor_unitario
+      );
+
+      const { error } = await supabase
+        .from('itens_composicao')
+        .update({
+          ...updates,
+          valor_por_m2: valorPorM2
+        })
+        .eq('id', item.id);
+
+      if (error) throw error;
+
+      await fetchItems();
+      await recalculateCompositionValue();
+      setEditingItem(null);
+    } catch (error) {
+      console.error('Erro ao atualizar item:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar item",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    try {
+      const { error } = await supabase
+        .from('itens_composicao')
+        .delete()
+        .eq('id', itemId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Item removido com sucesso",
+      });
+      
+      await fetchItems();
+      await recalculateCompositionValue();
+    } catch (error) {
+      console.error('Erro ao remover item:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao remover item",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const moveItem = async (itemId: string, direction: 'up' | 'down') => {
+    const currentItem = items.find(i => i.id === itemId);
+    if (!currentItem) return;
+
+    const sortedItems = [...items].sort((a, b) => a.ordem - b.ordem);
+    const currentIndex = sortedItems.findIndex(i => i.id === itemId);
+    
+    if (direction === 'up' && currentIndex > 0) {
+      const targetItem = sortedItems[currentIndex - 1];
+      await handleUpdateItem(currentItem, { ordem: targetItem.ordem });
+      await handleUpdateItem(targetItem, { ordem: currentItem.ordem });
+    } else if (direction === 'down' && currentIndex < sortedItems.length - 1) {
+      const targetItem = sortedItems[currentIndex + 1];
+      await handleUpdateItem(currentItem, { ordem: targetItem.ordem });
+      await handleUpdateItem(targetItem, { ordem: currentItem.ordem });
+    }
+  };
+
+  if (loading) {
+    return <div className="flex items-center justify-center p-8">Carregando itens...</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Itens da Composição</h3>
+        <Button onClick={() => setShowAddItem(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Adicionar Produto
+        </Button>
+      </div>
+
+      {showAddItem && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Adicionar Novo Item</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Produto</Label>
+                <Select value={newItem.produto_id} onValueChange={(value) => setNewItem(prev => ({ ...prev, produto_id: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um produto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {products
+                      .filter(p => !items.some(i => i.produto_id === p.id))
+                      .map(produto => (
+                        <SelectItem key={produto.id} value={produto.id}>
+                          {produto.codigo} - {produto.descricao}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Ordem</Label>
+                <Input
+                  type="number"
+                  value={newItem.ordem}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, ordem: parseInt(e.target.value) }))}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label>Consumo/m²</Label>
+                <Input
+                  type="number"
+                  step="0.001"
+                  value={newItem.consumo_por_m2}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, consumo_por_m2: parseFloat(e.target.value) }))}
+                />
+              </div>
+              <div>
+                <Label>Quebra %</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={newItem.quebra_aplicada}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, quebra_aplicada: parseFloat(e.target.value) }))}
+                />
+              </div>
+              <div>
+                <Label>Fator Correção</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={newItem.fator_correcao}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, fator_correcao: parseFloat(e.target.value) }))}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowAddItem(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleAddItem} disabled={!newItem.produto_id}>
+                Adicionar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ordem</TableHead>
+                <TableHead>Produto</TableHead>
+                <TableHead>Consumo/m²</TableHead>
+                <TableHead>Quebra %</TableHead>
+                <TableHead>Fator</TableHead>
+                <TableHead>Valor Unit.</TableHead>
+                <TableHead>Valor/m²</TableHead>
+                <TableHead className="w-32">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>{item.ordem}</TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{item.produtos_mestre?.codigo}</div>
+                      <div className="text-sm text-muted-foreground truncate max-w-xs">
+                        {item.produtos_mestre?.descricao}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {editingItem?.id === item.id ? (
+                      <Input
+                        type="number"
+                        step="0.001"
+                        value={editingItem.consumo_por_m2}
+                        onChange={(e) => setEditingItem(prev => prev ? { ...prev, consumo_por_m2: parseFloat(e.target.value) } : null)}
+                        className="w-20"
+                      />
+                    ) : (
+                      item.consumo_por_m2.toFixed(3)
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingItem?.id === item.id ? (
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={editingItem.quebra_aplicada}
+                        onChange={(e) => setEditingItem(prev => prev ? { ...prev, quebra_aplicada: parseFloat(e.target.value) } : null)}
+                        className="w-20"
+                      />
+                    ) : (
+                      `${item.quebra_aplicada}%`
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingItem?.id === item.id ? (
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={editingItem.fator_correcao}
+                        onChange={(e) => setEditingItem(prev => prev ? { ...prev, fator_correcao: parseFloat(e.target.value) } : null)}
+                        className="w-20"
+                      />
+                    ) : (
+                      item.fator_correcao.toFixed(1)
+                    )}
+                  </TableCell>
+                  <TableCell>R$ {item.valor_unitario.toFixed(2)}</TableCell>
+                  <TableCell>R$ {item.valor_por_m2.toFixed(2)}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      {editingItem?.id === item.id ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUpdateItem(item, {
+                              consumo_por_m2: editingItem.consumo_por_m2,
+                              quebra_aplicada: editingItem.quebra_aplicada,
+                              fator_correcao: editingItem.fator_correcao
+                            })}
+                          >
+                            ✓
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingItem(null)}
+                          >
+                            ✕
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingItem(item)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => moveItem(item.id, 'up')}
+                          >
+                            <ArrowUp className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => moveItem(item.id, 'down')}
+                          >
+                            <ArrowDown className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteItem(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
               ))}
-            </SelectContent>
-          </Select>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {items.length === 0 && (
+        <div className="text-center p-8 text-muted-foreground">
+          Nenhum item adicionado ainda. Clique em "Adicionar Produto" para começar.
+        </div>
+      )}
+
+      <div className="flex justify-end">
+        <div className="text-lg font-semibold">
+          Total da Composição: R$ {items.reduce((sum, item) => sum + item.valor_por_m2, 0).toFixed(2)}/m²
         </div>
       </div>
-
-      <div>
-        <Label htmlFor="nome">Nome</Label>
-        <Input
-          id="nome"
-          value={formData.nome}
-          onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-          required
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="valor_total_m2">Valor Total/m²</Label>
-        <Input
-          id="valor_total_m2"
-          type="number"
-          step="0.01"
-          value={formData.valor_total_m2}
-          onChange={(e) => setFormData(prev => ({ ...prev, valor_total_m2: parseFloat(e.target.value) }))}
-          required
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="descricao">Descrição</Label>
-        <Textarea
-          id="descricao"
-          value={formData.descricao}
-          onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="aplicacao">Aplicação</Label>
-        <Textarea
-          id="aplicacao"
-          value={formData.aplicacao}
-          onChange={(e) => setFormData(prev => ({ ...prev, aplicacao: e.target.value }))}
-        />
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button type="submit">
-          {composition ? 'Atualizar' : 'Criar'} Composição
-        </Button>
-      </div>
-    </form>
+    </div>
   );
 }
