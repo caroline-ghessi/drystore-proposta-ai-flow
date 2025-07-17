@@ -31,6 +31,7 @@ import { useCalculoMapeamento } from '@/hooks/useCalculoMapeamento';
 import { useToast } from '@/hooks/use-toast';
 import { TelhaSelectionCard } from './TelhaSelectionCard';
 import { ItemAdicionarModal } from '@/components/admin/ItemAdicionarModal';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface DimensoesTelhadoCompleto {
   area_total_m2: number;
@@ -45,6 +46,15 @@ interface DimensoesTelhadoCompleto {
   incluir_manta: boolean;
   estimar_rufos: boolean;
   observacoes?: string;
+}
+
+interface ComposicaoMapeada {
+  composicao_id: string;
+  composicao_nome: string;
+  composicao_codigo: string;
+  categoria: string;
+  valor_por_m2: number;
+  descricao?: string;
 }
 
 interface StepCalculoTelhasCompletoProps {
@@ -87,6 +97,11 @@ export function StepCalculoTelhasCompleto({
   const [itensEditaveis, setItensEditaveis] = useState<ItemCalculadoShingle[]>([]);
   const [showAdicionarModal, setShowAdicionarModal] = useState(false);
 
+  // Estados para mapeamento de composições
+  const [composicoesDisponiveis, setComposicoesDisponiveis] = useState<ComposicaoMapeada[]>([]);
+  const [composicoesSelecionadas, setComposicoesSelecionadas] = useState<string[]>([]);
+  const [usarMapeamento, setUsarMapeamento] = useState(false);
+
   const { canViewMargins } = useUserRole();
   const { 
     produtosShingleCompletos, 
@@ -99,7 +114,46 @@ export function StepCalculoTelhasCompleto({
 
   useEffect(() => {
     buscarProdutosShingleCompletos();
+    verificarComposicoesDisponiveis();
   }, []);
+
+  const verificarComposicoesDisponiveis = async () => {
+    try {
+      const temMapeamentos = await verificarMapeamentosDisponiveis('telhas-shingle');
+      if (temMapeamentos) {
+        // Buscar composições disponíveis
+        const mapeamentos = await calcularPorMapeamento('telhas-shingle', 100); // Usar 100m² como base
+        
+        // Agrupar por composição
+        const composicoesMap = new Map<string, ComposicaoMapeada>();
+        
+        mapeamentos.forEach(item => {
+          if (!composicoesMap.has(item.composicao_id)) {
+            composicoesMap.set(item.composicao_id, {
+              composicao_id: item.composicao_id,
+              composicao_nome: item.composicao_nome,
+              composicao_codigo: item.composicao_codigo,
+              categoria: item.categoria,
+              valor_por_m2: 0,
+              descricao: item.composicao_nome
+            });
+          }
+          
+          const composicao = composicoesMap.get(item.composicao_id)!;
+          composicao.valor_por_m2 += item.valor_total / 100; // Valor por m²
+        });
+        
+        const composicoes = Array.from(composicoesMap.values());
+        setComposicoesDisponiveis(composicoes);
+        setUsarMapeamento(true);
+        
+        // Selecionar todas as composições por padrão
+        setComposicoesSelecionadas(composicoes.map(c => c.composicao_id));
+      }
+    } catch (error) {
+      console.error('Erro ao verificar mapeamentos:', error);
+    }
+  };
 
   useEffect(() => {
     if (dimensoes.estimar_rufos && dimensoes.perimetro_telhado > 0) {
@@ -123,19 +177,13 @@ export function StepCalculoTelhasCompleto({
     setIsCalculating(true);
     
     try {
-      // Verificar se existem mapeamentos para telhas-shingle
-      const temMapeamentos = await verificarMapeamentosDisponiveis('telhas-shingle');
-      
-      if (temMapeamentos) {
-        // Usar sistema de mapeamentos
+      if (usarMapeamento && composicoesSelecionadas.length > 0) {
+        // Usar sistema de mapeamentos com composições selecionadas
         const dadosExtras = {
           comprimento_cumeeira: dimensoes.comprimento_cumeeira,
           perimetro_telhado: dimensoes.perimetro_telhado,
           comprimento_calha: dimensoes.incluir_calha ? dimensoes.comprimento_calha : 0,
-          tipo_telha: dimensoes.tipo_telha,
-          cor_acessorios: dimensoes.cor_acessorios,
-          incluir_manta: dimensoes.incluir_manta,
-          incluir_calha: dimensoes.incluir_calha
+          composicoes_selecionadas: composicoesSelecionadas
         };
 
         const itensMapeamento = await calcularPorMapeamento(
@@ -144,8 +192,13 @@ export function StepCalculoTelhasCompleto({
           dadosExtras
         );
 
+        // Filtrar apenas as composições selecionadas
+        const itensFiltrados = itensMapeamento.filter(item => 
+          composicoesSelecionadas.includes(item.composicao_id)
+        );
+
         // Converter para formato compatível
-        const itensCompatíveis: ItemCalculadoShingle[] = itensMapeamento.map(item => ({
+        const itensCompatíveis: ItemCalculadoShingle[] = itensFiltrados.map(item => ({
           tipo_item: item.categoria.replace('_', ' ').toUpperCase(),
           codigo: item.item_codigo,
           descricao: item.item_descricao,
@@ -175,11 +228,12 @@ export function StepCalculoTelhasCompleto({
 
         itensCompatíveis.forEach(item => {
           resumo.valorTotal += item.valor_total;
-          if (item.tipo_item.includes('TELHA')) {
+          // Classificar por categoria do mapeamento
+          if (item.categoria.includes('Telha') || item.categoria.includes('TELHA')) {
             resumo.valorTelhas += item.valor_total;
-          } else if (item.tipo_item.includes('CALHA')) {
+          } else if (item.categoria.includes('Calha') || item.categoria.includes('CALHA')) {
             resumo.valorCalhas += item.valor_total;
-          } else if (item.tipo_item.includes('CUMEEIRA') || item.tipo_item.includes('RUFO')) {
+          } else if (item.categoria.includes('Acessorio') || item.categoria.includes('ACESSORIO')) {
             resumo.valorAcessorios += item.valor_total;
           } else {
             resumo.valorComplementos += item.valor_total;
@@ -193,8 +247,8 @@ export function StepCalculoTelhasCompleto({
         onCalculoComplete(resumo);
         
         toast({
-          title: "Cálculo com Mapeamentos",
-          description: "Orçamento calculado usando o sistema de mapeamentos configurado.",
+          title: "Cálculo com Composições",
+          description: `Orçamento calculado usando ${composicoesSelecionadas.length} composição(ões) selecionada(s).`,
         });
       } else {
         // Usar sistema legado
@@ -214,7 +268,7 @@ export function StepCalculoTelhasCompleto({
         
         toast({
           title: "Cálculo Legado",
-          description: "Orçamento calculado usando o sistema de produtos individual. Configure mapeamentos para usar o novo sistema."
+          description: "Orçamento calculado usando produtos individuais.",
         });
       }
       
@@ -329,6 +383,14 @@ export function StepCalculoTelhasCompleto({
 
   const adicionarItem = (novoItem: ItemCalculadoShingle) => {
     setItensEditaveis(prev => [...prev, novoItem]);
+  };
+
+  const toggleComposicao = (composicaoId: string) => {
+    setComposicoesSelecionadas(prev => 
+      prev.includes(composicaoId) 
+        ? prev.filter(id => id !== composicaoId)
+        : [...prev, composicaoId]
+    );
   };
 
   return (
@@ -487,17 +549,55 @@ export function StepCalculoTelhasCompleto({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="space-y-4">
-                {/* Telha Selecionada */}
-                <div className="space-y-3">
-                  <Label>Telha Selecionada</Label>
-                  <TelhaSelectionCard 
-                    telha={telhasSelecionada}
-                    onEdit={() => setShowTelhaSelector(!showTelhaSelector)}
-                  />
-                </div>
+                {/* Seleção de Composições ou Telha Individual */}
+                {usarMapeamento && composicoesDisponiveis.length > 0 ? (
+                  <div className="space-y-3">
+                    <Label>Composições Disponíveis</Label>
+                    <div className="space-y-2">
+                      {composicoesDisponiveis.map((composicao) => (
+                        <div key={composicao.composicao_id} className="flex items-center space-x-2 p-3 border rounded-lg">
+                          <Checkbox
+                            id={`composicao-${composicao.composicao_id}`}
+                            checked={composicoesSelecionadas.includes(composicao.composicao_id)}
+                            onCheckedChange={() => toggleComposicao(composicao.composicao_id)}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <Label
+                              htmlFor={`composicao-${composicao.composicao_id}`}
+                              className="text-sm font-medium cursor-pointer"
+                            >
+                              {composicao.composicao_nome}
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              {composicao.composicao_codigo} - {composicao.categoria}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm font-medium">
+                              {formatCurrency(composicao.valor_por_m2)}/m²
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {composicoesSelecionadas.length === 0 && (
+                      <p className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
+                        Selecione pelo menos uma composição para calcular o orçamento.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <Label>Telha Selecionada</Label>
+                    <TelhaSelectionCard 
+                      telha={telhasSelecionada}
+                      onEdit={() => setShowTelhaSelector(!showTelhaSelector)}
+                    />
+                  </div>
+                )}
 
-                {/* Seletor de Telha (Collapsible) */}
-                {showTelhaSelector && (
+                {/* Seletor de Telha (Collapsible) - Apenas se não usar mapeamento */}
+                {!usarMapeamento && showTelhaSelector && (
                   <div className="space-y-2 border border-border rounded-lg p-3 bg-muted/20">
                     <Label htmlFor="tipo-telha">Escolher Nova Telha</Label>
                     <Select
@@ -551,41 +651,46 @@ export function StepCalculoTelhasCompleto({
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="cor-acessorios">Cor dos Acessórios</Label>
-                  <Select
-                    value={dimensoes.cor_acessorios}
-                    onValueChange={(value) => handleDimensaoChange('cor_acessorios', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CINZA">Cinza</SelectItem>
-                      <SelectItem value="MARROM">Marrom</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Configurações complementares - apenas se não usar mapeamento */}
+                {!usarMapeamento && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="cor-acessorios">Cor dos Acessórios</Label>
+                      <Select
+                        value={dimensoes.cor_acessorios}
+                        onValueChange={(value) => handleDimensaoChange('cor_acessorios', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="CINZA">Cinza</SelectItem>
+                          <SelectItem value="MARROM">Marrom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="incluir-manta"
-                      checked={dimensoes.incluir_manta}
-                      onCheckedChange={(checked) => handleDimensaoChange('incluir_manta', checked)}
-                    />
-                    <Label htmlFor="incluir-manta" className="text-sm">
-                      Incluir Manta Starter
-                    </Label>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Manta asfáltica para impermeabilização da base
-                  </p>
-                </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="incluir-manta"
+                          checked={dimensoes.incluir_manta}
+                          onCheckedChange={(checked) => handleDimensaoChange('incluir_manta', checked)}
+                        />
+                        <Label htmlFor="incluir-manta" className="text-sm">
+                          Incluir Manta Starter
+                        </Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Manta asfáltica para impermeabilização da base
+                      </p>
+                    </div>
+                  </>
+                )}
 
                 <Button 
                   onClick={calcular} 
-                  disabled={isCalculating || dimensoes.area_total_m2 <= 0}
+                  disabled={isCalculating || dimensoes.area_total_m2 <= 0 || (usarMapeamento && composicoesSelecionadas.length === 0)}
                   className="w-full"
                   size="lg"
                 >
@@ -593,19 +698,28 @@ export function StepCalculoTelhasCompleto({
                   {isCalculating ? 'Calculando...' : 'Calcular Orçamento Completo'}
                 </Button>
 
-                {/* Info das quebras */}
+                {/* Info das quebras ou composições */}
                 <Card className="bg-blue-50 border-blue-200">
                   <CardContent className="p-3">
                     <div className="flex gap-2">
                       <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
                       <div className="text-xs text-blue-800">
-                        <p className="font-medium mb-1">Quebras aplicadas:</p>
-                        <ul className="space-y-0.5">
-                          <li>• Telhas: 5%</li>
-                          <li>• Cumeeiras: 10%</li>
-                          <li>• Rufos/Calhas: 5%</li>
-                          <li>• Manta: 10%</li>
-                        </ul>
+                        {usarMapeamento ? (
+                          <div>
+                            <p className="font-medium mb-1">Sistema de Composições:</p>
+                            <p>Utilizando mapeamentos configurados para telhas shingle com cálculos automáticos baseados nas dimensões informadas.</p>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="font-medium mb-1">Quebras aplicadas:</p>
+                            <ul className="space-y-0.5">
+                              <li>• Telhas: 5%</li>
+                              <li>• Cumeeiras: 10%</li>
+                              <li>• Rufos/Calhas: 5%</li>
+                              <li>• Manta: 10%</li>
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>

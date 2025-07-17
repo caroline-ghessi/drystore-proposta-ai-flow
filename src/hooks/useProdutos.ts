@@ -59,6 +59,8 @@ export interface ItemCalculadoShingle {
   unidade_venda: string;
   preco_unitario: number;
   valor_total: number;
+  categoria?: string;
+  ordem?: number;
 }
 
 export interface ResumoOrcamentoShingle {
