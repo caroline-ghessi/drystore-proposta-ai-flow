@@ -2089,6 +2089,31 @@ export type Database = {
         }
         Returns: Json
       }
+      calcular_por_mapeamento: {
+        Args: {
+          p_tipo_proposta: string
+          p_area_base: number
+          p_dados_extras?: Json
+        }
+        Returns: {
+          composicao_id: string
+          composicao_nome: string
+          composicao_codigo: string
+          categoria: string
+          item_id: string
+          item_codigo: string
+          item_descricao: string
+          consumo_por_m2: number
+          area_aplicacao: number
+          fator_aplicacao: number
+          quantidade_liquida: number
+          quantidade_com_quebra: number
+          preco_unitario: number
+          valor_total: number
+          ordem_calculo: number
+          obrigatorio: boolean
+        }[]
+      }
       dimensionar_sistema: {
         Args: {
           p_consumo_kwh: number
@@ -2101,6 +2126,14 @@ export type Database = {
       recalcular_composicao: {
         Args: { p_composicao_id: string }
         Returns: number
+      }
+      resumo_orcamento_mapeamento: {
+        Args: {
+          p_tipo_proposta: string
+          p_area_base: number
+          p_dados_extras?: Json
+        }
+        Returns: Json
       }
       selecionar_equipamentos: {
         Args: {

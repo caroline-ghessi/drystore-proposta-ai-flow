@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProdutos, ProdutoShingleCompleto, ResumoOrcamentoShingle, ItemCalculadoShingle } from '@/hooks/useProdutos';
+import { useCalculoMapeamento } from '@/hooks/useCalculoMapeamento';
 import { useToast } from '@/hooks/use-toast';
 import { TelhaSelectionCard } from './TelhaSelectionCard';
 import { ItemAdicionarModal } from '@/components/admin/ItemAdicionarModal';
@@ -93,6 +94,7 @@ export function StepCalculoTelhasCompleto({
     calcularOrcamentoShingleCompleto,
     loading 
   } = useProdutos();
+  const { calcularPorMapeamento, verificarMapeamentosDisponiveis } = useCalculoMapeamento();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -121,19 +123,101 @@ export function StepCalculoTelhasCompleto({
     setIsCalculating(true);
     
     try {
-      const resultado = await calcularOrcamentoShingleCompleto(
-        dimensoes.area_total_m2,
-        dimensoes.comprimento_cumeeira,
-        dimensoes.perimetro_telhado,
-        dimensoes.incluir_calha ? dimensoes.comprimento_calha : 0,
-        dimensoes.tipo_telha,
-        dimensoes.cor_acessorios,
-        dimensoes.incluir_manta
-      );
+      // Verificar se existem mapeamentos para telhas-shingle
+      const temMapeamentos = await verificarMapeamentosDisponiveis('telhas-shingle');
+      
+      if (temMapeamentos) {
+        // Usar sistema de mapeamentos
+        const dadosExtras = {
+          comprimento_cumeeira: dimensoes.comprimento_cumeeira,
+          perimetro_telhado: dimensoes.perimetro_telhado,
+          comprimento_calha: dimensoes.incluir_calha ? dimensoes.comprimento_calha : 0,
+          tipo_telha: dimensoes.tipo_telha,
+          cor_acessorios: dimensoes.cor_acessorios,
+          incluir_manta: dimensoes.incluir_manta,
+          incluir_calha: dimensoes.incluir_calha
+        };
 
-      setOrcamento(resultado);
-      setItensEditaveis(resultado.itens); // Inicializar itens editáveis
-      onCalculoComplete(resultado);
+        const itensMapeamento = await calcularPorMapeamento(
+          'telhas-shingle',
+          dimensoes.area_total_m2,
+          dadosExtras
+        );
+
+        // Converter para formato compatível
+        const itensCompatíveis: ItemCalculadoShingle[] = itensMapeamento.map(item => ({
+          tipo_item: item.categoria.replace('_', ' ').toUpperCase(),
+          codigo: item.item_codigo,
+          descricao: item.item_descricao,
+          dimensao_base: item.area_aplicacao,
+          unidade_dimensao: 'm²',
+          fator_conversao: item.fator_aplicacao,
+          quebra_percentual: ((item.quantidade_com_quebra / item.quantidade_liquida) - 1) * 100,
+          quantidade_calculada: item.quantidade_liquida,
+          quantidade_final: Math.ceil(item.quantidade_com_quebra),
+          unidade_venda: 'un',
+          preco_unitario: item.preco_unitario,
+          valor_total: item.valor_total,
+          categoria: item.categoria,
+          ordem: item.ordem_calculo
+        }));
+
+        // Calcular resumo
+        const resumo: ResumoOrcamentoShingle = {
+          valorTelhas: 0,
+          valorAcessorios: 0,
+          valorCalhas: 0,
+          valorComplementos: 0,
+          valorTotal: 0,
+          valorPorM2: 0,
+          itens: itensCompatíveis
+        };
+
+        itensCompatíveis.forEach(item => {
+          resumo.valorTotal += item.valor_total;
+          if (item.tipo_item.includes('TELHA')) {
+            resumo.valorTelhas += item.valor_total;
+          } else if (item.tipo_item.includes('CALHA')) {
+            resumo.valorCalhas += item.valor_total;
+          } else if (item.tipo_item.includes('CUMEEIRA') || item.tipo_item.includes('RUFO')) {
+            resumo.valorAcessorios += item.valor_total;
+          } else {
+            resumo.valorComplementos += item.valor_total;
+          }
+        });
+
+        resumo.valorPorM2 = resumo.valorTotal / dimensoes.area_total_m2;
+
+        setOrcamento(resumo);
+        setItensEditaveis(itensCompatíveis);
+        onCalculoComplete(resumo);
+        
+        toast({
+          title: "Cálculo com Mapeamentos",
+          description: "Orçamento calculado usando o sistema de mapeamentos configurado.",
+        });
+      } else {
+        // Usar sistema legado
+        const resultado = await calcularOrcamentoShingleCompleto(
+          dimensoes.area_total_m2,
+          dimensoes.comprimento_cumeeira,
+          dimensoes.perimetro_telhado,
+          dimensoes.incluir_calha ? dimensoes.comprimento_calha : 0,
+          dimensoes.tipo_telha,
+          dimensoes.cor_acessorios,
+          dimensoes.incluir_manta
+        );
+
+        setOrcamento(resultado);
+        setItensEditaveis(resultado.itens);
+        onCalculoComplete(resultado);
+        
+        toast({
+          title: "Cálculo Legado",
+          description: "Orçamento calculado usando o sistema de produtos individual. Configure mapeamentos para usar o novo sistema."
+        });
+      }
+      
       setExpandedSections(prev => ({ ...prev, resultados: true }));
       
     } catch (error) {

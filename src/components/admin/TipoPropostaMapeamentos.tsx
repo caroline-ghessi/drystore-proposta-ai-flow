@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Plus, Trash2, Copy, Settings2, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCalculoMapeamento } from "@/hooks/useCalculoMapeamento";
 
 interface Composicao {
   id: string;
@@ -50,7 +51,10 @@ export const TipoPropostaMapeamentos = () => {
   const [tipoSelecionado, setTipoSelecionado] = useState<string>("energia-solar");
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showSimulador, setShowSimulador] = useState(false);
+  const [areaSimulacao, setAreaSimulacao] = useState(100);
   const { toast } = useToast();
+  const { calcularPorMapeamento, obterResumoOrcamento, isLoading } = useCalculoMapeamento();
 
   useEffect(() => {
     fetchComposicoes();
@@ -472,6 +476,68 @@ export const TipoPropostaMapeamentos = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Simulador de Cálculo */}
+            {mapeamentosDoTipo.length > 0 && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>🧪 Simulador de Cálculo</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowSimulador(!showSimulador)}
+                    >
+                      {showSimulador ? 'Ocultar' : 'Testar Mapeamento'}
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                {showSimulador && (
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <Input
+                          type="number"
+                          placeholder="Área base (m²)"
+                          value={areaSimulacao}
+                          onChange={(e) => setAreaSimulacao(Number(e.target.value))}
+                          className="w-32"
+                        />
+                      </div>
+                      <Button
+                        onClick={async () => {
+                          if (areaSimulacao > 0) {
+                            try {
+                              const resumo = await obterResumoOrcamento(tipo.value, areaSimulacao);
+                              if (resumo) {
+                                toast({
+                                  title: "Simulação Concluída",
+                                  description: `Valor total: R$ ${resumo.valor_total.toFixed(2)} (R$ ${resumo.valor_por_m2.toFixed(2)}/m²)`,
+                                });
+                              }
+                            } catch (error) {
+                              toast({
+                                title: "Erro na simulação",
+                                description: "Verifique se todas as composições têm produtos associados.",
+                                variant: "destructive"
+                              });
+                            }
+                          }
+                        }}
+                        disabled={isLoading || areaSimulacao <= 0}
+                        className="whitespace-nowrap"
+                      >
+                        {isLoading ? 'Calculando...' : 'Simular Cálculo'}
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Use este simulador para validar se o mapeamento está funcionando corretamente. 
+                      O cálculo usará as composições mapeadas e seus produtos associados.
+                    </p>
+                  </CardContent>
+                )}
+              </Card>
+            )}
           </TabsContent>
         ))}
       </Tabs>
