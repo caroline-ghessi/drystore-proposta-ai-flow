@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Calculator, ArrowLeft, Shield, Package, AlertCircle, Layers } from 'lucide-react'
-import { supabase } from '@/integrations/supabase/client'
+import { useCalculoMapeamento } from '@/hooks/useCalculoMapeamento'
 
 interface StepCalculoImpermeabilizacaoProps {
   dadosExtraidos?: any;
@@ -63,8 +63,8 @@ export function StepCalculoImpermeabilizacao({
   onBack, 
   onNext 
 }: StepCalculoImpermeabilizacaoProps) {
-  const [produtos, setProdutos] = useState<ProdutoImpermeabilizacao[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { calcularPorMapeamento, obterResumoOrcamento, isLoading, error } = useCalculoMapeamento();
+  const [loading, setLoading] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   
   // Inputs do projeto
@@ -125,24 +125,42 @@ export function StepCalculoImpermeabilizacao({
     setIsCalculating(true);
     
     try {
-      const quebra = quebraPersonalizada ? quebraPercentual : 5;
-      
-      const { data, error } = await supabase.rpc('calcular_orcamento_impermeabilizacao', {
-        p_area_total: areaTotal,
-        p_tipo_aplicacao: tipoAplicacao,
-        p_perimetro: perimetro,
-        p_altura_subida: alturaRodape,
-        p_com_tela: comTela,
-        p_com_primer: comPrimer,
-        p_quebra: quebra,
-        p_produto_principal_id: produtoImpermeabilizante || null
+      // Usar sistema de mapeamento
+      const itens = await calcularPorMapeamento('impermeabilizacao', areaTotal, {
+        tipo_aplicacao: tipoAplicacao,
+        perimetro: perimetro,
+        altura_subida: alturaRodape,
+        com_tela: comTela,
+        com_primer: comPrimer,
+        quebra: quebraPersonalizada ? quebraPercentual : 5
       });
-
-      if (error) throw error;
-
-      if (data) {
-        setItensCalculados(data);
-        const total = data.reduce((acc: number, item: ItemCalculado) => acc + item.valor_total, 0);
+      
+      const resumo = await obterResumoOrcamento('impermeabilizacao', areaTotal, {
+        tipo_aplicacao: tipoAplicacao,
+        perimetro: perimetro
+      });
+      
+      if (itens) {
+        // Converter dados do mapeamento para formato esperado
+        const itensConvertidos = itens.map((item, index) => ({
+          produto_id: item.item_id,
+          produto_codigo: item.item_codigo,
+          produto_nome: item.item_descricao,
+          tipo: item.composicao_categoria || 'IMPERMEABILIZANTE',
+          funcao: item.composicao_nome,
+          consumo_m2: item.consumo_por_m2,
+          area_aplicacao: item.area_aplicacao,
+          quantidade_necessaria: item.quantidade_liquida,
+          quantidade_com_quebra: item.quantidade_com_quebra,
+          unidades_compra: Math.ceil(item.quantidade_com_quebra),
+          unidade_venda: 'un',
+          preco_unitario: item.preco_unitario,
+          valor_total: item.valor_total,
+          ordem: item.ordem_calculo
+        }));
+        
+        setItensCalculados(itensConvertidos);
+        const total = resumo?.valor_total || itensConvertidos.reduce((acc, item) => acc + item.valor_total, 0);
         setValorTotal(total);
 
         const calculo = {
@@ -153,8 +171,8 @@ export function StepCalculoImpermeabilizacao({
           tipoAplicacao,
           comTela,
           comPrimer,
-          quebraPercentual: quebra,
-          itens: data,
+          quebraPercentual: quebraPersonalizada ? quebraPercentual : 5,
+          itens: itensConvertidos,
           valorTotal: total,
           valorPorM2: total / areaImpermeabilizar,
           tipo: 'impermeabilizacao'

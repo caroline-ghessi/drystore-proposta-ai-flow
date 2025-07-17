@@ -10,7 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Calculator, CheckCircle, Loader2, Sun, Zap, Clock, TrendingUp, Edit3, RotateCcw, Eye, EyeOff, ShieldCheck, Wrench, Settings } from "lucide-react"
 import { PropostaData } from "../PropostaWizard"
 import { DadosContaLuz } from "@/services/difyService"
-import { useEnergiaSolar, DadosEntradaSolar, CalculoCompleto } from "@/hooks/useEnergiaSolar"
+import { useCalculoMapeamento } from "@/hooks/useCalculoMapeamento"
 import { useProdutos } from "@/hooks/useProdutos"
 import { useUserRole } from "@/hooks/useUserRole"
 import { useToast } from "@/hooks/use-toast"
@@ -28,7 +28,7 @@ export function StepCalculoSolar({
   onBack, 
   onNext 
 }: StepCalculoSolarProps) {
-  const { calcularSistemaCompleto, loading, error } = useEnergiaSolar()
+  const { calcularPorMapeamento, obterResumoOrcamento, isLoading, error } = useCalculoMapeamento()
   const { paineis, inversores, buscarInversores, buscarProduto } = useProdutos()
   const { canViewMargins } = useUserRole()
   const { toast } = useToast()
@@ -40,7 +40,8 @@ export function StepCalculoSolar({
   const [tarifaEnergia, setTarifaEnergia] = useState(0.75)
   
   // Resultado dos cálculos
-  const [calculoCompleto, setCalculoCompleto] = useState<CalculoCompleto | null>(null)
+  const [resultadoMapeamento, setResultadoMapeamento] = useState(null)
+  const [resumoOrcamento, setResumoOrcamento] = useState(null)
   const [calculado, setCalculado] = useState(false)
   
   // Equipamentos editáveis
@@ -57,13 +58,7 @@ export function StepCalculoSolar({
     }
   }, [dadosContaLuz])
 
-  useEffect(() => {
-    if (calculoCompleto) {
-      setPainelSelecionado(calculoCompleto.equipamentos.painel.id)
-      setQuantidadePaineis(calculoCompleto.equipamentos.painel.quantidade)
-      setInversorSelecionado(calculoCompleto.equipamentos.inversor.id)
-    }
-  }, [calculoCompleto])
+  // Remover useEffect de equipamentos pois agora usamos mapeamento
 
   const handleCalcular = async () => {
     if (!dadosContaLuz?.consumo_atual) {
@@ -75,33 +70,40 @@ export function StepCalculoSolar({
       return
     }
 
-    const dadosEntrada: DadosEntradaSolar = {
-      consumo_mensal_kwh: dadosContaLuz.consumo_atual,
-      cidade: dadosContaLuz.endereco?.split(',')[0]?.trim() || 'São Paulo',
-      estado: 'SP', // TODO: extrair do endereço
-      tipo_instalacao: tipoInstalacao,
-      tipo_telha: tipoTelha,
-      area_disponivel: areaDisponivel,
-      tarifa_energia: tarifaEnergia
-    }
-
     try {
-      const resultado = await calcularSistemaCompleto(dadosEntrada)
-      setCalculoCompleto(resultado)
-      setCalculado(true)
+      // Calcular usando mapeamento
+      const areaBase = dadosContaLuz.consumo_atual * 8 / 1000; // estimativa 8m²/kWp
+      
+      const itens = await calcularPorMapeamento('energia-solar', areaBase, {
+        consumo_kwh: dadosContaLuz.consumo_atual,
+        cidade: dadosContaLuz.endereco?.split(',')[0]?.trim() || 'São Paulo',
+        estado: 'SP',
+        tipo_instalacao: tipoInstalacao,
+        tipo_telha: tipoTelha,
+        tarifa_energia: tarifaEnergia
+      });
+      
+      const resumo = await obterResumoOrcamento('energia-solar', areaBase, {
+        consumo_kwh: dadosContaLuz.consumo_atual
+      });
+      
+      setResultadoMapeamento(itens);
+      setResumoOrcamento(resumo);
+      setCalculado(true);
       
       // Atualizar valor total da proposta
       onDataChange({ 
-        valorTotal: resultado.orcamento.valor_total,
+        valorTotal: resumo?.valor_total || 0,
         dadosExtraidos: {
           ...dadosContaLuz,
-          calculo_solar: resultado
+          itens_orcamento: itens,
+          resumo_orcamento: resumo
         }
       })
 
       toast({
         title: "Cálculo realizado com sucesso!",
-        description: `Sistema de ${resultado.dimensionamento.potencia_necessaria_kwp}kWp calculado`,
+        description: `Orçamento calculado: ${resumo?.total_itens} itens`,
       })
     } catch (err) {
       toast({
@@ -280,10 +282,10 @@ export function StepCalculoSolar({
           {!calculado && (
             <Button 
               onClick={handleCalcular}
-              disabled={loading}
+              disabled={isLoading}
               className="w-full"
             >
-              {loading ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Calculando...
@@ -307,35 +309,35 @@ export function StepCalculoSolar({
       </Card>
 
       {/* Resultados do Cálculo */}
-      {calculoCompleto && (
+      {resumoOrcamento && (
         <div className="space-y-4">
-          {/* Dimensionamento */}
+          {/* Resumo do Orçamento */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Sun className="h-5 w-5 text-yellow-600" />
-                Dimensionamento do Sistema
+                Orçamento Sistema Solar - Via Mapeamento
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-primary">
-                    {calculoCompleto.dimensionamento.potencia_necessaria_kwp} kWp
+                    R$ {resumoOrcamento.valor_total?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
-                  <p className="text-sm text-muted-foreground">Potência do Sistema</p>
+                  <p className="text-sm text-muted-foreground">Valor Total</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-green-600">
-                    {calculoCompleto.equipamentos.painel.quantidade}
+                    {resumoOrcamento.total_itens}
                   </p>
-                  <p className="text-sm text-muted-foreground">Painéis Solares</p>
+                  <p className="text-sm text-muted-foreground">Total de Itens</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-blue-600">
-                    {Math.round(calculoCompleto.dimensionamento.geracao_estimada_anual)} kWh
+                    R$ {resumoOrcamento.valor_por_m2?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
-                  <p className="text-sm text-muted-foreground">Geração Anual</p>
+                  <p className="text-sm text-muted-foreground">Valor por m²</p>
                 </div>
               </div>
             </CardContent>

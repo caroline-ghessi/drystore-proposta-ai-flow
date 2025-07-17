@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Calculator, Home, Ruler, Layers, FileText, DoorOpen, Zap } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useCalculoMapeamento } from '@/hooks/useCalculoMapeamento';
 import { useToast } from '@/hooks/use-toast';
 
 interface ItemCalculado {
@@ -76,6 +76,7 @@ const TIPOS_PAREDE = [
 
 export function StepCalculoDivisorias({ onDataChange, onNext, onBack }: StepCalculoDivisoriasProps) {
   const { toast } = useToast();
+  const { calcularPorMapeamento, obterResumoOrcamento, isLoading, error } = useCalculoMapeamento();
   const [loading, setLoading] = useState(false);
   
   // Inputs principais
@@ -112,19 +113,37 @@ export function StepCalculoDivisorias({ onDataChange, onNext, onBack }: StepCalc
     setLoading(true);
     
     try {
-      const { data, error } = await supabase.rpc('calcular_orcamento_drywall', {
-        p_area_parede: areaParede,
-        p_composicao_nome: tipoParedeSelecionado,
-        p_pe_direito: peDireito,
-        p_incluir_porta: incluirPorta,
-        p_quantidade_portas: quantidadePortas
+      // Usar sistema de mapeamento
+      const itens = await calcularPorMapeamento('divisorias', areaParede, {
+        pe_direito: peDireito,
+        incluir_porta: incluirPorta,
+        quantidade_portas: quantidadePortas,
+        tipo_parede: tipoParedeSelecionado
       });
       
-      if (error) throw error;
+      const resumo = await obterResumoOrcamento('divisorias', areaParede, {
+        pe_direito: peDireito,
+        incluir_porta: incluirPorta,
+        quantidade_portas: quantidadePortas
+      });
       
-      if (data) {
-        setItensCalculados(data);
-        const resumoCalculado = calcularResumo(data);
+      if (itens) {
+        // Converter dados do mapeamento para formato esperado
+        const itensConvertidos = itens.map((item, index) => ({
+          categoria: item.composicao_nome.toUpperCase(),
+          descricao: item.item_descricao,
+          consumo_base: item.quantidade_liquida,
+          quebra_percentual: ((item.quantidade_com_quebra / item.quantidade_liquida) - 1) * 100,
+          consumo_com_quebra: item.quantidade_com_quebra,
+          unidade: 'un',
+          quantidade_final: Math.ceil(item.quantidade_com_quebra),
+          preco_unitario: item.preco_unitario,
+          valor_total: item.valor_total,
+          ordem: item.ordem_calculo
+        }));
+        
+        setItensCalculados(itensConvertidos);
+        const resumoCalculado = calcularResumo(itensConvertidos);
         setResumo(resumoCalculado);
         
         // Atualizar dados do wizard
@@ -136,17 +155,17 @@ export function StepCalculoDivisorias({ onDataChange, onNext, onBack }: StepCalc
             pe_direito: peDireito,
             incluir_porta: incluirPorta,
             quantidade_portas: quantidadePortas,
-            itens: data,
+            itens: itensConvertidos,
             resumo: resumoCalculado
           },
-          valor_total: resumoCalculado.valorTotal
+          valor_total: resumo?.valor_total || resumoCalculado.valorTotal
         });
       }
     } catch (error) {
       console.error('Erro ao calcular:', error);
       toast({
         title: "Erro no cálculo",
-        description: "Não foi possível calcular o orçamento. Tente novamente.",
+        description: error || "Não foi possível calcular o orçamento. Tente novamente.",
         variant: "destructive"
       });
     } finally {
