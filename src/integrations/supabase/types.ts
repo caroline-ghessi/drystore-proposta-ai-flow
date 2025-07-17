@@ -2054,6 +2054,10 @@ export type Database = {
         }
         Returns: Json
       }
+      recalcular_composicao: {
+        Args: { p_composicao_id: string }
+        Returns: number
+      }
       selecionar_equipamentos: {
         Args: {
           p_potencia_kwp: number
