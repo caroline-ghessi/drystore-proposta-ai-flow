@@ -17,7 +17,7 @@ interface StepUploadProps {
 
 const TIPO_LABELS = {
   'energia-solar': 'Energia Solar',
-  'telhas': 'Telhas Shingle',
+  'telhas-shingle': 'Telhas Shingle',
   'divisorias': 'Divisórias',
   'pisos': 'Pisos',
   'forros': 'Forros',
@@ -31,7 +31,7 @@ const DOCUMENTO_INFO = {
     formatos: 'PDF, JPG, PNG',
     exemplo: 'Exemplo: conta_luz_janeiro_2024.pdf'
   },
-  'telhas': {
+  'telhas-shingle': {
     titulo: 'Projeto de Cobertura',
     descricao: 'Envie o projeto ou especificações técnicas da cobertura',
     formatos: 'PDF',
