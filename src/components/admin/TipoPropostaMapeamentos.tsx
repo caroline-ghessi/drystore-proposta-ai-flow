@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-// Removendo drag and drop por enquanto
-import { Plus, Trash2, Copy, Settings2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Trash2, Copy, Settings2, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -48,6 +49,7 @@ export const TipoPropostaMapeamentos = () => {
   const [mapeamentos, setMapeamentos] = useState<Mapeamento[]>([]);
   const [tipoSelecionado, setTipoSelecionado] = useState<string>("energia-solar");
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -203,7 +205,9 @@ export const TipoPropostaMapeamentos = () => {
 
   const mapeamentosDoTipo = mapeamentos.filter(m => m.tipo_proposta === tipoSelecionado);
   const composicoesDisponiveis = composicoes.filter(c => 
-    !mapeamentosDoTipo.some(m => m.composicao_id === c.id)
+    !mapeamentosDoTipo.some(m => m.composicao_id === c.id) &&
+    (searchTerm === "" || c.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
+     c.categoria.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const categorias = [...new Set(composicoesDisponiveis.map(c => c.categoria))];
@@ -219,13 +223,39 @@ export const TipoPropostaMapeamentos = () => {
       </div>
 
       <Tabs value={tipoSelecionado} onValueChange={setTipoSelecionado}>
-        <TabsList className="grid grid-cols-5 lg:grid-cols-10">
-          {TIPOS_PROPOSTA.map((tipo) => (
-            <TabsTrigger key={tipo.value} value={tipo.value} className="text-xs">
-              {tipo.label.split(" ")[0]}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <div className="w-full overflow-hidden">
+          <ScrollArea className="w-full">
+            <TabsList className="inline-flex h-12 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-max min-w-full">
+              {TIPOS_PROPOSTA.map((tipo) => {
+                const qtdMapeamentos = mapeamentos.filter(m => m.tipo_proposta === tipo.value).length;
+                return (
+                  <TooltipProvider key={tipo.value}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <TabsTrigger 
+                          value={tipo.value} 
+                          className="relative whitespace-nowrap px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                          <div className="flex flex-col items-center">
+                            <span>{tipo.label}</span>
+                            {qtdMapeamentos > 0 && (
+                              <Badge variant="secondary" className="text-xs mt-1 h-4 px-1">
+                                {qtdMapeamentos}
+                              </Badge>
+                            )}
+                          </div>
+                        </TabsTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{tipo.label}: {qtdMapeamentos} composições mapeadas</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                );
+              })}
+            </TabsList>
+          </ScrollArea>
+        </div>
 
         {TIPOS_PROPOSTA.map((tipo) => (
           <TabsContent key={tipo.value} value={tipo.value} className="space-y-6">
@@ -252,117 +282,193 @@ export const TipoPropostaMapeamentos = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6">
               {/* Composições Mapeadas */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    Composições Mapeadas
-                    <Badge variant="secondary">
-                      {mapeamentosDoTipo.length} itens
-                    </Badge>
+              <Card className="flex flex-col">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span>Composições Mapeadas</span>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">
+                        {mapeamentosDoTipo.length} itens
+                      </Badge>
+                    </div>
                   </CardTitle>
+                  {/* Legenda dos controles */}
+                  <div className="flex flex-wrap gap-4 text-xs text-muted-foreground border-t pt-3">
+                    <span>Ordem</span>
+                    <span>Fator</span>
+                    <span>Obrigatório</span>
+                    <span>Ações</span>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  {mapeamentosDoTipo.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">
-                      Nenhuma composição mapeada
-                    </p>
-                  ) : (
-                    mapeamentosDoTipo.map((mapeamento, index) => (
-                      <div key={mapeamento.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="font-medium">
-                            {mapeamento.composicao?.nome}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {mapeamento.composicao?.categoria} • 
-                            R$ {mapeamento.composicao?.valor_total_m2.toFixed(2)}/m²
-                          </div>
+                <CardContent className="flex-1">
+                  <ScrollArea className="h-96">
+                    <div className="space-y-3 pr-4">
+                      {mapeamentosDoTipo.length === 0 ? (
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground">
+                            Nenhuma composição mapeada
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-2">
+                            Adicione composições da lista ao lado
+                          </p>
                         </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min="1"
-                            value={mapeamento.ordem_calculo}
-                            onChange={(e) => atualizarMapeamento(mapeamento.id, {
-                              ordem_calculo: parseInt(e.target.value) || 1
-                            })}
-                            className="w-16 h-8"
-                          />
-                          
-                          <Input
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            value={mapeamento.fator_aplicacao}
-                            onChange={(e) => atualizarMapeamento(mapeamento.id, {
-                              fator_aplicacao: parseFloat(e.target.value) || 1.0
-                            })}
-                            className="w-20 h-8"
-                          />
-                          
-                          <Switch
-                            checked={mapeamento.obrigatorio}
-                            onCheckedChange={(checked) => atualizarMapeamento(mapeamento.id, {
-                              obrigatorio: checked
-                            })}
-                          />
-                          
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => removerMapeamento(mapeamento.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  )}
+                      ) : (
+                        mapeamentosDoTipo.map((mapeamento) => (
+                          <div key={mapeamento.id} className="flex flex-col sm:flex-row gap-3 p-3 border rounded-lg hover:bg-muted/30 transition-colors">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">
+                                {mapeamento.composicao?.nome}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {mapeamento.composicao?.categoria} • 
+                                R$ {mapeamento.composicao?.valor_total_m2.toFixed(2)}/m²
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      value={mapeamento.ordem_calculo}
+                                      onChange={(e) => atualizarMapeamento(mapeamento.id, {
+                                        ordem_calculo: parseInt(e.target.value) || 1
+                                      })}
+                                      className="w-16 h-8 text-center"
+                                    />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Ordem de cálculo</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Input
+                                      type="number"
+                                      step="0.1"
+                                      min="0.1"
+                                      value={mapeamento.fator_aplicacao}
+                                      onChange={(e) => atualizarMapeamento(mapeamento.id, {
+                                        fator_aplicacao: parseFloat(e.target.value) || 1.0
+                                      })}
+                                      className="w-20 h-8 text-center"
+                                    />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Fator de aplicação</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Switch
+                                      checked={mapeamento.obrigatorio}
+                                      onCheckedChange={(checked) => atualizarMapeamento(mapeamento.id, {
+                                        obrigatorio: checked
+                                      })}
+                                    />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{mapeamento.obrigatorio ? 'Obrigatório' : 'Opcional'}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => removerMapeamento(mapeamento.id)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
                 </CardContent>
               </Card>
 
               {/* Composições Disponíveis */}
-              <Card>
-                <CardHeader>
+              <Card className="flex flex-col">
+                <CardHeader className="pb-4">
                   <CardTitle>Composições Disponíveis</CardTitle>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar composições..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  {categorias.map((categoria) => (
-                    <div key={categoria} className="mb-4">
-                      <h4 className="font-medium mb-2 text-sm text-muted-foreground">
-                        {categoria}
-                      </h4>
-                      <div className="space-y-2">
-                        {composicoesDisponiveis
-                          .filter(c => c.categoria === categoria)
-                          .map((composicao) => (
-                            <div
-                              key={composicao.id}
-                              className="flex items-center justify-between p-2 border rounded hover:bg-muted/50"
-                            >
-                              <div>
-                                <div className="font-medium text-sm">
-                                  {composicao.nome}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  R$ {composicao.valor_total_m2.toFixed(2)}/m²
-                                </div>
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => adicionarComposicao(composicao.id)}
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
+                <CardContent className="flex-1">
+                  <ScrollArea className="h-96">
+                    <div className="space-y-4 pr-4">
+                      {categorias.length === 0 ? (
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground">
+                            Nenhuma composição disponível
+                          </p>
+                          {searchTerm && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              Tente buscar por outro termo
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        categorias.map((categoria) => (
+                          <div key={categoria} className="space-y-2">
+                            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                              {categoria}
+                              <Badge variant="outline" className="ml-2">
+                                {composicoesDisponiveis.filter(c => c.categoria === categoria).length}
+                              </Badge>
+                            </h4>
+                            <div className="space-y-2">
+                              {composicoesDisponiveis
+                                .filter(c => c.categoria === categoria)
+                                .map((composicao) => (
+                                  <div
+                                    key={composicao.id}
+                                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors group"
+                                  >
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium text-sm truncate">
+                                        {composicao.nome}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        R$ {composicao.valor_total_m2.toFixed(2)}/m²
+                                      </div>
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => adicionarComposicao(composicao.id)}
+                                      className="opacity-60 group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <Plus className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
                             </div>
-                          ))}
-                      </div>
+                          </div>
+                        ))
+                      )}
                     </div>
-                  ))}
+                  </ScrollArea>
                 </CardContent>
               </Card>
             </div>
