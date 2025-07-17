@@ -37,14 +37,6 @@ interface DimensoesTelhadoCompleto {
   area_total_m2: number;
   comprimento_cumeeira: number;
   perimetro_telhado: number;
-  comprimento_calha: number;
-  comprimento_rufo_lateral?: number;
-  comprimento_rufo_capa?: number;
-  tipo_telha: string;
-  cor_acessorios: string;
-  incluir_calha: boolean;
-  incluir_manta: boolean;
-  estimar_rufos: boolean;
   observacoes?: string;
 }
 
@@ -73,13 +65,7 @@ export function StepCalculoTelhasCompleto({
   const [dimensoes, setDimensoes] = useState<DimensoesTelhadoCompleto>({
     area_total_m2: dadosExtraidos.area_total_m2 || 100,
     comprimento_cumeeira: dadosExtraidos.comprimento_cumeeira || 12,
-    perimetro_telhado: dadosExtraidos.perimetro_telhado || 50,
-    comprimento_calha: dadosExtraidos.comprimento_calha || 20,
-    tipo_telha: '10420',
-    cor_acessorios: 'CINZA',
-    incluir_calha: true,
-    incluir_manta: true,
-    estimar_rufos: true
+    perimetro_telhado: dadosExtraidos.perimetro_telhado || 50
   });
 
   const [orcamento, setOrcamento] = useState<ResumoOrcamentoShingle | null>(null);
@@ -155,15 +141,6 @@ export function StepCalculoTelhasCompleto({
     }
   };
 
-  useEffect(() => {
-    if (dimensoes.estimar_rufos && dimensoes.perimetro_telhado > 0) {
-      setDimensoes(prev => ({
-        ...prev,
-        comprimento_rufo_lateral: prev.perimetro_telhado * 0.6,
-        comprimento_rufo_capa: prev.perimetro_telhado * 0.4
-      }));
-    }
-  }, [dimensoes.perimetro_telhado, dimensoes.estimar_rufos]);
 
   useEffect(() => {
     if (dimensoes.area_total_m2 > 0) {
@@ -172,112 +149,87 @@ export function StepCalculoTelhasCompleto({
   }, [dimensoes]);
 
   const calcular = async () => {
-    if (dimensoes.area_total_m2 <= 0) return;
+    if (dimensoes.area_total_m2 <= 0 || composicoesSelecionadas.length === 0) return;
     
     setIsCalculating(true);
     
     try {
-      if (usarMapeamento && composicoesSelecionadas.length > 0) {
-        // Usar sistema de mapeamentos com composições selecionadas
-        const dadosExtras = {
-          comprimento_cumeeira: dimensoes.comprimento_cumeeira,
-          perimetro_telhado: dimensoes.perimetro_telhado,
-          comprimento_calha: dimensoes.incluir_calha ? dimensoes.comprimento_calha : 0,
-          composicoes_selecionadas: composicoesSelecionadas
-        };
+      // Usar exclusivamente sistema de mapeamentos
+      const dadosExtras = {
+        comprimento_cumeeira: dimensoes.comprimento_cumeeira,
+        perimetro_telhado: dimensoes.perimetro_telhado,
+        composicoes_selecionadas: composicoesSelecionadas
+      };
 
-        const itensMapeamento = await calcularPorMapeamento(
-          'telhas-shingle',
-          dimensoes.area_total_m2,
-          dadosExtras
-        );
+      const itensMapeamento = await calcularPorMapeamento(
+        'telhas-shingle',
+        dimensoes.area_total_m2,
+        dadosExtras
+      );
 
-        // Filtrar apenas as composições selecionadas
-        const itensFiltrados = itensMapeamento.filter(item => 
-          composicoesSelecionadas.includes(item.composicao_id)
-        );
+      // Filtrar apenas as composições selecionadas
+      const itensFiltrados = itensMapeamento.filter(item => 
+        composicoesSelecionadas.includes(item.composicao_id)
+      );
 
-        // Converter para formato compatível
-        const itensCompatíveis: ItemCalculadoShingle[] = itensFiltrados.map(item => ({
-          tipo_item: item.categoria.replace('_', ' ').toUpperCase(),
-          codigo: item.item_codigo,
-          descricao: item.item_descricao,
-          dimensao_base: item.area_aplicacao,
-          unidade_dimensao: 'm²',
-          fator_conversao: item.fator_aplicacao,
-          quebra_percentual: ((item.quantidade_com_quebra / item.quantidade_liquida) - 1) * 100,
-          quantidade_calculada: item.quantidade_liquida,
-          quantidade_final: Math.ceil(item.quantidade_com_quebra),
-          unidade_venda: 'un',
-          preco_unitario: item.preco_unitario,
-          valor_total: item.valor_total,
-          categoria: item.categoria,
-          ordem: item.ordem_calculo
-        }));
+      // Converter para formato compatível
+      const itensCompatíveis: ItemCalculadoShingle[] = itensFiltrados.map(item => ({
+        tipo_item: item.categoria.replace('_', ' ').toUpperCase(),
+        codigo: item.item_codigo,
+        descricao: item.item_descricao,
+        dimensao_base: item.area_aplicacao,
+        unidade_dimensao: 'm²',
+        fator_conversao: item.fator_aplicacao,
+        quebra_percentual: ((item.quantidade_com_quebra / item.quantidade_liquida) - 1) * 100,
+        quantidade_calculada: item.quantidade_liquida,
+        quantidade_final: Math.ceil(item.quantidade_com_quebra),
+        unidade_venda: 'un',
+        preco_unitario: item.preco_unitario,
+        valor_total: item.valor_total,
+        categoria: item.categoria,
+        ordem: item.ordem_calculo
+      }));
 
-        // Calcular resumo
-        const resumo: ResumoOrcamentoShingle = {
-          valorTelhas: 0,
-          valorAcessorios: 0,
-          valorCalhas: 0,
-          valorComplementos: 0,
-          valorTotal: 0,
-          valorPorM2: 0,
-          itens: itensCompatíveis
-        };
+      // Calcular resumo
+      const resumo: ResumoOrcamentoShingle = {
+        valorTelhas: 0,
+        valorAcessorios: 0,
+        valorCalhas: 0,
+        valorComplementos: 0,
+        valorTotal: 0,
+        valorPorM2: 0,
+        itens: itensCompatíveis
+      };
 
-        itensCompatíveis.forEach(item => {
-          resumo.valorTotal += item.valor_total;
-          // Classificar por categoria do mapeamento
-          if (item.categoria.includes('Telha') || item.categoria.includes('TELHA')) {
-            resumo.valorTelhas += item.valor_total;
-          } else if (item.categoria.includes('Calha') || item.categoria.includes('CALHA')) {
-            resumo.valorCalhas += item.valor_total;
-          } else if (item.categoria.includes('Acessorio') || item.categoria.includes('ACESSORIO')) {
-            resumo.valorAcessorios += item.valor_total;
-          } else {
-            resumo.valorComplementos += item.valor_total;
-          }
-        });
+      itensCompatíveis.forEach(item => {
+        resumo.valorTotal += item.valor_total;
+        // Classificar por categoria do mapeamento
+        if (item.categoria.toLowerCase().includes('telha')) {
+          resumo.valorTelhas += item.valor_total;
+        } else if (item.categoria.toLowerCase().includes('cumeeira')) {
+          resumo.valorAcessorios += item.valor_total;
+        } else {
+          resumo.valorComplementos += item.valor_total;
+        }
+      });
 
-        resumo.valorPorM2 = resumo.valorTotal / dimensoes.area_total_m2;
+      resumo.valorPorM2 = resumo.valorTotal / dimensoes.area_total_m2;
 
-        setOrcamento(resumo);
-        setItensEditaveis(itensCompatíveis);
-        onCalculoComplete(resumo);
-        
-        toast({
-          title: "Cálculo com Composições",
-          description: `Orçamento calculado usando ${composicoesSelecionadas.length} composição(ões) selecionada(s).`,
-        });
-      } else {
-        // Usar sistema legado
-        const resultado = await calcularOrcamentoShingleCompleto(
-          dimensoes.area_total_m2,
-          dimensoes.comprimento_cumeeira,
-          dimensoes.perimetro_telhado,
-          dimensoes.incluir_calha ? dimensoes.comprimento_calha : 0,
-          dimensoes.tipo_telha,
-          dimensoes.cor_acessorios,
-          dimensoes.incluir_manta
-        );
-
-        setOrcamento(resultado);
-        setItensEditaveis(resultado.itens);
-        onCalculoComplete(resultado);
-        
-        toast({
-          title: "Cálculo Legado",
-          description: "Orçamento calculado usando produtos individuais.",
-        });
-      }
+      setOrcamento(resumo);
+      setItensEditaveis(itensCompatíveis);
+      onCalculoComplete(resumo);
+      
+      toast({
+        title: "Cálculo Shingle Completo",
+        description: `Orçamento calculado usando ${composicoesSelecionadas.length} composição(ões) selecionada(s).`,
+      });
       
       setExpandedSections(prev => ({ ...prev, resultados: true }));
       
     } catch (error) {
       toast({
         title: "Erro no cálculo",
-        description: "Não foi possível calcular o orçamento completo. Tente novamente.",
+        description: "Não foi possível calcular o orçamento. Tente novamente.",
         variant: "destructive"
       });
     } finally {
@@ -299,8 +251,6 @@ export function StepCalculoTelhasCompleto({
     }));
   };
 
-  const telhas = produtosShingleCompletos.filter(p => p.tipo_componente === 'TELHA');
-  const telhasSelecionada = telhas.find(t => t.codigo === dimensoes.tipo_telha);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -399,10 +349,10 @@ export function StepCalculoTelhasCompleto({
       <div className="text-center">
         <h2 className="text-3xl font-bold flex items-center justify-center gap-2">
           <Home className="w-8 h-8" />
-          Sistema Completo de Telhas Shingle
+          Sistema de Telhas Shingle
         </h2>
         <p className="text-muted-foreground mt-2">
-          Cálculo detalhado incluindo telhas, cumeeiras, rufos, calhas e acessórios
+          Selecione as composições desejadas e informe as dimensões do telhado
         </p>
       </div>
 
@@ -463,67 +413,6 @@ export function StepCalculoTelhasCompleto({
                     </p>
                   </div>
 
-                  <div className="space-y-3 sm:col-span-2">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="estimar-rufos"
-                        checked={dimensoes.estimar_rufos}
-                        onCheckedChange={(checked) => handleDimensaoChange('estimar_rufos', checked)}
-                      />
-                      <Label htmlFor="estimar-rufos" className="text-sm">
-                        Estimar rufos automaticamente
-                      </Label>
-                    </div>
-                    
-                    {dimensoes.estimar_rufos && (
-                      <div className="text-xs text-muted-foreground space-y-1 bg-muted/30 p-2 rounded">
-                        <p>• Rufo Lateral: {(dimensoes.perimetro_telhado * 0.6).toFixed(1)} m (60%)</p>
-                        <p>• Rufo Capa: {(dimensoes.perimetro_telhado * 0.4).toFixed(1)} m (40%)</p>
-                      </div>
-                    )}
-
-                    {!dimensoes.estimar_rufos && (
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="Rufo Lateral (m)"
-                          value={dimensoes.comprimento_rufo_lateral || ''}
-                          onChange={(e) => handleDimensaoChange('comprimento_rufo_lateral', Number(e.target.value) || 0)}
-                        />
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="Rufo Capa (m)"
-                          value={dimensoes.comprimento_rufo_capa || ''}
-                          onChange={(e) => handleDimensaoChange('comprimento_rufo_capa', Number(e.target.value) || 0)}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-3 sm:col-span-2">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="incluir-calha"
-                        checked={dimensoes.incluir_calha}
-                        onCheckedChange={(checked) => handleDimensaoChange('incluir_calha', checked)}
-                      />
-                      <Label htmlFor="incluir-calha" className="text-sm">
-                        Incluir Calhas
-                      </Label>
-                    </div>
-                    
-                    {dimensoes.incluir_calha && (
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="Comprimento das calhas (m)"
-                        value={dimensoes.comprimento_calha}
-                        onChange={(e) => handleDimensaoChange('comprimento_calha', Number(e.target.value))}
-                      />
-                    )}
-                  </div>
                 </div>
               </CardContent>
             </CollapsibleContent>
@@ -549,13 +438,13 @@ export function StepCalculoTelhasCompleto({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="space-y-4">
-                {/* Seleção de Composições ou Telha Individual */}
-                {usarMapeamento && composicoesDisponiveis.length > 0 ? (
-                  <div className="space-y-3">
-                    <Label>Composições Disponíveis</Label>
+                {/* Seleção de Composições */}
+                <div className="space-y-3">
+                  <Label>Escolha o tipo de sistema Shingle</Label>
+                  {composicoesDisponiveis.length > 0 ? (
                     <div className="space-y-2">
                       {composicoesDisponiveis.map((composicao) => (
-                        <div key={composicao.composicao_id} className="flex items-center space-x-2 p-3 border rounded-lg">
+                        <div key={composicao.composicao_id} className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                           <Checkbox
                             id={`composicao-${composicao.composicao_id}`}
                             checked={composicoesSelecionadas.includes(composicao.composicao_id)}
@@ -569,157 +458,48 @@ export function StepCalculoTelhasCompleto({
                               {composicao.composicao_nome}
                             </Label>
                             <p className="text-xs text-muted-foreground">
-                              {composicao.composicao_codigo} - {composicao.categoria}
+                              {composicao.composicao_codigo}
                             </p>
                           </div>
                           <div className="text-right">
-                            <span className="text-sm font-medium">
+                            <span className="text-sm font-medium text-primary">
                               {formatCurrency(composicao.valor_por_m2)}/m²
                             </span>
                           </div>
                         </div>
                       ))}
                     </div>
-                    {composicoesSelecionadas.length === 0 && (
-                      <p className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
-                        Selecione pelo menos uma composição para calcular o orçamento.
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <Label>Telha Selecionada</Label>
-                    <TelhaSelectionCard 
-                      telha={telhasSelecionada}
-                      onEdit={() => setShowTelhaSelector(!showTelhaSelector)}
-                    />
-                  </div>
-                )}
-
-                {/* Seletor de Telha (Collapsible) - Apenas se não usar mapeamento */}
-                {!usarMapeamento && showTelhaSelector && (
-                  <div className="space-y-2 border border-border rounded-lg p-3 bg-muted/20">
-                    <Label htmlFor="tipo-telha">Escolher Nova Telha</Label>
-                    <Select
-                      value={dimensoes.tipo_telha}
-                      onValueChange={(value) => {
-                        handleDimensaoChange('tipo_telha', value);
-                        setShowTelhaSelector(false);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a telha" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-64">
-                        <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                          Linha Supreme
-                        </div>
-                        {telhas.filter(t => t.linha === 'SUPREME').map(telha => (
-                          <SelectItem key={telha.codigo} value={telha.codigo}>
-                            <div className="flex flex-col gap-1 py-1">
-                              <span className="font-medium">{telha.descricao}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {formatCurrency(telha.preco_unitario)}/pct
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                        
-                        <div className="px-2 py-1 text-xs font-medium text-muted-foreground mt-2">
-                          Linha Duration
-                        </div>
-                        {telhas.filter(t => t.linha === 'DURATION').map(telha => (
-                          <SelectItem key={telha.codigo} value={telha.codigo}>
-                            <div className="flex flex-col gap-1 py-1">
-                              <span className="font-medium">{telha.descricao}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {formatCurrency(telha.preco_unitario)}/pct
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setShowTelhaSelector(false)}
-                      className="w-full mt-2"
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                )}
-
-                {/* Configurações complementares - apenas se não usar mapeamento */}
-                {!usarMapeamento && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="cor-acessorios">Cor dos Acessórios</Label>
-                      <Select
-                        value={dimensoes.cor_acessorios}
-                        onValueChange={(value) => handleDimensaoChange('cor_acessorios', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="CINZA">Cinza</SelectItem>
-                          <SelectItem value="MARROM">Marrom</SelectItem>
-                        </SelectContent>
-                      </Select>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      <Package className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Carregando composições disponíveis...</p>
                     </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="incluir-manta"
-                          checked={dimensoes.incluir_manta}
-                          onCheckedChange={(checked) => handleDimensaoChange('incluir_manta', checked)}
-                        />
-                        <Label htmlFor="incluir-manta" className="text-sm">
-                          Incluir Manta Starter
-                        </Label>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Manta asfáltica para impermeabilização da base
-                      </p>
-                    </div>
-                  </>
-                )}
+                  )}
+                  {composicoesSelecionadas.length === 0 && composicoesDisponiveis.length > 0 && (
+                    <p className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
+                      Selecione pelo menos uma composição para calcular o orçamento.
+                    </p>
+                  )}
+                </div>
 
                 <Button 
                   onClick={calcular} 
-                  disabled={isCalculating || dimensoes.area_total_m2 <= 0 || (usarMapeamento && composicoesSelecionadas.length === 0)}
+                  disabled={isCalculating || dimensoes.area_total_m2 <= 0 || composicoesSelecionadas.length === 0}
                   className="w-full"
                   size="lg"
                 >
                   <Calculator className="w-4 h-4 mr-2" />
-                  {isCalculating ? 'Calculando...' : 'Calcular Orçamento Completo'}
+                  {isCalculating ? 'Calculando...' : 'Calcular Orçamento'}
                 </Button>
 
-                {/* Info das quebras ou composições */}
+                {/* Info do sistema de composições */}
                 <Card className="bg-blue-50 border-blue-200">
                   <CardContent className="p-3">
                     <div className="flex gap-2">
                       <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
                       <div className="text-xs text-blue-800">
-                        {usarMapeamento ? (
-                          <div>
-                            <p className="font-medium mb-1">Sistema de Composições:</p>
-                            <p>Utilizando mapeamentos configurados para telhas shingle com cálculos automáticos baseados nas dimensões informadas.</p>
-                          </div>
-                        ) : (
-                          <div>
-                            <p className="font-medium mb-1">Quebras aplicadas:</p>
-                            <ul className="space-y-0.5">
-                              <li>• Telhas: 5%</li>
-                              <li>• Cumeeiras: 10%</li>
-                              <li>• Rufos/Calhas: 5%</li>
-                              <li>• Manta: 10%</li>
-                            </ul>
-                          </div>
-                        )}
+                        <p className="font-medium mb-1">Sistema de Composições Shingle:</p>
+                        <p>Os cálculos incluem telhas, OSB, cumeeiras e todos os componentes necessários para a instalação, baseados nas dimensões informadas e nas composições selecionadas.</p>
                       </div>
                     </div>
                   </CardContent>
