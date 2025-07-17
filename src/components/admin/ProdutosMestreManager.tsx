@@ -79,6 +79,8 @@ export function ProdutosMestreManager() {
   const [showCompositionDialog, setShowCompositionDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [csvData, setCsvData] = useState("");
+  const [auditData, setAuditData] = useState<any[]>([]);
+  const [showAudit, setShowAudit] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -123,6 +125,70 @@ export function ProdutosMestreManager() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Funções de auditoria e validação
+  const runPriceAudit = async () => {
+    try {
+      const { data, error } = await supabase.rpc('auditar_precos_suspeitos');
+      if (error) throw error;
+      setAuditData(data || []);
+      setShowAudit(true);
+      toast({
+        title: "Auditoria Completa",
+        description: `${data?.length || 0} problemas encontrados`,
+      });
+    } catch (error) {
+      console.error('Erro na auditoria:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao executar auditoria",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getCompositionsWithoutItems = async () => {
+    try {
+      const { data, error } = await supabase.rpc('composicoes_sem_itens');
+      if (error) throw error;
+      toast({
+        title: "Composições sem Itens",
+        description: `${data?.length || 0} composições sem itens detalhados`,
+      });
+      console.log('Composições sem itens:', data);
+    } catch (error) {
+      console.error('Erro ao buscar composições sem itens:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao buscar composições sem itens",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const validateCompositions = async () => {
+    try {
+      const { data, error } = await supabase.rpc('validar_composicoes');
+      if (error) throw error;
+      
+      const inconsistent = data?.filter((item: any) => 
+        item.status_validacao !== 'OK' && item.status_validacao !== 'SEM_ITENS'
+      ) || [];
+      
+      toast({
+        title: "Validação Concluída",
+        description: `${inconsistent.length} composições com diferenças de preço`,
+      });
+      console.log('Composições com inconsistências:', inconsistent);
+    } catch (error) {
+      console.error('Erro na validação:', error);
+      toast({
+        title: "Erro", 
+        description: "Erro ao validar composições",
+        variant: "destructive"
+      });
     }
   };
 
@@ -275,6 +341,15 @@ export function ProdutosMestreManager() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button onClick={runPriceAudit} variant="outline" size="sm">
+            🔍 Auditoria de Preços
+          </Button>
+          <Button onClick={getCompositionsWithoutItems} variant="outline" size="sm">
+            📋 Composições sem Itens
+          </Button>
+          <Button onClick={validateCompositions} variant="outline" size="sm">
+            ✅ Validar Composições
+          </Button>
           <Button onClick={exportToCSV} variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" />
             Exportar CSV

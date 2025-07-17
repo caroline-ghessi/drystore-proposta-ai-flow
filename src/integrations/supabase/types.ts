@@ -1960,6 +1960,17 @@ export type Database = {
       }
     }
     Functions: {
+      auditar_precos_suspeitos: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          produto_id: string
+          codigo: string
+          descricao: string
+          categoria: string
+          preco_unitario: number
+          motivo: string
+        }[]
+      }
       calcular_orcamento: {
         Args: {
           p_painel_id: string
@@ -2114,6 +2125,17 @@ export type Database = {
           obrigatorio: boolean
         }[]
       }
+      composicoes_sem_itens: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          composicao_id: string
+          codigo: string
+          nome: string
+          categoria: string
+          valor_total_m2: number
+          total_itens: number
+        }[]
+      }
       dimensionar_sistema: {
         Args: {
           p_consumo_kwh: number
@@ -2142,6 +2164,18 @@ export type Database = {
           p_area_disponivel?: number
         }
         Returns: Json
+      }
+      validar_composicoes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          composicao_id: string
+          codigo: string
+          nome: string
+          valor_registrado: number
+          valor_calculado: number
+          diferenca: number
+          status_validacao: string
+        }[]
       }
     }
     Enums: {
