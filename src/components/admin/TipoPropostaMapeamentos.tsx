@@ -372,3 +372,5 @@ export const TipoPropostaMapeamentos = () => {
     </div>
   );
 };
+
+export default TipoPropostaMapeamentos;
