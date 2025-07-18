@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { Plus, Edit, Trash2, ChevronUp, ChevronDown, Calculator, RefreshCw } from 'lucide-react';
 import { useCompositionManager, ItemComposicao, NovoItemComposicao } from '@/hooks/useCompositionManager';
 import { supabase } from '@/integrations/supabase/client';
@@ -239,27 +239,28 @@ export function CompositionItemsManager({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">Ordem</TableHead>
+                  <TableHead>Ordem</TableHead>
                   <TableHead>Produto</TableHead>
                   <TableHead>Consumo/m²</TableHead>
-                  <TableHead>Quebra%</TableHead>
+                  <TableHead>Quebra</TableHead>
                   <TableHead>Fator</TableHead>
+                  <TableHead>Tipo Cálculo</TableHead>
+                  <TableHead>Valor Unit.</TableHead>
                   <TableHead>Valor/m²</TableHead>
-                  <TableHead>Unidade</TableHead>
-                  <TableHead className="w-32">Ações</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {itens.map((item, index) => (
                   <TableRow key={item.id}>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <span className="font-mono text-sm">{item.ordem}</span>
-                        <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm w-6">{item.ordem}</span>
+                        <div className="flex flex-col gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 w-6 p-0"
+                            className="h-5 w-5 p-0"
                             onClick={() => handleReorderItem(item.id, 'up')}
                             disabled={index === 0}
                           >
@@ -268,7 +269,7 @@ export function CompositionItemsManager({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 w-6 p-0"
+                            className="h-5 w-5 p-0"
                             onClick={() => handleReorderItem(item.id, 'down')}
                             disabled={index === itens.length - 1}
                           >
@@ -279,21 +280,22 @@ export function CompositionItemsManager({
                     </TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{item.produtos_mestre?.codigo}</div>
+                        <div className="font-medium">{item.produto_codigo}</div>
                         <div className="text-sm text-muted-foreground truncate max-w-xs">
-                          {item.produtos_mestre?.descricao}
+                          {item.produto_descricao}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{item.consumo_por_m2.toFixed(3)}</TableCell>
-                    <TableCell>{item.quebra_aplicada.toFixed(1)}%</TableCell>
-                    <TableCell>{item.fator_correcao.toFixed(2)}</TableCell>
+                    <TableCell>{item.consumo_por_m2}</TableCell>
+                    <TableCell>{item.quebra_aplicada}%</TableCell>
+                    <TableCell>{item.fator_correcao}</TableCell>
                     <TableCell>
-                      <span className="font-bold">R$ {item.valor_por_m2.toFixed(2)}</span>
+                      <Badge variant={item.tipo_calculo === 'rendimento' ? 'secondary' : item.tipo_calculo === 'customizado' ? 'destructive' : 'default'}>
+                        {item.tipo_calculo === 'rendimento' ? 'Rendimento' : item.tipo_calculo === 'customizado' ? 'Custom' : 'Direto'}
+                      </Badge>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{item.produtos_mestre?.unidade_medida}</Badge>
-                    </TableCell>
+                    <TableCell>R$ {item.valor_unitario.toFixed(2)}</TableCell>
+                    <TableCell className="font-medium">R$ {item.valor_por_m2.toFixed(2)}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <Button
@@ -331,7 +333,10 @@ export function CompositionItemsManager({
                 consumo_por_m2: editingItem.consumo_por_m2,
                 quebra_aplicada: editingItem.quebra_aplicada,
                 fator_correcao: editingItem.fator_correcao,
-                ordem: editingItem.ordem
+                ordem: editingItem.ordem,
+                tipo_calculo: editingItem.tipo_calculo,
+                formula_customizada: editingItem.formula_customizada,
+                observacoes_calculo: editingItem.observacoes_calculo
               }}
               onSave={(data) => handleEditItem(editingItem.id, data)}
               onCancel={() => setEditingItem(null)}
@@ -363,37 +368,52 @@ function ItemCompositionForm({
   onSearchChange: (term: string) => void;
   isEditing?: boolean;
 }) {
-  const [formData, setFormData] = useState<NovoItemComposicao>({
-    produto_id: initialData?.produto_id || '',
-    consumo_por_m2: initialData?.consumo_por_m2 || 1,
-    quebra_aplicada: initialData?.quebra_aplicada || 5,
-    fator_correcao: initialData?.fator_correcao || 1,
-    ordem: initialData?.ordem || 1
-  });
-
-  const [selectedProduto, setSelectedProduto] = useState<ProdutoMestre | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProdutoMestre | null>(null);
+  const [consumo, setConsumo] = useState(initialData?.consumo_por_m2?.toString() || '1');
+  const [quebra, setQuebra] = useState(initialData?.quebra_aplicada?.toString() || '5');
+  const [fator, setFator] = useState(initialData?.fator_correcao?.toString() || '1');
+  const [tipoCalculo, setTipoCalculo] = useState(initialData?.tipo_calculo || 'direto');
+  const [formulaCustomizada, setFormulaCustomizada] = useState(initialData?.formula_customizada || '');
+  const [observacoes, setObservacoes] = useState(initialData?.observacoes_calculo || '');
 
   const { calcularPreviewItem } = useCompositionManager();
 
   useEffect(() => {
-    if (formData.produto_id) {
-      const produto = produtos.find(p => p.id === formData.produto_id);
-      setSelectedProduto(produto || null);
+    if (initialData?.produto_id) {
+      const produto = produtos.find(p => p.id === initialData.produto_id);
+      setSelectedProduct(produto || null);
     }
-  }, [formData.produto_id, produtos]);
+  }, [initialData, produtos]);
+
+  // Preview do cálculo
+  const preview = useMemo(() => {
+    if (!selectedProduct || !consumo || !quebra || !fator) return null;
+    
+    return calcularPreviewItem(
+      parseFloat(consumo) || 1,
+      selectedProduct.preco_unitario,
+      selectedProduct.quantidade_embalagem,
+      parseFloat(quebra) || 5,
+      parseFloat(fator) || 1,
+      tipoCalculo,
+      formulaCustomizada
+    );
+  }, [selectedProduct, consumo, quebra, fator, tipoCalculo, formulaCustomizada, calcularPreviewItem]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
-  };
+    if (!selectedProduct) return;
 
-  const preview = selectedProduto ? calcularPreviewItem(
-    formData.consumo_por_m2,
-    selectedProduto.preco_unitario,
-    selectedProduto.quantidade_embalagem,
-    formData.quebra_aplicada,
-    formData.fator_correcao
-  ) : null;
+    onSave({
+      produto_id: selectedProduct.id,
+      consumo_por_m2: parseFloat(consumo),
+      quebra_aplicada: parseFloat(quebra),
+      fator_correcao: parseFloat(fator),
+      tipo_calculo: tipoCalculo,
+      formula_customizada: tipoCalculo === 'customizado' ? formulaCustomizada : undefined,
+      observacoes_calculo: observacoes || undefined
+    });
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -418,8 +438,11 @@ function ItemCompositionForm({
         <div className="space-y-2">
           <Label>Produto *</Label>
           <Select 
-            value={formData.produto_id} 
-            onValueChange={(value) => setFormData(prev => ({ ...prev, produto_id: value }))}
+            value={selectedProduct?.id || ''} 
+            onValueChange={(value) => {
+              const produto = produtos.find(p => p.id === value);
+              setSelectedProduct(produto || null);
+            }}
             disabled={isEditing}
           >
             <SelectTrigger>
@@ -446,19 +469,45 @@ function ItemCompositionForm({
           </Select>
         </div>
 
-        {/* Campos de configuração */}
-        <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="tipo-calculo">Tipo de Cálculo</Label>
+          <Select value={tipoCalculo} onValueChange={setTipoCalculo}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o tipo de cálculo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="direto">Direto (consumo × preço)</SelectItem>
+              <SelectItem value="rendimento">Rendimento (preço ÷ rendimento)</SelectItem>
+              <SelectItem value="customizado">Fórmula Customizada</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {tipoCalculo === 'customizado' && (
+          <div>
+            <Label htmlFor="formula">Fórmula Customizada</Label>
+            <Textarea
+              id="formula"
+              value={formulaCustomizada}
+              onChange={(e) => setFormulaCustomizada(e.target.value)}
+              placeholder="Ex: {preco} / {rendimento} * (1 + {quebra}/100) * {fator}"
+              className="min-h-20"
+            />
+            <p className="text-sm text-muted-foreground mt-1">
+              Variáveis: {'{preco}'}, {'{consumo}'}, {'{quebra}'}, {'{fator}'}, {'{rendimento}'}
+            </p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label>Consumo por m² *</Label>
             <Input
               type="number"
               step="0.001"
               min="0.001"
-              value={formData.consumo_por_m2}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                consumo_por_m2: parseFloat(e.target.value) || 0 
-              }))}
+              value={consumo}
+              onChange={(e) => setConsumo(e.target.value)}
               required
             />
           </div>
@@ -470,11 +519,8 @@ function ItemCompositionForm({
               step="0.1"
               min="0"
               max="50"
-              value={formData.quebra_aplicada}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                quebra_aplicada: parseFloat(e.target.value) || 0 
-              }))}
+              value={quebra}
+              onChange={(e) => setQuebra(e.target.value)}
               required
             />
           </div>
@@ -486,66 +532,52 @@ function ItemCompositionForm({
               step="0.01"
               min="0.1"
               max="10"
-              value={formData.fator_correcao}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                fator_correcao: parseFloat(e.target.value) || 1 
-              }))}
+              value={fator}
+              onChange={(e) => setFator(e.target.value)}
               required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Ordem</Label>
-            <Input
-              type="number"
-              min="1"
-              value={formData.ordem}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                ordem: parseInt(e.target.value) || 1 
-              }))}
             />
           </div>
         </div>
 
-        {/* Preview dos cálculos */}
-        {preview && selectedProduto && (
-          <Card className="bg-muted/30">
+        <div>
+          <Label htmlFor="observacoes">Observações</Label>
+          <Textarea
+            id="observacoes"
+            value={observacoes}
+            onChange={(e) => setObservacoes(e.target.value)}
+            placeholder="Observações sobre este cálculo..."
+            className="min-h-16"
+          />
+        </div>
+
+        {preview && (
+          <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Preview dos Cálculos</CardTitle>
+              <CardTitle className="text-lg">Preview do Cálculo</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-muted-foreground">Valor Unitário:</span>
-                  <span className="ml-2 font-medium">
-                    R$ {preview.valor_unitario.toFixed(4)}
-                  </span>
+                  <Label>Valor Unitário</Label>
+                  <div className="text-lg font-bold">R$ {preview.valor_unitario.toFixed(2)}</div>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Valor por m²:</span>
-                  <span className="ml-2 font-bold text-primary">
-                    R$ {preview.valor_por_m2.toFixed(2)}
-                  </span>
-                </div>
-                <div className="col-span-2 text-xs text-muted-foreground">
-                  Cálculo: {formData.consumo_por_m2} × {preview.valor_unitario.toFixed(4)} × 
-                  (1 + {formData.quebra_aplicada}%) × {formData.fator_correcao} = R$ {preview.valor_por_m2.toFixed(2)}
+                  <Label>Valor por m²</Label>
+                  <div className="text-lg font-bold text-green-600">R$ {preview.valor_por_m2.toFixed(2)}</div>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
-      </div>
 
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={!formData.produto_id}>
-          {isEditing ? 'Atualizar' : 'Adicionar'} Item
-        </Button>
+        <div className="flex gap-2 justify-end">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={!selectedProduct}>
+            {isEditing ? 'Atualizar' : 'Adicionar'} Item
+          </Button>
+        </div>
       </div>
     </form>
   );

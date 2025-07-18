@@ -805,10 +805,13 @@ export type Database = {
           consumo_por_m2: number
           created_at: string
           fator_correcao: number
+          formula_customizada: string | null
           id: string
+          observacoes_calculo: string | null
           ordem: number
           produto_id: string
           quebra_aplicada: number
+          tipo_calculo: string | null
           valor_por_m2: number
           valor_unitario: number
         }
@@ -817,10 +820,13 @@ export type Database = {
           consumo_por_m2: number
           created_at?: string
           fator_correcao?: number
+          formula_customizada?: string | null
           id?: string
+          observacoes_calculo?: string | null
           ordem?: number
           produto_id: string
           quebra_aplicada?: number
+          tipo_calculo?: string | null
           valor_por_m2: number
           valor_unitario: number
         }
@@ -829,10 +835,13 @@ export type Database = {
           consumo_por_m2?: number
           created_at?: string
           fator_correcao?: number
+          formula_customizada?: string | null
           id?: string
+          observacoes_calculo?: string | null
           ordem?: number
           produto_id?: string
           quebra_aplicada?: number
+          tipo_calculo?: string | null
           valor_por_m2?: number
           valor_unitario?: number
         }
