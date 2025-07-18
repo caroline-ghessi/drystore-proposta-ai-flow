@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -280,6 +279,78 @@ export const useCompositionManager = () => {
     return { valor_unitario, valor_por_m2 };
   };
 
+  const atualizarValoresComposicao = async (composicaoId: string): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+
+      // Buscar todos os itens da composição com dados atuais dos produtos
+      const { data: itens, error: itensError } = await supabase
+        .from('itens_composicao')
+        .select(`
+          *,
+          produtos_mestre:produto_id (
+            id,
+            codigo,
+            descricao,
+            preco_unitario,
+            quantidade_embalagem
+          )
+        `)
+        .eq('composicao_id', composicaoId);
+
+      if (itensError) throw itensError;
+
+      let itensAtualizados = 0;
+
+      // Atualizar cada item com preços atuais
+      for (const item of itens || []) {
+        const produto = item.produtos_mestre;
+        if (!produto) continue;
+
+        // Recalcular valores
+        const valor_unitario = produto.preco_unitario / produto.quantidade_embalagem;
+        const valor_por_m2 = item.consumo_por_m2 * valor_unitario * (1 + item.quebra_aplicada / 100) * item.fator_correcao;
+
+        // Atualizar apenas se houve mudança significativa (diferença > R$ 0.01)
+        if (Math.abs(valor_unitario - item.valor_unitario) > 0.01 || 
+            Math.abs(valor_por_m2 - item.valor_por_m2) > 0.01) {
+          
+          const { error: updateError } = await supabase
+            .from('itens_composicao')
+            .update({
+              valor_unitario,
+              valor_por_m2
+            })
+            .eq('id', item.id);
+
+          if (updateError) throw updateError;
+          itensAtualizados++;
+        }
+      }
+
+      // Recalcular composição total
+      await recalcularComposicao(composicaoId);
+
+      toast({
+        title: "Valores Atualizados",
+        description: `${itensAtualizados} itens foram atualizados com os preços atuais dos produtos`
+      });
+
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar valores';
+      setError(errorMessage);
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     fetchItensComposicao,
     adicionarItem,
@@ -288,6 +359,7 @@ export const useCompositionManager = () => {
     reordenarItens,
     recalcularComposicao,
     calcularPreviewItem,
+    atualizarValoresComposicao,
     isLoading,
     error
   };

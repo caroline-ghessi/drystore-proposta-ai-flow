@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, ChevronUp, ChevronDown, Calculator } from 'lucide-react';
+import { Plus, Edit, Trash2, ChevronUp, ChevronDown, Calculator, RefreshCw } from 'lucide-react';
 import { useCompositionManager, ItemComposicao, NovoItemComposicao } from '@/hooks/useCompositionManager';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -51,6 +51,7 @@ export function CompositionItemsManager({
     reordenarItens,
     recalcularComposicao,
     calcularPreviewItem,
+    atualizarValoresComposicao,
     isLoading
   } = useCompositionManager();
 
@@ -136,6 +137,15 @@ export function CompositionItemsManager({
     }
   };
 
+  const handleAtualizarValores = async () => {
+    const success = await atualizarValoresComposicao(composicaoId);
+    if (success) {
+      await loadItens();
+      const novoValor = await recalcularComposicao(composicaoId);
+      onValorTotalChange?.(novoValor);
+    }
+  };
+
   const filteredProdutos = produtos.filter(produto =>
     produto.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     produto.descricao.toLowerCase().includes(searchTerm.toLowerCase())
@@ -158,23 +168,33 @@ export function CompositionItemsManager({
                 Gerencie os produtos que compõem esta solução
               </CardDescription>
             </div>
-            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Item
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <ItemCompositionForm
-                  produtos={filteredProdutos}
-                  onSave={handleAddItem}
-                  onCancel={() => setShowAddDialog(false)}
-                  searchTerm={searchTerm}
-                  onSearchChange={setSearchTerm}
-                />
-              </DialogContent>
-            </Dialog>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleAtualizarValores}
+                disabled={isLoading}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                Atualizar Valores
+              </Button>
+              <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Adicionar Item
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <ItemCompositionForm
+                    produtos={filteredProdutos}
+                    onSave={handleAddItem}
+                    onCancel={() => setShowAddDialog(false)}
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
