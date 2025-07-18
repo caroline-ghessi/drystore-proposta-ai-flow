@@ -4,17 +4,28 @@ import { useToast } from "@/hooks/use-toast";
 
 export interface ProdutoShingleCompleto {
   id: string;
-  tipo_componente: string;
+  categoria: string;
   codigo: string;
-  linha: string;
   descricao: string;
-  cor?: string;
+  aplicacao?: string;
   unidade_medida: string;
-  conteudo_unidade: number;
   quebra_padrao: number;
   preco_unitario: number;
-  peso_unitario?: number;
-  especificacoes_tecnicas?: any;
+  quantidade_embalagem: number;
+  icms_percentual?: number;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ComposicaoMestre {
+  id: string;
+  codigo: string;
+  nome: string;
+  categoria: string;
+  descricao?: string;
+  aplicacao?: string;
+  valor_total_m2: number;
   ativo: boolean;
   created_at: string;
   updated_at: string;
@@ -65,26 +76,26 @@ export interface ParametrosCalculoShingle {
 
 export function useTelhasShingleCompleto() {
   const [produtos, setProdutos] = useState<ProdutoShingleCompleto[]>([]);
-  const [telhas, setTelhas] = useState<ProdutoShingleCompleto[]>([]);
+  const [telhas, setTelhas] = useState<ComposicaoMestre[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Carregar todos os produtos
+  // Carregar todos os produtos usando composicoes_mestre
   const buscarProdutos = async (tipo_componente?: string) => {
     try {
       setLoading(true);
       setError(null);
 
       let query = supabase
-        .from('produtos_shingle_novo')
+        .from('produtos_mestre')
         .select('*')
         .eq('ativo', true)
-        .order('tipo_componente', { ascending: true })
+        .order('categoria', { ascending: true })
         .order('descricao', { ascending: true });
 
       if (tipo_componente) {
-        query = query.eq('tipo_componente', tipo_componente);
+        query = query.eq('categoria', tipo_componente);
       }
 
       const { data, error: dbError } = await query;
@@ -92,9 +103,7 @@ export function useTelhasShingleCompleto() {
       if (dbError) throw dbError;
 
       if (tipo_componente) {
-        if (tipo_componente === 'TELHA') {
-          setTelhas(data || []);
-        }
+        // Para telhas, já é buscado pela buscarTelhas
       } else {
         setProdutos(data || []);
       }
@@ -110,21 +119,21 @@ export function useTelhasShingleCompleto() {
     }
   };
 
-  // Buscar apenas telhas
+  // Buscar apenas telhas usando composicoes_mestre
   const buscarTelhas = async (linha?: 'SUPREME' | 'DURATION') => {
     try {
       setLoading(true);
       
       let query = supabase
-        .from('produtos_shingle_novo')
+        .from('composicoes_mestre')
         .select('*')
-        .eq('tipo_componente', 'TELHA')
+        .eq('categoria', 'telhas-shingle')
         .eq('ativo', true)
-        .order('linha', { ascending: true })
-        .order('descricao', { ascending: true });
+        .order('codigo', { ascending: true })
+        .order('nome', { ascending: true });
 
       if (linha) {
-        query = query.eq('linha', linha);
+        query = query.ilike('nome', `%${linha}%`);
       }
 
       const { data, error: dbError } = await query;
@@ -143,7 +152,7 @@ export function useTelhasShingleCompleto() {
     }
   };
 
-  // Calcular orçamento completo
+  // Calcular orçamento completo usando calcular_por_mapeamento
   const calcularOrcamentoShingleCompleto = async (
     parametros: ParametrosCalculoShingle
   ): Promise<ResumoOrcamentoShingleCompleto | null> => {
@@ -151,15 +160,18 @@ export function useTelhasShingleCompleto() {
       setLoading(true);
       setError(null);
 
-      const { data, error: dbError } = await supabase.rpc('calcular_orcamento_shingle_completo_v2', {
-        p_area_telhado: parametros.area_telhado,
-        p_comprimento_cumeeira: parametros.comprimento_cumeeira || 0,
-        p_perimetro_telhado: parametros.perimetro_telhado || 0,
-        p_comprimento_calha: parametros.comprimento_calha || 0,
-        p_telha_codigo: parametros.telha_codigo || '10420',
-        p_cor_acessorios: parametros.cor_acessorios || 'CINZA',
-        p_incluir_manta: parametros.incluir_manta ?? true,
-        p_incluir_calha: parametros.incluir_calha ?? true
+      const { data, error: dbError } = await supabase.rpc('calcular_por_mapeamento', {
+        p_tipo_proposta: 'telhas-shingle',
+        p_area_base: parametros.area_telhado,
+        p_dados_extras: {
+          comprimento_cumeeira: parametros.comprimento_cumeeira || 0,
+          perimetro_telhado: parametros.perimetro_telhado || 0,
+          comprimento_calha: parametros.comprimento_calha || 0,
+          telha_codigo: parametros.telha_codigo || '1.16',
+          cor_acessorios: parametros.cor_acessorios || 'CINZA',
+          incluir_manta: parametros.incluir_manta ?? true,
+          incluir_calha: parametros.incluir_calha ?? true
+        }
       });
 
       if (dbError) throw dbError;
@@ -168,8 +180,24 @@ export function useTelhasShingleCompleto() {
         throw new Error('Nenhum resultado retornado do cálculo');
       }
 
-      // Processar resultados
-      const itens: ItemCalculadoShingleCompleto[] = data;
+      // Processar resultados do mapeamento
+      const itens: ItemCalculadoShingleCompleto[] = data.map((item: any) => ({
+        tipo_item: item.categoria,
+        codigo: item.item_codigo,
+        descricao: item.item_descricao,
+        dimensao_base: item.area_aplicacao,
+        unidade_dimensao: 'm²',
+        fator_conversao: item.fator_aplicacao,
+        quebra_percentual: (item.quantidade_com_quebra - item.quantidade_liquida) / item.quantidade_liquida * 100,
+        quantidade_calculada: item.quantidade_liquida,
+        quantidade_final: item.quantidade_com_quebra,
+        unidade_venda: 'un',
+        preco_unitario: item.preco_unitario,
+        valor_total: item.valor_total,
+        categoria: item.categoria,
+        ordem: item.ordem_calculo
+      }));
+
       const valor_total_geral = itens.reduce((sum, item) => sum + item.valor_total, 0);
       const valor_por_m2 = valor_total_geral / parametros.area_telhado;
 
@@ -228,35 +256,35 @@ export function useTelhasShingleCompleto() {
     }
   };
 
-  // Buscar produto por ID
+  // Buscar produto por ID usando produtos_mestre
   const buscarProduto = async (id: string): Promise<ProdutoShingleCompleto | null> => {
     try {
       const { data, error: dbError } = await supabase
-        .from('produtos_shingle_novo')
+        .from('produtos_mestre')
         .select('*')
         .eq('id', id)
         .single();
 
       if (dbError) throw dbError;
-      return data;
+      return data as ProdutoShingleCompleto;
     } catch (err) {
       console.error('Erro ao buscar produto:', err);
       return null;
     }
   };
 
-  // Buscar produtos por categoria
+  // Buscar produtos por categoria usando produtos_mestre
   const buscarProdutosPorCategoria = async () => {
     const categorias = [
-      'TELHA', 'OSB', 'SUBCOBERTURA', 'MANTA_STARTER',
-      'CUMEEIRA', 'VENTILACAO', 'RUFO_LATERAL', 'RUFO_CAPA',
-      'CALHA', 'PREGO', 'GRAMPO', 'SELANTE', 'FLASH'
+      'telhas-shingle', 'osb', 'subcobertura', 'manta-starter',
+      'cumeeira', 'ventilacao', 'rufo-lateral', 'rufo-capa',
+      'calha', 'pregos', 'grampos', 'selante', 'flash'
     ];
 
     const resultado: { [categoria: string]: ProdutoShingleCompleto[] } = {};
 
     for (const categoria of categorias) {
-      resultado[categoria] = await buscarProdutos(categoria);
+      resultado[categoria] = await buscarProdutos(categoria) as ProdutoShingleCompleto[];
     }
 
     return resultado;

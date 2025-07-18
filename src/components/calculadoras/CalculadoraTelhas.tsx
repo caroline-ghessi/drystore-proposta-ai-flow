@@ -252,9 +252,9 @@ export const CalculadoraTelhas = () => {
                     <SelectValue placeholder="Selecione a telha..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {telhas.map(telha => (
+                   {telhas.map(telha => (
                       <SelectItem key={telha.id} value={telha.codigo}>
-                        {telha.descricao} - {formatCurrency(telha.preco_unitario)}/pct
+                        {telha.nome} - {formatCurrency(telha.valor_total_m2)}/m²
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -263,10 +263,10 @@ export const CalculadoraTelhas = () => {
 
               {telhaAtual && (
                 <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-sm font-medium">{telhaAtual.descricao}</p>
+                  <p className="text-sm font-medium">{telhaAtual.nome}</p>
                   <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                    <p>Cobertura: {telhaAtual.conteudo_unidade}m² por pacote</p>
-                    <p>Linha: {telhaAtual.linha}</p>
+                    <p>Valor: {formatCurrency(telhaAtual.valor_total_m2)}/m²</p>
+                    <p>Código: {telhaAtual.codigo}</p>
                   </div>
                 </div>
               )}

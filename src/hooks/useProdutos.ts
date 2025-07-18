@@ -220,7 +220,7 @@ export const useProdutos = () => {
     comprimentoCumeeira: number = 0,
     perimetroTelhado: number = 0,
     comprimentoCalha: number = 0,
-    telhaCodigo: string = '10420',
+    telhaCodigo: string = '1.16',
     corAcessorios: string = 'CINZA',
     incluirManta: boolean = true,
     incluirCalha: boolean = true
@@ -229,20 +229,36 @@ export const useProdutos = () => {
       setLoading(true);
       setError(null);
       
-      const { data, error } = await supabase.rpc('calcular_orcamento_shingle_completo_v2', {
-        p_area_telhado: areaTelhado,
-        p_comprimento_cumeeira: comprimentoCumeeira,
-        p_perimetro_telhado: perimetroTelhado,
-        p_comprimento_calha: comprimentoCalha,
-        p_telha_codigo: telhaCodigo,
-        p_cor_acessorios: corAcessorios,
-        p_incluir_manta: incluirManta,
-        p_incluir_calha: incluirCalha
+      const { data, error } = await supabase.rpc('calcular_por_mapeamento', {
+        p_tipo_proposta: 'telhas-shingle',
+        p_area_base: areaTelhado,
+        p_dados_extras: {
+          comprimento_cumeeira: comprimentoCumeeira,
+          perimetro_telhado: perimetroTelhado,
+          comprimento_calha: comprimentoCalha,
+          telha_codigo: telhaCodigo,
+          cor_acessorios: corAcessorios,
+          incluir_manta: incluirManta,
+          incluir_calha: incluirCalha
+        }
       });
 
       if (error) throw error;
       
-      const itens = data as ItemCalculadoShingle[];
+      const itens = data.map((item: any) => ({
+        tipo_item: item.categoria,
+        codigo: item.item_codigo,
+        descricao: item.item_descricao,
+        dimensao_base: item.area_aplicacao,
+        unidade_dimensao: 'm²',
+        fator_conversao: item.fator_aplicacao,
+        quebra_percentual: (item.quantidade_com_quebra - item.quantidade_liquida) / item.quantidade_liquida * 100,
+        quantidade_calculada: item.quantidade_liquida,
+        quantidade_final: item.quantidade_com_quebra,
+        unidade_venda: 'un',
+        preco_unitario: item.preco_unitario,
+        valor_total: item.valor_total
+      })) as ItemCalculadoShingle[];
       
       // Calcular resumo por categoria
       const resumo: ResumoOrcamentoShingle = {
@@ -257,19 +273,19 @@ export const useProdutos = () => {
 
       itens.forEach(item => {
         switch(item.tipo_item) {
-          case 'TELHA':
+          case 'telhas-shingle':
             resumo.valorTelhas += item.valor_total;
             break;
-          case 'CUMEEIRA':
-          case 'RUFO_LATERAL':
-          case 'RUFO_CAPA':
+          case 'cumeeira':
+          case 'rufo-lateral':
+          case 'rufo-capa':
             resumo.valorAcessorios += item.valor_total;
             break;
-          case 'CALHA':
+          case 'calha':
             resumo.valorCalhas += item.valor_total;
             break;
-          case 'PREGO':
-          case 'MANTA_STARTER':
+          case 'pregos':
+          case 'manta-starter':
             resumo.valorComplementos += item.valor_total;
             break;
         }

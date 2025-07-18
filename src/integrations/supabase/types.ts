@@ -344,53 +344,6 @@ export type Database = {
         }
         Relationships: []
       }
-      composicoes_shingle: {
-        Row: {
-          base_calculo: string
-          consumo_unitario: number
-          created_at: string | null
-          id: string
-          linha_telha: string | null
-          nome_composicao: string
-          obrigatorio: boolean | null
-          ordem_instalacao: number | null
-          produto_id: string | null
-          tipo_calculo: string
-        }
-        Insert: {
-          base_calculo: string
-          consumo_unitario: number
-          created_at?: string | null
-          id?: string
-          linha_telha?: string | null
-          nome_composicao: string
-          obrigatorio?: boolean | null
-          ordem_instalacao?: number | null
-          produto_id?: string | null
-          tipo_calculo: string
-        }
-        Update: {
-          base_calculo?: string
-          consumo_unitario?: number
-          created_at?: string | null
-          id?: string
-          linha_telha?: string | null
-          nome_composicao?: string
-          obrigatorio?: boolean | null
-          ordem_instalacao?: number | null
-          produto_id?: string | null
-          tipo_calculo?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "composicoes_shingle_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "produtos_shingle_novo"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       configuracoes_globais: {
         Row: {
           ativo: boolean
@@ -2037,59 +1990,6 @@ export type Database = {
           p_inclinacao?: number
         }
         Returns: Json
-      }
-      calcular_orcamento_shingle_completo: {
-        Args: {
-          p_area_telhado: number
-          p_comprimento_cumeeira?: number
-          p_perimetro_telhado?: number
-          p_comprimento_calha?: number
-          p_telha_codigo?: string
-          p_cor_acessorios?: string
-          p_incluir_manta?: boolean
-        }
-        Returns: {
-          tipo_item: string
-          codigo: string
-          descricao: string
-          dimensao_base: number
-          unidade_dimensao: string
-          fator_conversao: number
-          quebra_percentual: number
-          quantidade_calculada: number
-          quantidade_final: number
-          unidade_venda: string
-          preco_unitario: number
-          valor_total: number
-        }[]
-      }
-      calcular_orcamento_shingle_completo_v2: {
-        Args: {
-          p_area_telhado: number
-          p_comprimento_cumeeira?: number
-          p_perimetro_telhado?: number
-          p_comprimento_calha?: number
-          p_telha_codigo?: string
-          p_cor_acessorios?: string
-          p_incluir_manta?: boolean
-          p_incluir_calha?: boolean
-        }
-        Returns: {
-          tipo_item: string
-          codigo: string
-          descricao: string
-          dimensao_base: number
-          unidade_dimensao: string
-          fator_conversao: number
-          quebra_percentual: number
-          quantidade_calculada: number
-          quantidade_final: number
-          unidade_venda: string
-          preco_unitario: number
-          valor_total: number
-          categoria: string
-          ordem: number
-        }[]
       }
       calcular_payback: {
         Args: {

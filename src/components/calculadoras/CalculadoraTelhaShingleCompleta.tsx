@@ -307,33 +307,22 @@ export function CalculadoraTelhaShingleCompleta() {
                   <SelectValue placeholder="Selecione a telha..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <optgroup label="Linha Supreme">
-                    {telhas.filter(t => t.linha === 'SUPREME').map(telha => (
-                      <SelectItem key={telha.id} value={telha.codigo}>
-                        {telha.descricao} - {formatCurrency(telha.preco_unitario)}/pct
-                      </SelectItem>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Linha Duration">
-                    {telhas.filter(t => t.linha === 'DURATION').map(telha => (
-                      <SelectItem key={telha.id} value={telha.codigo}>
-                        {telha.descricao} - {formatCurrency(telha.preco_unitario)}/pct
-                      </SelectItem>
-                    ))}
-                  </optgroup>
+                  {telhas.map(telha => (
+                    <SelectItem key={telha.id} value={telha.codigo}>
+                      {telha.nome} - {formatCurrency(telha.valor_total_m2)}/m²
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             {telhaAtual && (
               <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm font-medium">{telhaAtual.descricao}</p>
+                <p className="text-sm font-medium">{telhaAtual.nome}</p>
                 <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                  <p>Cobertura: {telhaAtual.conteudo_unidade}m² por pacote</p>
-                  <p>Linha: {telhaAtual.linha}</p>
-                  {telhaAtual.especificacoes_tecnicas?.garantia_anos && (
-                    <p>Garantia: {telhaAtual.especificacoes_tecnicas.garantia_anos} anos</p>
-                  )}
+                  <p>Valor: {formatCurrency(telhaAtual.valor_total_m2)}/m²</p>
+                  <p>Código: {telhaAtual.codigo}</p>
+                  <p>Categoria: {telhaAtual.categoria}</p>
                 </div>
               </div>
             )}
