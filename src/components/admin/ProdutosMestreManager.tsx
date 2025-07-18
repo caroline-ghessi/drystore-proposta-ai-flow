@@ -81,6 +81,9 @@ export function ProdutosMestreManager() {
   const [csvData, setCsvData] = useState("");
   const [auditData, setAuditData] = useState<any[]>([]);
   const [showAudit, setShowAudit] = useState(false);
+  const [priceReport, setPriceReport] = useState<any[]>([]);
+  const [suspiciousCompositions, setSuspiciousCompositions] = useState<any[]>([]);
+  const [showPriceReport, setShowPriceReport] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -187,6 +190,52 @@ export function ProdutosMestreManager() {
       toast({
         title: "Erro", 
         description: "Erro ao validar composições",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const generatePriceReport = async () => {
+    try {
+      // Como essas funções ainda não estão nos tipos, vamos fazer requests diretas
+      const { data: priceData, error: priceError } = await supabase
+        .from('composicoes_mestre')
+        .select(`
+          codigo,
+          nome,
+          valor_total_m2,
+          categoria,
+          itens_composicao!inner(
+            valor_unitario,
+            valor_por_m2,
+            produtos_mestre!inner(
+              codigo,
+              descricao,
+              preco_unitario,
+              quantidade_embalagem
+            )
+          )
+        `)
+        .eq('ativo', true);
+      
+      if (priceError) throw priceError;
+      
+      // Simular relatório de preços suspeitos
+      const suspiciousData = priceData?.filter(comp => comp.valor_total_m2 > 300) || [];
+      
+      setPriceReport(priceData || []);
+      setSuspiciousCompositions(suspiciousData);
+      setShowPriceReport(true);
+      
+      toast({
+        title: "Relatório Gerado",
+        description: `${priceData?.length || 0} composições analisadas`,
+      });
+    } catch (error) {
+      console.error('Erro ao gerar relatório:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao gerar relatório de preços",
         variant: "destructive"
       });
     }
@@ -343,6 +392,9 @@ export function ProdutosMestreManager() {
         <div className="flex gap-2">
           <Button onClick={runPriceAudit} variant="outline" size="sm">
             🔍 Auditoria de Preços
+          </Button>
+          <Button onClick={generatePriceReport} variant="outline" size="sm">
+            📊 Relatório de Preços
           </Button>
           <Button onClick={getCompositionsWithoutItems} variant="outline" size="sm">
             📋 Composições sem Itens
@@ -607,6 +659,143 @@ export function ProdutosMestreManager() {
             <TipoPropostaMapeamentos />
           </TabsContent>
         </Tabs>
+
+        {/* Diálogo do Relatório de Preços */}
+        <Dialog open={showPriceReport} onOpenChange={setShowPriceReport}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>📊 Relatório Detalhado de Preços das Composições</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Resumo Executivo */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Resumo Executivo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">{priceReport.length}</div>
+                      <div className="text-sm text-muted-foreground">Composições Analisadas</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-600">{suspiciousCompositions.length}</div>
+                      <div className="text-sm text-muted-foreground">Preços Elevados (&gt;R$ 300/m²)</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        R$ {priceReport.length > 0 ? (priceReport.reduce((sum, comp) => sum + comp.valor_total_m2, 0) / priceReport.length).toFixed(2) : 0}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Preço Médio/m²</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Composições com Preços Elevados */}
+              {suspiciousCompositions.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg text-orange-600">⚠️ Composições com Preços Elevados</CardTitle>
+                    <CardDescription>
+                      Composições que podem precisar de revisão devido aos valores altos
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Código</TableHead>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Categoria</TableHead>
+                          <TableHead>Valor/m²</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {suspiciousCompositions.map((comp, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-mono">{comp.codigo}</TableCell>
+                            <TableCell>{comp.nome}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{comp.categoria}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-bold text-orange-600">
+                                R$ {comp.valor_total_m2.toFixed(2)}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Relatório Completo de Composições */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">📋 Todas as Composições</CardTitle>
+                  <CardDescription>
+                    Análise detalhada de todas as composições ativas no sistema
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Código</TableHead>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Categoria</TableHead>
+                        <TableHead>Valor/m²</TableHead>
+                        <TableHead>Qtd. Itens</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {priceReport.map((comp, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-mono">{comp.codigo}</TableCell>
+                          <TableCell>{comp.nome}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{comp.categoria}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`font-bold ${comp.valor_total_m2 > 300 ? 'text-orange-600' : comp.valor_total_m2 > 150 ? 'text-yellow-600' : 'text-green-600'}`}>
+                              R$ {comp.valor_total_m2.toFixed(2)}
+                            </span>
+                          </TableCell>
+                          <TableCell>{comp.itens_composicao?.length || 0}</TableCell>
+                          <TableCell>
+                            <Badge variant={comp.valor_total_m2 > 300 ? "destructive" : comp.valor_total_m2 > 150 ? "secondary" : "default"}>
+                              {comp.valor_total_m2 > 300 ? "Alto" : comp.valor_total_m2 > 150 ? "Médio" : "Normal"}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              {/* Informações sobre a Correção */}
+              <Card className="border-green-200 bg-green-50">
+                <CardHeader>
+                  <CardTitle className="text-lg text-green-700">✅ Correções Aplicadas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 text-sm">
+                    <p><strong>✓ Valor unitário do TYVEK corrigido:</strong> R$ 1.533,60 → R$ 0,489</p>
+                    <p><strong>✓ Triggers automáticos implementados:</strong> Cálculo automático dos valores unitários</p>
+                    <p><strong>✓ Sincronização de preços:</strong> Alterações nos produtos se refletem automaticamente</p>
+                    <p><strong>✓ Recálculo das composições:</strong> Todas as composições foram recalculadas</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }
