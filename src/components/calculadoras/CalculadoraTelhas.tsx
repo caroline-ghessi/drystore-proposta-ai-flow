@@ -32,14 +32,12 @@ export const CalculadoraTelhas = () => {
   const [dimensoes, setDimensoes] = useState({
     area: 100,
     comprimentoCumeeira: 12,
-    perimetro: 50,
-    comprimentoCalha: 20
+    perimetro: 50
   });
 
   const [configuracoes, setConfiguracoes] = useState({
     telhaId: '',
     corAcessorios: 'CINZA',
-    incluirCalha: true,
     incluirManta: true
   });
 
@@ -65,11 +63,9 @@ export const CalculadoraTelhas = () => {
       area_telhado: dimensoes.area,
       comprimento_cumeeira: dimensoes.comprimentoCumeeira,
       perimetro_telhado: dimensoes.perimetro,
-      comprimento_calha: configuracoes.incluirCalha ? dimensoes.comprimentoCalha : 0,
       telha_codigo: configuracoes.telhaId,
       cor_acessorios: configuracoes.corAcessorios,
-      incluir_manta: configuracoes.incluirManta,
-      incluir_calha: configuracoes.incluirCalha
+      incluir_manta: configuracoes.incluirManta
     };
 
     const erros = validarParametros(parametros);
@@ -93,11 +89,9 @@ export const CalculadoraTelhas = () => {
         area_telhado: dimensoes.area,
         comprimento_cumeeira: dimensoes.comprimentoCumeeira,
         perimetro_telhado: dimensoes.perimetro,
-        comprimento_calha: configuracoes.incluirCalha ? dimensoes.comprimentoCalha : 0,
         telha_codigo: configuracoes.telhaId,
         cor_acessorios: configuracoes.corAcessorios,
-        incluir_manta: configuracoes.incluirManta,
-        incluir_calha: configuracoes.incluirCalha
+        incluir_manta: configuracoes.incluirManta
       };
 
       const resultadoCalculo = await calcularOrcamentoShingleCompleto(parametros);
@@ -207,29 +201,6 @@ export const CalculadoraTelhas = () => {
                   step="0.01"
                   min="0"
                 />
-              </div>
-
-              <div className="space-y-2">
-                <label className="flex items-center gap-2">
-                  <Switch
-                    checked={configuracoes.incluirCalha}
-                    onCheckedChange={(checked) => setConfiguracoes({...configuracoes, incluirCalha: checked})}
-                  />
-                  <span className="text-sm">Incluir Sistema de Calhas</span>
-                </label>
-                
-                {configuracoes.incluirCalha && (
-                  <div>
-                    <Label>Comprimento de Calhas (m)</Label>
-                    <Input
-                      type="number"
-                      value={dimensoes.comprimentoCalha}
-                      onChange={(e) => setDimensoes({...dimensoes, comprimentoCalha: parseFloat(e.target.value) || 0})}
-                      step="0.01"
-                      min="0"
-                    />
-                  </div>
-                )}
               </div>
             </div>
           </Card>

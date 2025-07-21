@@ -297,8 +297,9 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
               dadosExtraidos={{
                 area_total_m2: propostaData.areaTelhado || 0,
                 comprimento_cumeeira: 0,
+                comprimento_espigao: 0,
+                comprimento_agua_furtada: 0,
                 perimetro_telhado: 0,
-                comprimento_calha: 0,
                 observacoes_especiais: propostaData.observacoes
               }}
               onCalculoComplete={(orcamento) => {
