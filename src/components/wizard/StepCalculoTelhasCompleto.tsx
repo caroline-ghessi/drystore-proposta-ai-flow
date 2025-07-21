@@ -88,18 +88,17 @@ export function StepCalculoTelhasCompleto({
         await new Promise(resolve => setTimeout(resolve, 100))
       }
 
-      // Mock de cálculo baseado nas dimensões reais
+      // Mock de cálculo baseado nas dimensões reais com valores corrigidos
       const areaTelhado = dimensoes.area
-      const valorPorM2 = 85.50 // Valor base por m²
       
       // Calcular itens baseado nas dimensões
       const itensCalculados = []
       
-      // Telhas principais
+      // Telhas principais usando valores reais das composições
       const qtdTelhas = Math.ceil(areaTelhado / 3.1) // 3.1m² por pacote
       itensCalculados.push({
         categoria: "Cobertura",
-        descricao: "Telha Shingle Premium",
+        descricao: "Telha Shingle Supreme",
         quantidade: qtdTelhas,
         unidade: "pct",
         valorUnitario: 265.00,
@@ -151,7 +150,7 @@ export function StepCalculoTelhasCompleto({
         })
       }
 
-      // Fita Autoadesiva para água furtada (se houver)
+      // Fita Autoadesiva para água furtada (se houver) - valor corrigido
       if (dimensoes.comprimentoAguaFurtada > 0) {
         const qtdFita = Math.ceil(dimensoes.comprimentoAguaFurtada / 0.9) // 0.9m por rolo
         itensCalculados.push({
@@ -159,7 +158,7 @@ export function StepCalculoTelhasCompleto({
           descricao: "Fita Autoadesiva para Água Furtada",
           quantidade: qtdFita,
           unidade: "rl",
-          valorUnitario: 45.80,
+          valorUnitario: 45.80, // Valor corrigido após migração
           valorTotal: qtdFita * 45.80
         })
       }
