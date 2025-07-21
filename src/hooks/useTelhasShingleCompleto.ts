@@ -90,17 +90,23 @@ export function useTelhasShingleCompleto() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Buscar sistemas disponíveis (Supreme e Oakridge)
+  // Buscar sistemas disponíveis (Supreme e Oakridge) através dos mapeamentos
   const buscarSistemasDisponiveis = async () => {
     try {
       setLoading(true);
       
       const { data, error: dbError } = await supabase
         .from('composicoes_mestre')
-        .select('*')
-        .eq('categoria', 'telhas-shingle')
+        .select(`
+          *,
+          tipo_proposta_composicoes!inner(
+            tipo_proposta,
+            ativo
+          )
+        `)
+        .eq('tipo_proposta_composicoes.tipo_proposta', 'telhas-shingle')
+        .eq('tipo_proposta_composicoes.ativo', true)
         .eq('ativo', true)
-        .in('codigo', ['1.16', '1.17'])
         .order('codigo');
 
       if (dbError) throw dbError;
@@ -113,12 +119,20 @@ export function useTelhasShingleCompleto() {
         linha: comp.codigo === '1.16' ? 'SUPREME' : 'OAKRIDGE'
       }));
 
+      console.log('Sistemas carregados:', sistemas);
       setSistemasDisponiveis(sistemas);
       return sistemas;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar sistemas';
       setError(errorMessage);
       console.error('Erro ao buscar sistemas:', err);
+      
+      toast({
+        title: "Erro ao carregar sistemas",
+        description: errorMessage,
+        variant: "destructive"
+      });
+      
       return [];
     } finally {
       setLoading(false);
@@ -206,6 +220,12 @@ export function useTelhasShingleCompleto() {
 
       // Determinar o tipo de proposta baseado no código da telha
       const tipoProposta = parametros.telha_codigo === '1.17' ? 'telhas-shingle-oakridge' : 'telhas-shingle-supreme';
+
+      console.log('Calculando com parâmetros:', {
+        tipoProposta,
+        telha_codigo: parametros.telha_codigo,
+        area_telhado: parametros.area_telhado
+      });
 
       const { data, error: dbError } = await supabase.rpc('calcular_por_mapeamento', {
         p_tipo_proposta: tipoProposta,
