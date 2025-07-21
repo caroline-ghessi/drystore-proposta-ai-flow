@@ -231,48 +231,6 @@ export function CalculadoraTelhaShingleCompleta() {
             </div>
             
             <div>
-              <Label>Comprimento da Cumeeira (m)</Label>
-              <Input
-                type="number"
-                value={dimensoes.comprimentoCumeeira}
-                onChange={(e) => setDimensoes({...dimensoes, comprimentoCumeeira: parseFloat(e.target.value) || 0})}
-                step="0.01"
-                min="0"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Soma de todas as cumeeiras
-              </p>
-            </div>
-            
-            <div>
-              <Label>Espigão (m)</Label>
-              <Input
-                type="number"
-                value={dimensoes.comprimentoEspigao}
-                onChange={(e) => setDimensoes({...dimensoes, comprimentoEspigao: parseFloat(e.target.value) || 0})}
-                step="0.01"
-                min="0"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Para aplicação do cap de cumeeira
-              </p>
-            </div>
-            
-            <div>
-              <Label>Água Furtada (m)</Label>
-              <Input
-                type="number"
-                value={dimensoes.comprimentoAguaFurtada}
-                onChange={(e) => setDimensoes({...dimensoes, comprimentoAguaFurtada: parseFloat(e.target.value) || 0})}
-                step="0.01"
-                min="0"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Para aplicação da fita autoadesiva
-              </p>
-            </div>
-            
-            <div>
               <Label>Perímetro do Telhado (m)</Label>
               <Input
                 type="number"
@@ -286,27 +244,86 @@ export function CalculadoraTelhaShingleCompleta() {
               </p>
             </div>
 
-            <div className="space-y-2">
-              <label className="flex items-center gap-2">
-                <Switch
-                  checked={configuracoes.incluirCalha}
-                  onCheckedChange={(checked) => setConfiguracoes({...configuracoes, incluirCalha: checked})}
-                />
-                <span className="text-sm">Incluir Sistema de Calhas</span>
-              </label>
+            {/* Seção de Cumeeiras e Espigões */}
+            <div className="border-t pt-4">
+              <h4 className="font-medium text-sm mb-3 text-amber-700">Cumeeiras e Espigões</h4>
               
-              {configuracoes.incluirCalha && (
+              <div className="space-y-3">
                 <div>
-                  <Label>Comprimento de Calhas (m)</Label>
+                  <Label>Comprimento da Cumeeira (m)</Label>
                   <Input
                     type="number"
-                    value={dimensoes.comprimentoCalha}
-                    onChange={(e) => setDimensoes({...dimensoes, comprimentoCalha: parseFloat(e.target.value) || 0})}
+                    value={dimensoes.comprimentoCumeeira}
+                    onChange={(e) => setDimensoes({...dimensoes, comprimentoCumeeira: parseFloat(e.target.value) || 0})}
                     step="0.01"
                     min="0"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Soma de todas as cumeeiras principais
+                  </p>
                 </div>
-              )}
+                
+                <div>
+                  <Label>Comprimento do Espigão (m)</Label>
+                  <Input
+                    type="number"
+                    value={dimensoes.comprimentoEspigao}
+                    onChange={(e) => setDimensoes({...dimensoes, comprimentoEspigao: parseFloat(e.target.value) || 0})}
+                    step="0.01"
+                    min="0"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Aresta externa do telhado (se houver)
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Seção de Águas Furtadas */}
+            <div className="border-t pt-4">
+              <h4 className="font-medium text-sm mb-3 text-blue-700">Águas Furtadas</h4>
+              
+              <div>
+                <Label>Comprimento de Água Furtada (m)</Label>
+                <Input
+                  type="number"
+                  value={dimensoes.comprimentoAguaFurtada}
+                  onChange={(e) => setDimensoes({...dimensoes, comprimentoAguaFurtada: parseFloat(e.target.value) || 0})}
+                  step="0.01"
+                  min="0"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Aresta interna (vale) do telhado (se houver)
+                </p>
+              </div>
+            </div>
+
+            {/* Seção de Calhas */}
+            <div className="border-t pt-4">
+              <h4 className="font-medium text-sm mb-3 text-green-700">Sistema de Calhas</h4>
+              
+              <div className="space-y-2">
+                <label className="flex items-center gap-2">
+                  <Switch
+                    checked={configuracoes.incluirCalha}
+                    onCheckedChange={(checked) => setConfiguracoes({...configuracoes, incluirCalha: checked})}
+                  />
+                  <span className="text-sm">Incluir Sistema de Calhas</span>
+                </label>
+                
+                {configuracoes.incluirCalha && (
+                  <div>
+                    <Label>Comprimento de Calhas (m)</Label>
+                    <Input
+                      type="number"
+                      value={dimensoes.comprimentoCalha}
+                      onChange={(e) => setDimensoes({...dimensoes, comprimentoCalha: parseFloat(e.target.value) || 0})}
+                      step="0.01"
+                      min="0"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Estimativas automáticas */}
@@ -321,6 +338,26 @@ export function CalculadoraTelhaShingleCompleta() {
                   )}
                 </div>
               </div>
+            )}
+
+            {/* Info Box - Produtos Condicionais */}
+            {(dimensoes.comprimentoEspigao > 0 || dimensoes.comprimentoAguaFurtada > 0) && (
+              <Card className="mt-4 p-3 bg-green-50 border-green-200">
+                <div className="flex gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-green-800">
+                    <p className="font-medium mb-1">Produtos adicionais inclusos:</p>
+                    <ul className="space-y-0.5">
+                      {dimensoes.comprimentoEspigao > 0 && (
+                        <li>✓ Cap de Cumeeira para espigão ({dimensoes.comprimentoEspigao}m)</li>
+                      )}
+                      {dimensoes.comprimentoAguaFurtada > 0 && (
+                        <li>✓ Fita Autoadesiva para água furtada ({dimensoes.comprimentoAguaFurtada}m)</li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </Card>
             )}
           </div>
         </Card>
