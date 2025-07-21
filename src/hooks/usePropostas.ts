@@ -172,6 +172,32 @@ export function usePropostas() {
     }
   }, []);
 
+  const buscarPropostaPorId = useCallback(async (id: string): Promise<Proposta | null> => {
+    try {
+      console.log('Buscando proposta por ID:', id);
+      
+      const { data, error } = await supabase
+        .from('propostas')
+        .select(`
+          *,
+          vendedores (nome, email, whatsapp)
+        `)
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Erro na query buscarPropostaPorId:', error);
+        throw error;
+      }
+
+      console.log('Proposta encontrada por ID:', data);
+      return data as Proposta;
+    } catch (err: any) {
+      console.error('Erro ao buscar proposta por ID:', err);
+      return null;
+    }
+  }, []);
+
   const registrarVisualizacao = useCallback(async (urlUnica: string, dadosExtras?: any): Promise<boolean> => {
     try {
       const { data, error } = await supabase.functions.invoke('registrar-visualizacao', {
@@ -245,6 +271,7 @@ export function usePropostas() {
     criarProposta,
     atualizarProposta,
     buscarPropostaPorUrl,
+    buscarPropostaPorId,
     registrarVisualizacao,
     aceitarProposta
   };

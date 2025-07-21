@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -134,6 +133,81 @@ export function useQuantitativosShingle() {
     }
   };
 
+  const processarQuantitativosProposta = (dadosExtraidos: any): ItemQuantitativo[] => {
+    try {
+      console.log('Processando quantitativos da proposta:', dadosExtraidos);
+
+      // Verificar se temos os dados necessários
+      if (!dadosExtraidos?.orcamento_completo?.itens) {
+        console.warn('Dados de orçamento não encontrados');
+        return [];
+      }
+
+      const itens = dadosExtraidos.orcamento_completo.itens;
+      
+      // Converter dados para formato ItemQuantitativo
+      const itensProcessados: ItemQuantitativo[] = itens.map((item: any, index: number) => {
+        // Calcular quantidade líquida (antes da quebra)
+        const quantidadeLiquida = item.quantidade_calculada || 0;
+        
+        // Calcular quebra percentual
+        const quebraPercentual = item.quebra_aplicada || 0;
+        
+        // Quantidade com quebra
+        const quantidadeComQuebra = item.quantidade_final || quantidadeLiquida;
+        
+        // Determinar unidade de venda baseada no tipo
+        const unidadeVenda = determinarUnidadeVenda(item.tipo_componente || '', item.unidade_dimensao);
+        
+        // Quantidade de embalagens (usar quantidade_arredondada se disponível)
+        const quantidadeEmbalagens = item.quantidade_arredondada || Math.ceil(quantidadeComQuebra);
+
+        return {
+          codigo: item.produto_codigo || `ITEM-${index + 1}`,
+          descricao: item.descricao || 'Produto não identificado',
+          categoria: mapearCategoria(item.tipo_componente || ''),
+          quantidade_liquida: parseFloat(quantidadeLiquida.toFixed(2)),
+          quebra_percentual: parseFloat(quebraPercentual.toFixed(1)),
+          quantidade_com_quebra: parseFloat(quantidadeComQuebra.toFixed(2)),
+          unidade_venda: unidadeVenda,
+          quantidade_embalagens: quantidadeEmbalagens,
+          preco_unitario: parseFloat((item.preco_unitario || 0).toFixed(2)),
+          valor_total: parseFloat((item.valor_total || 0).toFixed(2)),
+          ordem: index + 1
+        };
+      });
+
+      // Ordenar por categoria e código
+      itensProcessados.sort((a, b) => {
+        if (a.categoria !== b.categoria) {
+          return a.categoria.localeCompare(b.categoria);
+        }
+        return a.codigo.localeCompare(b.codigo);
+      });
+
+      console.log('Quantitativos processados:', itensProcessados);
+      return itensProcessados;
+
+    } catch (error) {
+      console.error('Erro ao processar quantitativos da proposta:', error);
+      return [];
+    }
+  };
+
+  const mapearCategoria = (tipoComponente: string): string => {
+    const mapeamento: Record<string, string> = {
+      'TELHA_SHINGLE': 'TELHAS_SHINGLE',
+      'STARTER': 'STARTER_SHINGLE',
+      'CUMEEIRA': 'ACESSORIOS_SHINGLE',
+      'OSB': 'PLACAS_OSB',
+      'SUBCOBERTURA': 'SUBCOBERTURA',
+      'FIXACAO': 'FIXACAO',
+      'ACESSORIO': 'ACESSORIOS_SHINGLE'
+    };
+
+    return mapeamento[tipoComponente.toUpperCase()] || 'OUTROS';
+  };
+
   const determinarUnidadeVenda = (categoria: string, unidadeMedida?: string): string => {
     // Mapeamento de categorias para unidades de venda
     const unidadesPorCategoria: Record<string, string> = {
@@ -177,6 +251,7 @@ export function useQuantitativosShingle() {
     loading,
     error,
     calcularQuantitativosComerciais,
+    processarQuantitativosProposta,
     validarQuantitativos,
     clearError: () => setError(null)
   };

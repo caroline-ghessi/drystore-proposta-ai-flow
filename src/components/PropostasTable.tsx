@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Calendar, Percent, Filter, Eye } from "lucide-react";
+import { MessageSquare, Calendar, Percent, Filter, Eye, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FollowUpInteligente } from "./FollowUpInteligente";
+import { ModalQuantitativosPropostas } from "./propostas/ModalQuantitativosPropostas";
 
 interface Proposta {
   id: string;
@@ -36,6 +37,8 @@ const PropostasTable = ({ propostas }: PropostasTableProps) => {
   const [descontoData, setDescontoData] = useState({ proposta: "", percentual: "", motivo: "" });
   const [followUpInteligenteOpen, setFollowUpInteligenteOpen] = useState(false);
   const [propostaSelecionada, setPropostaSelecionada] = useState<Proposta | null>(null);
+  const [quantitativosModalOpen, setQuantitativosModalOpen] = useState(false);
+  const [propostaQuantitativos, setPropostaQuantitativos] = useState<Proposta | null>(null);
 
   const filteredPropostas = propostas.filter(proposta => 
     statusFilter === "todos" || proposta.status === statusFilter
@@ -82,6 +85,15 @@ const PropostasTable = ({ propostas }: PropostasTableProps) => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleQuantitativos = (proposta: Proposta) => {
+    setPropostaQuantitativos(proposta);
+    setQuantitativosModalOpen(true);
+  };
+
+  const isPropostaShingle = (tipo: string) => {
+    return tipo.toLowerCase().includes('telha') && tipo.toLowerCase().includes('shingle');
   };
 
   return (
@@ -141,6 +153,19 @@ const PropostasTable = ({ propostas }: PropostasTableProps) => {
                     <Button size="sm" variant="outline" onClick={() => handleVerProposta(proposta)}>
                       <Eye className="h-4 w-4" />
                     </Button>
+
+                    {/* Quantitativos Button - apenas para propostas shingle */}
+                    {isPropostaShingle(proposta.tipo) && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleQuantitativos(proposta)}
+                        className="gap-1"
+                        title="Ver Quantitativos"
+                      >
+                        <FileSpreadsheet className="h-4 w-4" />
+                      </Button>
+                    )}
 
                     {/* Follow-up Unificado */}
                     <Button 
@@ -253,6 +278,19 @@ const PropostasTable = ({ propostas }: PropostasTableProps) => {
           propostaId={propostaSelecionada.id}
           clienteNome={propostaSelecionada.cliente}
           clienteWhatsapp={propostaSelecionada.whatsapp}
+        />
+      )}
+
+      {/* Modal de Quantitativos */}
+      {propostaQuantitativos && (
+        <ModalQuantitativosPropostas
+          isOpen={quantitativosModalOpen}
+          onClose={() => {
+            setQuantitativosModalOpen(false);
+            setPropostaQuantitativos(null);
+          }}
+          propostaId={propostaQuantitativos.id}
+          clienteNome={propostaQuantitativos.cliente}
         />
       )}
     </Card>
