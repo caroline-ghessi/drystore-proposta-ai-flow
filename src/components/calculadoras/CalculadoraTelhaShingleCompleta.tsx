@@ -121,6 +121,8 @@ export function CalculadoraTelhaShingleCompleta() {
         comprimento_cumeeira: dimensoes.comprimentoCumeeira,
         perimetro_telhado: dimensoes.perimetro,
         comprimento_calha: configuracoes.incluirCalha ? dimensoes.comprimentoCalha : 0,
+        comprimento_espigao: dimensoes.comprimentoEspigao,
+        comprimento_agua_furtada: dimensoes.comprimentoAguaFurtada,
         telha_codigo: configuracoes.telhaId,
         cor_acessorios: configuracoes.corAcessorios,
         incluir_manta: configuracoes.incluirManta,
