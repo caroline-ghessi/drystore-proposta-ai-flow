@@ -26,16 +26,22 @@ export function useQuantitativosShingle() {
       setLoading(true);
       setError(null);
 
-      // Determinar tipo de proposta baseado no código da telha
-      const tipoProposta = dados.telha_codigo === '1.17' ? 'telhas-shingle-oakridge' : 'telhas-shingle-supreme';
+      // CORREÇÃO: Sempre usar 'telhas-shingle' como tipo de proposta
+      const tipoProposta = 'telhas-shingle';
 
       console.log('Calculando quantitativos para:', {
         tipoProposta,
         area_telhado: dados.area_telhado,
-        telha_codigo: dados.telha_codigo
+        telha_codigo: dados.telha_codigo,
+        dados_completos: dados
       });
 
-      // Chamar função de cálculo por mapeamento
+      // Validar dados de entrada
+      if (!dados.area_telhado || dados.area_telhado <= 0) {
+        throw new Error('Área do telhado deve ser maior que zero');
+      }
+
+      // Chamar função de cálculo por mapeamento com dados extras estruturados
       const { data: resultadoMapeamento, error: dbError } = await supabase.rpc('calcular_por_mapeamento', {
         p_tipo_proposta: tipoProposta,
         p_area_base: dados.area_telhado,
@@ -51,11 +57,15 @@ export function useQuantitativosShingle() {
       });
 
       if (dbError) {
-        throw dbError;
+        console.error('Erro na função calcular_por_mapeamento:', dbError);
+        throw new Error(`Erro no cálculo: ${dbError.message}`);
       }
 
+      console.log('Resultado da função calcular_por_mapeamento:', resultadoMapeamento);
+
       if (!resultadoMapeamento || resultadoMapeamento.length === 0) {
-        throw new Error('Nenhum resultado retornado do cálculo de mapeamento');
+        console.warn('Nenhum resultado retornado do cálculo de mapeamento');
+        throw new Error('Nenhum item foi calculado. Verifique se existem produtos configurados para telhas shingle.');
       }
 
       // Buscar informações de embalagem dos produtos
@@ -67,6 +77,7 @@ export function useQuantitativosShingle() {
         .in('codigo', codigosProdutos);
 
       if (produtoError) {
+        console.error('Erro ao buscar informações dos produtos:', produtoError);
         throw produtoError;
       }
 
@@ -113,7 +124,12 @@ export function useQuantitativosShingle() {
         return a.ordem - b.ordem;
       });
 
-      console.log('Quantitativos calculados:', itensQuantitativos);
+      console.log('Quantitativos calculados com sucesso:', itensQuantitativos);
+      
+      if (itensQuantitativos.length === 0) {
+        throw new Error('Nenhum item foi processado corretamente');
+      }
+
       return itensQuantitativos;
 
     } catch (err) {
