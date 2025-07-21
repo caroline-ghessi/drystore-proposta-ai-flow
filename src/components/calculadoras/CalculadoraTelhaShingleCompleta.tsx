@@ -24,9 +24,11 @@ import {
   Share2
 } from 'lucide-react';
 
-interface DimensoesTelhado {
+interface DimensoesTelhadoCompleto {
   area: number;
   comprimentoCumeeira: number;
+  comprimentoEspigao: number;
+  comprimentoAguaFurtada: number;
   perimetro: number;
   comprimentoCalha: number;
 }
@@ -43,9 +45,11 @@ export function CalculadoraTelhaShingleCompleta() {
   const { toast } = useToast();
 
   // Estados do formulário
-  const [dimensoes, setDimensoes] = useState<DimensoesTelhado>({
+  const [dimensoes, setDimensoes] = useState<DimensoesTelhadoCompleto>({
     area: 100,
     comprimentoCumeeira: 12,
+    comprimentoEspigao: 0,
+    comprimentoAguaFurtada: 0,
     perimetro: 50,
     comprimentoCalha: 20
   });
@@ -82,16 +86,18 @@ export function CalculadoraTelhaShingleCompleta() {
 
   // Validar formulário em tempo real
   useEffect(() => {
-    const parametros: ParametrosCalculoShingle = {
-      area_telhado: dimensoes.area,
-      comprimento_cumeeira: dimensoes.comprimentoCumeeira,
-      perimetro_telhado: dimensoes.perimetro,
-      comprimento_calha: configuracoes.incluirCalha ? dimensoes.comprimentoCalha : 0,
-      telha_codigo: configuracoes.telhaId,
-      cor_acessorios: configuracoes.corAcessorios,
-      incluir_manta: configuracoes.incluirManta,
-      incluir_calha: configuracoes.incluirCalha
-    };
+      const parametros: ParametrosCalculoShingle = {
+        area_telhado: dimensoes.area,
+        comprimento_cumeeira: dimensoes.comprimentoCumeeira,
+        comprimento_espigao: dimensoes.comprimentoEspigao,
+        comprimento_agua_furtada: dimensoes.comprimentoAguaFurtada,
+        perimetro_telhado: dimensoes.perimetro,
+        comprimento_calha: configuracoes.incluirCalha ? dimensoes.comprimentoCalha : 0,
+        telha_codigo: configuracoes.telhaId,
+        cor_acessorios: configuracoes.corAcessorios,
+        incluir_manta: configuracoes.incluirManta,
+        incluir_calha: configuracoes.incluirCalha
+      };
 
     const erros = validarParametros(parametros);
     setValidationErrors(erros);
@@ -233,6 +239,34 @@ export function CalculadoraTelhaShingleCompleta() {
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Soma de todas as cumeeiras
+              </p>
+            </div>
+            
+            <div>
+              <Label>Espigão (m)</Label>
+              <Input
+                type="number"
+                value={dimensoes.comprimentoEspigao}
+                onChange={(e) => setDimensoes({...dimensoes, comprimentoEspigao: parseFloat(e.target.value) || 0})}
+                step="0.01"
+                min="0"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Para aplicação do cap de cumeeira
+              </p>
+            </div>
+            
+            <div>
+              <Label>Água Furtada (m)</Label>
+              <Input
+                type="number"
+                value={dimensoes.comprimentoAguaFurtada}
+                onChange={(e) => setDimensoes({...dimensoes, comprimentoAguaFurtada: parseFloat(e.target.value) || 0})}
+                step="0.01"
+                min="0"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Para aplicação da fita autoadesiva
               </p>
             </div>
             

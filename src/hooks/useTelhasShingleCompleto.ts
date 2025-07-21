@@ -66,6 +66,8 @@ export interface ResumoOrcamentoShingleCompleto {
 export interface ParametrosCalculoShingle {
   area_telhado: number;
   comprimento_cumeeira?: number;
+  comprimento_espigao?: number;
+  comprimento_agua_furtada?: number;
   perimetro_telhado?: number;
   comprimento_calha?: number;
   telha_codigo?: string;
@@ -165,6 +167,8 @@ export function useTelhasShingleCompleto() {
         p_area_base: parametros.area_telhado,
         p_dados_extras: {
           comprimento_cumeeira: parametros.comprimento_cumeeira || 0,
+          comprimento_espigao: parametros.comprimento_espigao || 0,
+          comprimento_agua_furtada: parametros.comprimento_agua_furtada || 0,
           perimetro_telhado: parametros.perimetro_telhado || 0,
           comprimento_calha: parametros.comprimento_calha || 0,
           telha_codigo: parametros.telha_codigo || '1.16',
@@ -304,6 +308,14 @@ export function useTelhasShingleCompleto() {
 
     if (parametros.comprimento_cumeeira && parametros.comprimento_cumeeira < 0) {
       erros.push('Comprimento da cumeeira não pode ser negativo');
+    }
+
+    if (parametros.comprimento_espigao && parametros.comprimento_espigao < 0) {
+      erros.push('Comprimento do espigão não pode ser negativo');
+    }
+
+    if (parametros.comprimento_agua_furtada && parametros.comprimento_agua_furtada < 0) {
+      erros.push('Comprimento da água furtada não pode ser negativo');
     }
 
     if (parametros.perimetro_telhado && parametros.perimetro_telhado < 0) {
