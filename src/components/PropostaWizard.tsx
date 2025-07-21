@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
@@ -14,6 +13,7 @@ import { StepCalculoVentilacao } from "./wizard/StepCalculoVentilacao"
 import { StepVentilacaoConfirmacao } from "./wizard/StepVentilacaoConfirmacao"
 import { StepGenerate } from "./wizard/StepGenerate"
 import { StepCalculoDivisorias } from "./wizard/StepCalculoDivisorias"
+import { StepValidarQuantitativos } from "./wizard/StepValidarQuantitativos"
 
 export type TipoProposta = 'energia-solar' | 'telhas-shingle' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao' | 'tintas-texturas' | 'verga-fibra' | 'argamassa-silentfloor' | 'light-steel-frame' | 'impermeabilizacao'
 
@@ -33,6 +33,7 @@ export interface PropostaData {
   incluiBaterias?: boolean;
   entradaManual?: boolean;
   incluirVentilacao?: boolean;
+  quantitativosAprovados?: any[];
   // Dados manuais para telhas
   areaTelhado?: number;
   inclinacaoTelhado?: number;
@@ -82,6 +83,7 @@ const STEPS_TELHAS_MANUAL = [
   { title: "Cálculos de Cobertura", description: "Dimensionamento automático" },
   { title: "Confirmação de Ventilação", description: "Incluir cálculo de ventilação?" },
   { title: "Ventilação do Telhado", description: "Cálculo de acessórios de ventilação" },
+  { title: "Validar Quantitativos", description: "Conferir materiais calculados" },
   { title: "Gerar Proposta", description: "Confirmar e criar proposta" }
 ]
 
@@ -173,11 +175,12 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
         return STEPS_ENERGIA_SOLAR;
       case 'telhas-shingle':
         if (propostaData.entradaManual) {
+          let steps = [...STEPS_TELHAS_MANUAL];
           // Se não incluir ventilação, remover a etapa de ventilação
           if (propostaData.incluirVentilacao === false) {
-            return STEPS_TELHAS_MANUAL.filter(step => step.title !== "Ventilação do Telhado");
+            steps = steps.filter(step => step.title !== "Ventilação do Telhado");
           }
-          return STEPS_TELHAS_MANUAL;
+          return steps;
         }
         return STEPS_TELHAS_UPLOAD;
       case 'divisorias':
@@ -387,13 +390,37 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             />
           )}
 
+          {/* Step 6: Validar Quantitativos - fluxo manual telhas */}
+          {currentStep === 6 && propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual && (
+            <StepValidarQuantitativos
+              dadosCalculoShingle={{
+                area_telhado: propostaData.areaTelhado || 0,
+                comprimento_cumeeira: propostaData.dadosExtraidos?.comprimento_cumeeira || 0,
+                comprimento_espigao: propostaData.dadosExtraidos?.comprimento_espigao || 0,
+                comprimento_agua_furtada: propostaData.dadosExtraidos?.comprimento_agua_furtada || 0,
+                perimetro_telhado: propostaData.dadosExtraidos?.perimetro_telhado || 0,
+                telha_codigo: propostaData.dadosExtraidos?.telha_codigo || '1.16',
+                cor_acessorios: propostaData.dadosExtraidos?.cor_acessorios || 'CINZA',
+                incluir_manta: propostaData.dadosExtraidos?.incluir_manta ?? true
+              }}
+              onBack={handleBack}
+              onApprove={(quantitativos) => {
+                handleStepData({ 
+                  quantitativosAprovados: quantitativos,
+                  valorTotal: quantitativos.reduce((sum, item) => sum + item.valor_total, 0)
+                });
+                handleNext();
+              }}
+            />
+          )}
+
           {/* Step Final: Gerar Proposta */}
           {((currentStep === 3 && propostaData.tipoProposta === 'divisorias' && propostaData.entradaManual) ||
             (currentStep === 4 && propostaData.tipoProposta === 'divisorias' && !propostaData.entradaManual) ||
             (currentStep === 5 && propostaData.tipoProposta === 'energia-solar') ||
             (currentStep === 5 && propostaData.tipoProposta === 'telhas-shingle' && !propostaData.entradaManual) ||
-            (currentStep === 5 && propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual && propostaData.incluirVentilacao === false) ||
-            (currentStep === 6 && propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual && propostaData.incluirVentilacao === true)) && (
+            (currentStep === 6 && propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual && propostaData.incluirVentilacao === false) ||
+            (currentStep === 7 && propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual && propostaData.incluirVentilacao === true)) && (
             <StepGenerate
               propostaData={propostaData}
               onBack={handleBack}
