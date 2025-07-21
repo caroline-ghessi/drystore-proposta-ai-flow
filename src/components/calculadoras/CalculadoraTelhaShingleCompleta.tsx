@@ -30,12 +30,12 @@ interface DimensoesTelhadoCompleto {
   comprimentoEspigao: number;
   comprimentoAguaFurtada: number;
   perimetro: number;
-  comprimentoCalha: number;
 }
 
 export function CalculadoraTelhaShingleCompleta() {
   const {
     telhas,
+    sistemasDisponiveis,
     loading: hookLoading,
     calcularOrcamentoShingleCompleto,
     validarParametros,
@@ -50,16 +50,13 @@ export function CalculadoraTelhaShingleCompleta() {
     comprimentoCumeeira: 12,
     comprimentoEspigao: 0,
     comprimentoAguaFurtada: 0,
-    perimetro: 50,
-    comprimentoCalha: 20
+    perimetro: 50
   });
 
   const [configuracoes, setConfiguracoes] = useState({
     telhaId: '',
     corAcessorios: 'CINZA',
-    incluirCalha: true,
-    incluirManta: true,
-    estimarRufos: true
+    incluirManta: true
   });
 
   // Estados dos resultados
@@ -67,37 +64,37 @@ export function CalculadoraTelhaShingleCompleta() {
   const [resultado, setResultado] = useState<ResumoOrcamentoShingleCompleto | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
-  // Carregar telhas disponíveis
+  // Carregar sistemas disponíveis e definir padrão
   useEffect(() => {
-    if (telhas.length > 0 && !configuracoes.telhaId) {
-      setConfiguracoes(prev => ({
-        ...prev,
-        telhaId: telhas[0].codigo
-      }));
+    if (sistemasDisponiveis.length > 0 && !configuracoes.telhaId) {
+      // Definir Supreme (1.16) como padrão
+      const supremeSystem = sistemasDisponiveis.find(s => s.codigo === '1.16');
+      if (supremeSystem) {
+        setConfiguracoes(prev => ({
+          ...prev,
+          telhaId: supremeSystem.codigo
+        }));
+      } else if (sistemasDisponiveis.length > 0) {
+        setConfiguracoes(prev => ({
+          ...prev,
+          telhaId: sistemasDisponiveis[0].codigo
+        }));
+      }
     }
-  }, [telhas, configuracoes.telhaId]);
-
-  // Estimar dimensões de rufos automaticamente
-  useEffect(() => {
-    if (configuracoes.estimarRufos && dimensoes.perimetro > 0) {
-      // As estimativas são feitas automaticamente na função de cálculo
-    }
-  }, [dimensoes.perimetro, configuracoes.estimarRufos]);
+  }, [sistemasDisponiveis, configuracoes.telhaId]);
 
   // Validar formulário em tempo real
   useEffect(() => {
-      const parametros: ParametrosCalculoShingle = {
-        area_telhado: dimensoes.area,
-        comprimento_cumeeira: dimensoes.comprimentoCumeeira,
-        comprimento_espigao: dimensoes.comprimentoEspigao,
-        comprimento_agua_furtada: dimensoes.comprimentoAguaFurtada,
-        perimetro_telhado: dimensoes.perimetro,
-        comprimento_calha: configuracoes.incluirCalha ? dimensoes.comprimentoCalha : 0,
-        telha_codigo: configuracoes.telhaId,
-        cor_acessorios: configuracoes.corAcessorios,
-        incluir_manta: configuracoes.incluirManta,
-        incluir_calha: configuracoes.incluirCalha
-      };
+    const parametros: ParametrosCalculoShingle = {
+      area_telhado: dimensoes.area,
+      comprimento_cumeeira: dimensoes.comprimentoCumeeira,
+      comprimento_espigao: dimensoes.comprimentoEspigao,
+      comprimento_agua_furtada: dimensoes.comprimentoAguaFurtada,
+      perimetro_telhado: dimensoes.perimetro,
+      telha_codigo: configuracoes.telhaId,
+      cor_acessorios: configuracoes.corAcessorios,
+      incluir_manta: configuracoes.incluirManta
+    };
 
     const erros = validarParametros(parametros);
     setValidationErrors(erros);
@@ -120,13 +117,11 @@ export function CalculadoraTelhaShingleCompleta() {
         area_telhado: dimensoes.area,
         comprimento_cumeeira: dimensoes.comprimentoCumeeira,
         perimetro_telhado: dimensoes.perimetro,
-        comprimento_calha: configuracoes.incluirCalha ? dimensoes.comprimentoCalha : 0,
         comprimento_espigao: dimensoes.comprimentoEspigao,
         comprimento_agua_furtada: dimensoes.comprimentoAguaFurtada,
         telha_codigo: configuracoes.telhaId,
         cor_acessorios: configuracoes.corAcessorios,
-        incluir_manta: configuracoes.incluirManta,
-        incluir_calha: configuracoes.incluirCalha
+        incluir_manta: configuracoes.incluirManta
       };
 
       const resultadoCalculo = await calcularOrcamentoShingleCompleto(parametros);
@@ -172,7 +167,7 @@ export function CalculadoraTelhaShingleCompleta() {
     });
   }
 
-  const telhaAtual = telhas.find(t => t.codigo === configuracoes.telhaId);
+  const sistemaAtual = sistemasDisponiveis.find(s => s.codigo === configuracoes.telhaId);
 
   if (hookLoading) {
     return (
@@ -298,48 +293,6 @@ export function CalculadoraTelhaShingleCompleta() {
               </div>
             </div>
 
-            {/* Seção de Calhas */}
-            <div className="border-t pt-4">
-              <h4 className="font-medium text-sm mb-3 text-green-700">Sistema de Calhas</h4>
-              
-              <div className="space-y-2">
-                <label className="flex items-center gap-2">
-                  <Switch
-                    checked={configuracoes.incluirCalha}
-                    onCheckedChange={(checked) => setConfiguracoes({...configuracoes, incluirCalha: checked})}
-                  />
-                  <span className="text-sm">Incluir Sistema de Calhas</span>
-                </label>
-                
-                {configuracoes.incluirCalha && (
-                  <div>
-                    <Label>Comprimento de Calhas (m)</Label>
-                    <Input
-                      type="number"
-                      value={dimensoes.comprimentoCalha}
-                      onChange={(e) => setDimensoes({...dimensoes, comprimentoCalha: parseFloat(e.target.value) || 0})}
-                      step="0.01"
-                      min="0"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Estimativas automáticas */}
-            {configuracoes.estimarRufos && dimensoes.perimetro > 0 && (
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm font-medium mb-2">Estimativas Automáticas:</p>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>• Rufo Lateral: {(dimensoes.perimetro * 0.6).toFixed(1)}m</p>
-                  <p>• Rufo Capa: {(dimensoes.perimetro * 0.4).toFixed(1)}m</p>
-                  {configuracoes.incluirManta && (
-                    <p>• Manta Starter: {(dimensoes.perimetro * 0.25).toFixed(1)}m²</p>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Info Box - Produtos Condicionais */}
             {(dimensoes.comprimentoEspigao > 0 || dimensoes.comprimentoAguaFurtada > 0) && (
               <Card className="mt-4 p-3 bg-green-50 border-green-200">
@@ -370,32 +323,43 @@ export function CalculadoraTelhaShingleCompleta() {
           </h3>
           
           <div className="space-y-4">
+            {/* Seleção do Sistema Shingle */}
             <div>
-              <Label>Tipo de Telha *</Label>
+              <Label>Sistema Shingle *</Label>
               <Select
                 value={configuracoes.telhaId}
                 onValueChange={(value) => setConfiguracoes({...configuracoes, telhaId: value})}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a telha..." />
+                  <SelectValue placeholder="Selecione o sistema..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {telhas.map(telha => (
-                    <SelectItem key={telha.id} value={telha.codigo}>
-                      {telha.nome} - {formatCurrency(telha.valor_total_m2)}/m²
+                  {sistemasDisponiveis.map(sistema => (
+                    <SelectItem key={sistema.codigo} value={sistema.codigo}>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={sistema.linha === 'SUPREME' ? "default" : "secondary"}>
+                          {sistema.linha}
+                        </Badge>
+                        {sistema.nome} - {formatCurrency(sistema.valor_m2)}/m²
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {sistemaAtual && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {sistemaAtual.descricao || `Código: ${sistemaAtual.codigo}`}
+                </p>
+              )}
             </div>
 
-            {telhaAtual && (
+            {sistemaAtual && (
               <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm font-medium">{telhaAtual.nome}</p>
+                <p className="text-sm font-medium">{sistemaAtual.nome}</p>
                 <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                  <p>Valor: {formatCurrency(telhaAtual.valor_total_m2)}/m²</p>
-                  <p>Código: {telhaAtual.codigo}</p>
-                  <p>Categoria: {telhaAtual.categoria}</p>
+                  <p>Valor: {formatCurrency(sistemaAtual.valor_m2)}/m²</p>
+                  <p>Código: {sistemaAtual.codigo}</p>
+                  <p>Linha: {sistemaAtual.linha}</p>
                 </div>
               </div>
             )}
