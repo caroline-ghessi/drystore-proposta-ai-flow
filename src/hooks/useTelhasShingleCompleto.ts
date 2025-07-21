@@ -69,19 +69,61 @@ export interface ParametrosCalculoShingle {
   comprimento_espigao?: number;
   comprimento_agua_furtada?: number;
   perimetro_telhado?: number;
-  comprimento_calha?: number;
   telha_codigo?: string;
   cor_acessorios?: string;
   incluir_manta?: boolean;
-  incluir_calha?: boolean;
+}
+
+export interface SistemaShingle {
+  codigo: string;
+  nome: string;
+  valor_m2: number;
+  descricao: string;
+  linha: 'SUPREME' | 'OAKRIDGE';
 }
 
 export function useTelhasShingleCompleto() {
   const [produtos, setProdutos] = useState<ProdutoShingleCompleto[]>([]);
   const [telhas, setTelhas] = useState<ComposicaoMestre[]>([]);
+  const [sistemasDisponiveis, setSistemasDisponiveis] = useState<SistemaShingle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Buscar sistemas disponíveis (Supreme e Oakridge)
+  const buscarSistemasDisponiveis = async () => {
+    try {
+      setLoading(true);
+      
+      const { data, error: dbError } = await supabase
+        .from('composicoes_mestre')
+        .select('*')
+        .eq('categoria', 'telhas-shingle')
+        .eq('ativo', true)
+        .in('codigo', ['1.16', '1.17'])
+        .order('codigo');
+
+      if (dbError) throw dbError;
+
+      const sistemas: SistemaShingle[] = (data || []).map(comp => ({
+        codigo: comp.codigo,
+        nome: comp.nome,
+        valor_m2: comp.valor_total_m2,
+        descricao: comp.descricao || '',
+        linha: comp.codigo === '1.16' ? 'SUPREME' : 'OAKRIDGE'
+      }));
+
+      setSistemasDisponiveis(sistemas);
+      return sistemas;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar sistemas';
+      setError(errorMessage);
+      console.error('Erro ao buscar sistemas:', err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Carregar todos os produtos usando composicoes_mestre
   const buscarProdutos = async (tipo_componente?: string) => {
@@ -162,19 +204,20 @@ export function useTelhasShingleCompleto() {
       setLoading(true);
       setError(null);
 
+      // Determinar o tipo de proposta baseado no código da telha
+      const tipoProposta = parametros.telha_codigo === '1.17' ? 'telhas-shingle-oakridge' : 'telhas-shingle-supreme';
+
       const { data, error: dbError } = await supabase.rpc('calcular_por_mapeamento', {
-        p_tipo_proposta: 'telhas-shingle',
+        p_tipo_proposta: tipoProposta,
         p_area_base: parametros.area_telhado,
         p_dados_extras: {
           comprimento_cumeeira: parametros.comprimento_cumeeira || 0,
           comprimento_espigao: parametros.comprimento_espigao || 0,
           comprimento_agua_furtada: parametros.comprimento_agua_furtada || 0,
           perimetro_telhado: parametros.perimetro_telhado || 0,
-          comprimento_calha: parametros.comprimento_calha || 0,
           telha_codigo: parametros.telha_codigo || '1.16',
           cor_acessorios: parametros.cor_acessorios || 'CINZA',
-          incluir_manta: parametros.incluir_manta ?? true,
-          incluir_calha: parametros.incluir_calha ?? true
+          incluir_manta: parametros.incluir_manta ?? true
         }
       });
 
@@ -322,15 +365,12 @@ export function useTelhasShingleCompleto() {
       erros.push('Perímetro do telhado não pode ser negativo');
     }
 
-    if (parametros.comprimento_calha && parametros.comprimento_calha < 0) {
-      erros.push('Comprimento da calha não pode ser negativo');
-    }
-
     return erros;
   };
 
   // Effect para carregar dados iniciais
   useEffect(() => {
+    buscarSistemasDisponiveis();
     buscarTelhas();
     buscarProdutos();
   }, []);
@@ -339,12 +379,14 @@ export function useTelhasShingleCompleto() {
     // Estado
     produtos,
     telhas,
+    sistemasDisponiveis,
     loading,
     error,
 
     // Funções
     buscarProdutos,
     buscarTelhas,
+    buscarSistemasDisponiveis,
     buscarProduto,
     buscarProdutosPorCategoria,
     calcularOrcamentoShingleCompleto,

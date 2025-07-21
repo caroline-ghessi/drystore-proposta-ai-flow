@@ -10,6 +10,8 @@ import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/hooks/use-toast"
 import { Calculator, Home, Ruler, Package, AlertTriangle, CheckCircle, Info } from "lucide-react"
+import { useTelhasShingleCompleto, ParametrosCalculoShingle, ResumoOrcamentoShingleCompleto } from "@/hooks/useTelhasShingleCompleto"
+import { SistemaShingleSelector } from "./SistemaShingleSelector"
 
 interface DadosExtraidos {
   area_total_m2?: number
@@ -17,7 +19,6 @@ interface DadosExtraidos {
   comprimento_espigao?: number
   comprimento_agua_furtada?: number
   perimetro_telhado?: number
-  comprimento_calha?: number
   inclinacao_telhado?: number
   tipo_estrutura?: string
   regiao_climatica?: string
@@ -57,6 +58,12 @@ export function StepCalculoTelhasCompleto({
   onNext 
 }: StepCalculoTelhasCompletoProps) {
   const { toast } = useToast()
+  const { 
+    sistemasDisponiveis, 
+    calcularOrcamentoShingleCompleto, 
+    loading: hookLoading,
+    error: hookError
+  } = useTelhasShingleCompleto()
   
   // Estados para dimensões do telhado
   const [dimensoes, setDimensoes] = useState({
@@ -64,158 +71,81 @@ export function StepCalculoTelhasCompleto({
     comprimentoCumeeira: dadosExtraidos.comprimento_cumeeira || 12,
     comprimentoEspigao: dadosExtraidos.comprimento_espigao || 0,
     comprimentoAguaFurtada: dadosExtraidos.comprimento_agua_furtada || 0,
-    perimetro: dadosExtraidos.perimetro_telhado || 50,
-    comprimentoCalha: dadosExtraidos.comprimento_calha || 20
+    perimetro: dadosExtraidos.perimetro_telhado || 50
   })
 
   const [configuracoes, setConfiguracoes] = useState({
-    incluirCalha: true,
     incluirManta: true,
-    corAcessorios: 'CINZA'
+    sistemaShingle: '1.16' // Default para Supreme
   })
 
   const [calculando, setCalculando] = useState(false)
   const [progresso, setProgresso] = useState(0)
 
   async function calcularOrcamento() {
+    if (!configuracoes.sistemaShingle) {
+      toast({
+        title: "Sistema não selecionado",
+        description: "Por favor, selecione um sistema (Supreme ou Oakridge).",
+        variant: "destructive"
+      })
+      return
+    }
+
     setCalculando(true)
     setProgresso(0)
 
     try {
       // Simular progresso
-      for (let i = 0; i <= 100; i += 10) {
+      for (let i = 0; i <= 50; i += 10) {
         setProgresso(i)
         await new Promise(resolve => setTimeout(resolve, 100))
       }
 
-      // Mock de cálculo baseado nas dimensões reais com valores corrigidos
-      const areaTelhado = dimensoes.area
-      
-      // Calcular itens baseado nas dimensões
-      const itensCalculados = []
-      
-      // Telhas principais usando valores reais das composições
-      const qtdTelhas = Math.ceil(areaTelhado / 3.1) // 3.1m² por pacote
-      itensCalculados.push({
-        categoria: "Cobertura",
-        descricao: "Telha Shingle Supreme",
-        quantidade: qtdTelhas,
-        unidade: "pct",
-        valorUnitario: 265.00,
-        valorTotal: qtdTelhas * 265.00
-      })
-
-      // OSB e Subcobertura (sempre inclusos)
-      itensCalculados.push({
-        categoria: "Base Estrutural",
-        descricao: "OSB 11,1mm",
-        quantidade: Math.ceil(areaTelhado * 1.05), // 5% quebra
-        unidade: "m²",
-        valorUnitario: 28.50,
-        valorTotal: Math.ceil(areaTelhado * 1.05) * 28.50
-      })
-
-      itensCalculados.push({
-        categoria: "Impermeabilização",
-        descricao: "Subcobertura TYVEK",
-        quantidade: Math.ceil(areaTelhado * 1.10), // 10% sobreposição
-        unidade: "m²",
-        valorUnitario: 12.80,
-        valorTotal: Math.ceil(areaTelhado * 1.10) * 12.80
-      })
-
-      // Cumeeiras (se houver)
-      if (dimensoes.comprimentoCumeeira > 0) {
-        const qtdCumeeiras = Math.ceil(dimensoes.comprimentoCumeeira / 5) // 5m por pacote
-        itensCalculados.push({
-          categoria: "Acabamento",
-          descricao: "Cap de Cumeeira",
-          quantidade: qtdCumeeiras,
-          unidade: "pct",
-          valorUnitario: 89.50,
-          valorTotal: qtdCumeeiras * 89.50
-        })
+      const parametros: ParametrosCalculoShingle = {
+        area_telhado: dimensoes.area,
+        comprimento_cumeeira: dimensoes.comprimentoCumeeira,
+        comprimento_espigao: dimensoes.comprimentoEspigao,
+        comprimento_agua_furtada: dimensoes.comprimentoAguaFurtada,
+        perimetro_telhado: dimensoes.perimetro,
+        telha_codigo: configuracoes.sistemaShingle,
+        incluir_manta: configuracoes.incluirManta
       }
 
-      // Cap de Cumeeira para espigão (se houver)
-      if (dimensoes.comprimentoEspigao > 0) {
-        const qtdEspigao = Math.ceil(dimensoes.comprimentoEspigao / 5)
-        itensCalculados.push({
-          categoria: "Acabamento",
-          descricao: "Cap de Cumeeira para Espigão",
-          quantidade: qtdEspigao,
-          unidade: "pct",
-          valorUnitario: 89.50,
-          valorTotal: qtdEspigao * 89.50
-        })
-      }
+      setProgresso(70)
 
-      // Fita Autoadesiva para água furtada (se houver) - valor corrigido
-      if (dimensoes.comprimentoAguaFurtada > 0) {
-        const qtdFita = Math.ceil(dimensoes.comprimentoAguaFurtada / 0.9) // 0.9m por rolo
-        itensCalculados.push({
-          categoria: "Vedação",
-          descricao: "Fita Autoadesiva para Água Furtada",
-          quantidade: qtdFita,
-          unidade: "rl",
-          valorUnitario: 45.80, // Valor corrigido após migração
-          valorTotal: qtdFita * 45.80
-        })
-      }
+      const resultado = await calcularOrcamentoShingleCompleto(parametros)
 
-      // Manta Starter (se incluída)
-      if (configuracoes.incluirManta && dimensoes.perimetro > 0) {
-        const areaManta = dimensoes.perimetro * 0.25 // 25cm de largura
-        itensCalculados.push({
-          categoria: "Impermeabilização",
-          descricao: "Manta Starter",
-          quantidade: Math.ceil(areaManta),
-          unidade: "m²",
-          valorUnitario: 18.90,
-          valorTotal: Math.ceil(areaManta) * 18.90
-        })
-      }
+      setProgresso(100)
 
-      // Calhas (se incluídas)
-      if (configuracoes.incluirCalha && dimensoes.comprimentoCalha > 0) {
-        itensCalculados.push({
-          categoria: "Sistema de Águas",
-          descricao: "Calha PVC 125mm",
-          quantidade: Math.ceil(dimensoes.comprimentoCalha / 3), // 3m por barra
-          unidade: "br",
-          valorUnitario: 35.50,
-          valorTotal: Math.ceil(dimensoes.comprimentoCalha / 3) * 35.50
-        })
-      }
-
-      // Fixações sempre incluídas
-      itensCalculados.push({
-        categoria: "Fixação",
-        descricao: "Pregos e Grampos",
-        quantidade: 1,
-        unidade: "kit",
-        valorUnitario: areaTelhado * 2.50,
-        valorTotal: areaTelhado * 2.50
-      })
-
-      const valorTotal = itensCalculados.reduce((total, item) => total + item.valorTotal, 0)
-
-      const orcamentoCompleto: OrcamentoCompleto = {
-        valorTotal,
-        itens: itensCalculados,
-        resumo: {
-          totalItens: itensCalculados.length,
-          pesoTotal: areaTelhado * 12, // 12kg/m²
-          economiaVsCeramica: areaTelhado * (40 - 12) // economia de peso vs cerâmica
+      if (resultado) {
+        // Converter para o formato esperado pelo componente pai
+        const orcamentoCompleto: OrcamentoCompleto = {
+          valorTotal: resultado.valor_total_geral,
+          itens: resultado.itens.map(item => ({
+            categoria: item.categoria,
+            descricao: item.descricao,
+            quantidade: item.quantidade_final,
+            unidade: item.unidade_venda,
+            valorUnitario: item.preco_unitario,
+            valorTotal: item.valor_total
+          })),
+          resumo: {
+            totalItens: resultado.itens.length,
+            pesoTotal: resultado.area_telhado * 12, // 12kg/m²
+            economiaVsCeramica: resultado.economia_peso_vs_ceramica || 0
+          }
         }
-      }
 
-      onCalculoComplete(orcamentoCompleto)
-      
-      toast({
-        title: "Cálculo Concluído!",
-        description: `Orçamento de R$ ${valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} calculado com sucesso.`
-      })
+        onCalculoComplete(orcamentoCompleto)
+        
+        toast({
+          title: "Cálculo Concluído!",
+          description: `Orçamento de R$ ${resultado.valor_total_geral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} calculado com sucesso.`
+        })
+      } else {
+        throw new Error('Não foi possível calcular o orçamento')
+      }
 
     } catch (error) {
       console.error('Erro no cálculo:', error)
@@ -234,9 +164,32 @@ export function StepCalculoTelhasCompleto({
       <div className="text-center">
         <h2 className="text-2xl font-bold mb-2">Cálculo do Sistema Completo</h2>
         <p className="text-muted-foreground">
-          Configure as dimensões finais para o cálculo preciso do orçamento
+          Escolha o sistema e configure as dimensões para o cálculo preciso do orçamento
         </p>
       </div>
+
+      {/* Seleção do Sistema Shingle */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="w-5 h-5" />
+            Sistema Shingle
+          </CardTitle>
+          <CardDescription>
+            Selecione entre Supreme ou Oakridge conforme sua necessidade
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SistemaShingleSelector
+            sistemas={sistemasDisponiveis}
+            sistemaSelecionado={configuracoes.sistemaShingle}
+            onSelecionarSistema={(codigo) => 
+              setConfiguracoes(prev => ({ ...prev, sistemaShingle: codigo }))
+            }
+            loading={hookLoading}
+          />
+        </CardContent>
+      </Card>
 
       {/* Dimensões do Telhado */}
       <Card>
@@ -337,42 +290,17 @@ export function StepCalculoTelhasCompleto({
 
           <Separator />
 
-          {/* Sistema de Calhas */}
+          {/* Configurações Adicionais */}
           <div>
-            <h4 className="font-medium mb-3 text-green-700">Sistema de Calhas</h4>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="incluirCalha"
-                  checked={configuracoes.incluirCalha}
-                  onCheckedChange={(checked) => setConfiguracoes({...configuracoes, incluirCalha: checked})}
-                />
-                <Label htmlFor="incluirCalha">Incluir sistema de calhas</Label>
-              </div>
-
-              {configuracoes.incluirCalha && (
-                <div>
-                  <Label htmlFor="comprimentoCalha">Comprimento de Calhas (m)</Label>
-                  <Input
-                    id="comprimentoCalha"
-                    type="number"
-                    value={dimensoes.comprimentoCalha}
-                    onChange={(e) => setDimensoes({...dimensoes, comprimentoCalha: parseFloat(e.target.value) || 0})}
-                    step="0.01"
-                    min="0"
-                  />
-                </div>
-              )}
+            <h4 className="font-medium mb-3 text-green-700">Configurações Adicionais</h4>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="incluirManta"
+                checked={configuracoes.incluirManta}
+                onCheckedChange={(checked) => setConfiguracoes({...configuracoes, incluirManta: checked})}
+              />
+              <Label htmlFor="incluirManta">Incluir manta starter</Label>
             </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="incluirManta"
-              checked={configuracoes.incluirManta}
-              onCheckedChange={(checked) => setConfiguracoes({...configuracoes, incluirManta: checked})}
-            />
-            <Label htmlFor="incluirManta">Incluir manta starter</Label>
           </div>
         </CardContent>
       </Card>
@@ -426,7 +354,7 @@ export function StepCalculoTelhasCompleto({
         <div className="flex gap-2">
           <Button 
             onClick={calcularOrcamento}
-            disabled={calculando || dimensoes.area <= 0}
+            disabled={calculando || dimensoes.area <= 0 || !configuracoes.sistemaShingle}
             className="min-w-32"
           >
             {calculando ? (
