@@ -390,8 +390,8 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             />
           )}
 
-          {/* Step 6: Validar Quantitativos - fluxo manual telhas */}
-          {currentStep === 6 && propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual && (
+          {/* Validar Quantitativos - fluxo manual telhas */}
+          {STEPS[currentStep]?.title === "Validar Quantitativos" && propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual && (
             <StepValidarQuantitativos
               dadosCalculoShingle={{
                 area_telhado: propostaData.areaTelhado || 0,
@@ -415,12 +415,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
           )}
 
           {/* Step Final: Gerar Proposta */}
-          {((currentStep === 3 && propostaData.tipoProposta === 'divisorias' && propostaData.entradaManual) ||
-            (currentStep === 4 && propostaData.tipoProposta === 'divisorias' && !propostaData.entradaManual) ||
-            (currentStep === 5 && propostaData.tipoProposta === 'energia-solar') ||
-            (currentStep === 5 && propostaData.tipoProposta === 'telhas-shingle' && !propostaData.entradaManual) ||
-            (currentStep === 6 && propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual && propostaData.incluirVentilacao === false) ||
-            (currentStep === 7 && propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual && propostaData.incluirVentilacao === true)) && (
+          {STEPS[currentStep]?.title === "Gerar Proposta" && (
             <StepGenerate
               propostaData={propostaData}
               onBack={handleBack}
