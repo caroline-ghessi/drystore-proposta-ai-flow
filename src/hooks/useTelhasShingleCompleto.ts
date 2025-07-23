@@ -247,23 +247,36 @@ export function useTelhasShingleCompleto() {
         throw new Error('Nenhum resultado retornado do cálculo');
       }
 
-      // Processar resultados do mapeamento
-      const itens: ItemCalculadoShingleCompleto[] = data.map((item: any) => ({
-        tipo_item: item.categoria,
-        codigo: item.item_codigo,
-        descricao: item.item_descricao,
-        dimensao_base: item.area_aplicacao,
-        unidade_dimensao: 'm²',
-        fator_conversao: item.fator_aplicacao,
-        quebra_percentual: (item.quantidade_com_quebra - item.quantidade_liquida) / item.quantidade_liquida * 100,
-        quantidade_calculada: item.quantidade_liquida,
-        quantidade_final: item.quantidade_com_quebra,
-        unidade_venda: 'un',
-        preco_unitario: item.preco_unitario,
-        valor_total: item.valor_total,
-        categoria: item.categoria,
-        ordem: item.ordem_calculo
-      }));
+      console.log('Dados recebidos da função SQL:', data);
+
+      // Processar resultados do mapeamento - usar dados diretamente da SQL
+      const itens: ItemCalculadoShingleCompleto[] = data.map((item: any, index: number) => {
+        console.log(`Item ${index}:`, {
+          codigo: item.item_codigo,
+          descricao: item.item_descricao,
+          quantidade_liquida: item.quantidade_liquida,
+          quantidade_com_quebra: item.quantidade_com_quebra,
+          valor_total: item.valor_total
+        });
+
+        return {
+          tipo_item: item.categoria,
+          codigo: item.item_codigo,
+          descricao: item.item_descricao,
+          dimensao_base: item.area_aplicacao,
+          unidade_dimensao: 'm²',
+          fator_conversao: item.fator_aplicacao,
+          quebra_percentual: item.quantidade_liquida > 0 ? 
+            ((item.quantidade_com_quebra - item.quantidade_liquida) / item.quantidade_liquida * 100) : 0,
+          quantidade_calculada: item.quantidade_liquida,
+          quantidade_final: item.quantidade_com_quebra,
+          unidade_venda: 'un',
+          preco_unitario: item.preco_unitario,
+          valor_total: item.valor_total,
+          categoria: item.categoria,
+          ordem: item.ordem_calculo
+        };
+      });
 
       const valor_total_geral = itens.reduce((sum, item) => sum + item.valor_total, 0);
       const valor_por_m2 = valor_total_geral / parametros.area_telhado;
