@@ -191,8 +191,11 @@ export function useQuantitativosShingle() {
         const quantidadeEmbalagem = infoProduto.quantidade_embalagem || 1;
         const unidadeVenda = determinarUnidadeVenda(item.categoria, infoProduto.unidade_medida);
         
-        // Calcular quantidade de embalagens necessárias
-        const quantidadeEmbalagens = Math.ceil(item.quantidade_com_quebra / quantidadeEmbalagem);
+        // Produtos com cálculo customizado (starter, cumeeira) já têm quantidade correta
+        const produtosCustomizados = ['10471', '10472']; // Starter e Cap de Cumeeira
+        const quantidadeEmbalagens = produtosCustomizados.includes(item.item_codigo)
+          ? item.quantidade_com_quebra // Usar diretamente a quantidade calculada
+          : Math.ceil(item.quantidade_com_quebra / quantidadeEmbalagem); // Calcular normalmente
         
         // Calcular quebra percentual
         const quebraPercentual = item.quantidade_liquida > 0 
