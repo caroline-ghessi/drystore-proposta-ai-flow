@@ -22,49 +22,58 @@ export function useQuantitativosShingle() {
   const calcularQuantitativosComerciais = async (
     dados: DadosCalculoShingle
   ): Promise<ItemQuantitativo[] | null> => {
+    console.log('🔄 [useQuantitativosShingle] Iniciando cálculo de quantitativos comerciais');
+    console.log('📊 [useQuantitativosShingle] Dados de entrada:', JSON.stringify(dados, null, 2));
+    
     try {
       setLoading(true);
       setError(null);
 
+      // Validação prévia dos dados essenciais
+      if (!dados?.area_telhado || dados.area_telhado <= 0) {
+        const errorMsg = 'Área do telhado é obrigatória e deve ser maior que zero';
+        console.error('❌ [useQuantitativosShingle] Validação falhou:', errorMsg);
+        throw new Error(errorMsg);
+      }
+
       // CORREÇÃO: Sempre usar 'telhas-shingle' como tipo de proposta
       const tipoProposta = 'telhas-shingle';
 
-      console.log('Calculando quantitativos para:', {
-        tipoProposta,
+      // Construir dados extras com valores padrão seguros e logs detalhados
+      const dadosExtras = {
         area_telhado: dados.area_telhado,
-        telha_codigo: dados.telha_codigo,
-        dados_completos: dados
-      });
+        perimetro_telhado: dados.perimetro_telhado || 0,
+        comprimento_cumeeira: dados.comprimento_cumeeira || 0,
+        comprimento_espigao: dados.comprimento_espigao || 0,
+        comprimento_agua_furtada: dados.comprimento_agua_furtada || 0,
+        telha_codigo: dados.telha_codigo || '1.16',
+        cor_acessorios: dados.cor_acessorios || 'CINZA',
+        incluir_manta: dados.incluir_manta || false
+      };
 
-      // Validar dados de entrada
-      if (!dados.area_telhado || dados.area_telhado <= 0) {
-        throw new Error('Área do telhado deve ser maior que zero');
-      }
+      console.log('🏗️ [useQuantitativosShingle] Dados extras preparados:', JSON.stringify(dadosExtras, null, 2));
+      console.log(`📋 [useQuantitativosShingle] Tipo de proposta final: ${tipoProposta}`);
+      console.log(`📐 [useQuantitativosShingle] Área base: ${dados.area_telhado}m²`);
+      
+      console.log('🚀 [useQuantitativosShingle] Chamando função calcular_por_mapeamento...');
 
       // Chamar função de cálculo por mapeamento com dados extras estruturados
       const { data: resultadoMapeamento, error: dbError } = await supabase.rpc('calcular_por_mapeamento', {
         p_tipo_proposta: tipoProposta,
         p_area_base: dados.area_telhado,
-        p_dados_extras: {
-          comprimento_cumeeira: dados.comprimento_cumeeira || 0,
-          comprimento_espigao: dados.comprimento_espigao || 0,
-          comprimento_agua_furtada: dados.comprimento_agua_furtada || 0,
-          perimetro_telhado: dados.perimetro_telhado || 0,
-          telha_codigo: dados.telha_codigo || '1.16',
-          cor_acessorios: dados.cor_acessorios || 'CINZA',
-          incluir_manta: dados.incluir_manta ?? true
-        }
+        p_dados_extras: dadosExtras
       });
 
       if (dbError) {
-        console.error('Erro na função calcular_por_mapeamento:', dbError);
+        console.error('💥 [useQuantitativosShingle] Erro na função RPC:', dbError);
         throw new Error(`Erro no cálculo: ${dbError.message}`);
       }
 
-      console.log('Resultado da função calcular_por_mapeamento:', resultadoMapeamento);
+      console.log('📦 [useQuantitativosShingle] Resultados brutos recebidos:', resultadoMapeamento);
+      console.log(`📊 [useQuantitativosShingle] Número de itens retornados: ${resultadoMapeamento?.length || 0}`);
 
       if (!resultadoMapeamento || resultadoMapeamento.length === 0) {
-        console.warn('Nenhum resultado retornado do cálculo de mapeamento');
+        console.warn('⚠️ [useQuantitativosShingle] Nenhum resultado retornado');
         throw new Error('Nenhum item foi calculado. Verifique se existem produtos configurados para telhas shingle.');
       }
 
