@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { ItemQuantitativo } from '@/components/wizard/PlanilhaQuantitativos';
@@ -18,8 +18,9 @@ export function useQuantitativosShingle() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const calcularQuantitativosComerciais = async (
+  const calcularQuantitativosComerciais = useCallback(async (
     dados: DadosCalculoShingle
   ): Promise<ItemQuantitativo[] | null> => {
     console.log('🎬 [HOOK-DEBUG] === INICIANDO CÁLCULO ===');
@@ -27,6 +28,12 @@ export function useQuantitativosShingle() {
     console.log('📊 [HOOK-DEBUG] Tipo dos dados:', typeof dados);
     console.log('📊 [HOOK-DEBUG] Dados válidos?', !!dados);
     
+    // Cancelar operação anterior se existir
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       setError(null);
@@ -75,6 +82,12 @@ export function useQuantitativosShingle() {
         p_area_base: dados.area_telhado,
         p_dados_extras: dadosExtras
       });
+
+      // Verificar se foi cancelado
+      if (abortControllerRef.current?.signal.aborted) {
+        console.log('🚫 [HOOK-DEBUG] Operação cancelada');
+        return null;
+      }
 
       console.log('📡 [HOOK-DEBUG] Resposta da RPC recebida');
       console.log('📡 [HOOK-DEBUG] Erro da RPC:', dbError);
@@ -161,6 +174,11 @@ export function useQuantitativosShingle() {
       return itensQuantitativos;
 
     } catch (err) {
+      if (abortControllerRef.current?.signal.aborted) {
+        console.log('🚫 [HOOK-DEBUG] Operação cancelada por abort');
+        return null;
+      }
+
       const errorMessage = err instanceof Error ? err.message : 'Erro ao calcular quantitativos';
       setError(errorMessage);
       console.error('Erro ao calcular quantitativos:', err);
@@ -175,7 +193,7 @@ export function useQuantitativosShingle() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   const processarQuantitativosProposta = (dadosExtraidos: any): ItemQuantitativo[] => {
     try {
@@ -291,12 +309,14 @@ export function useQuantitativosShingle() {
     return alertas;
   };
 
+  const clearError = useCallback(() => setError(null), []);
+
   return {
     loading,
     error,
     calcularQuantitativosComerciais,
     processarQuantitativosProposta,
     validarQuantitativos,
-    clearError: () => setError(null)
+    clearError
   };
 }

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { PlanilhaQuantitativos, ItemQuantitativo } from './PlanilhaQuantitativos';
 import { useQuantitativosShingle } from '@/hooks/useQuantitativosShingle';
@@ -33,6 +33,9 @@ export function StepValidarQuantitativos({
   const [quantitativos, setQuantitativos] = useState<ItemQuantitativo[]>([]);
   const [valorTotal, setValorTotal] = useState(0);
   const [processando, setProcessando] = useState(false);
+  const [inicializando, setInicializando] = useState(true);
+  const [tempoInicio, setTempoInicio] = useState<number>(0);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const { 
     loading, 
@@ -50,11 +53,21 @@ export function StepValidarQuantitativos({
   console.log('🎯 [STEP-DEBUG] - quantitativos.length:', quantitativos.length);
   console.log('🎯 [STEP-DEBUG] - valorTotal:', valorTotal);
 
-  const calcularQuantitativos = async () => {
+  const calcularQuantitativos = useCallback(async () => {
     console.log('🚀 [STEP-DEBUG] === INICIANDO CÁLCULO LOCAL ===');
     console.log('📋 [STEP-DEBUG] Dados para cálculo:', JSON.stringify(dadosCalculoShingle, null, 2));
     
+    const inicio = Date.now();
+    setTempoInicio(inicio);
     setProcessando(true);
+    setInicializando(false);
+    clearError();
+
+    // Timeout de segurança
+    timeoutRef.current = setTimeout(() => {
+      console.error('⏰ [STEP-DEBUG] Timeout - operação muito lenta');
+      setProcessando(false);
+    }, 30000); // 30 segundos
     
     try {
       // Validação inicial dos dados - o hook já faz as validações
@@ -68,10 +81,17 @@ export function StepValidarQuantitativos({
         return;
       }
       
-      clearError();
       console.log('🔄 [STEP-DEBUG] Executando calcularQuantitativosComerciais...');
       
       const resultado = await calcularQuantitativosComerciais(dadosCalculoShingle);
+      
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+
+      const duracao = Date.now() - inicio;
+      console.log(`⏱️ [STEP-DEBUG] Operação concluída em ${duracao}ms`);
       
       console.log('📊 [STEP-DEBUG] Resultado retornado do hook:', resultado);
       console.log('📊 [STEP-DEBUG] Tipo do resultado:', typeof resultado);
@@ -107,12 +127,16 @@ export function StepValidarQuantitativos({
         setValorTotal(0);
       }
     } catch (calcError) {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
       console.error('💥 [STEP-DEBUG] Erro durante cálculo:', calcError);
     } finally {
       setProcessando(false);
       console.log('🏁 [STEP-DEBUG] === CÁLCULO FINALIZADO ===');
     }
-  };
+  }, [dadosCalculoShingle, calcularQuantitativosComerciais, validarQuantitativos, clearError]);
 
   useEffect(() => {
     console.log('🔄 [StepValidarQuantitativos] useEffect disparado');
@@ -122,25 +146,61 @@ export function StepValidarQuantitativos({
       calcularQuantitativos();
     } else {
       console.warn('⚠️ [StepValidarQuantitativos] Dados insuficientes para calcular');
-      // O hook já gerencia o estado de erro
+      setInicializando(false);
     }
-  }, [dadosCalculoShingle]);
 
-  const handleApprove = () => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, [calcularQuantitativos]);
+
+  const handleApprove = useCallback(() => {
+    console.log('✅ [STEP-DEBUG] Aprovando quantitativos:', quantitativos.length);
     onApprove(quantitativos);
-  };
+  }, [quantitativos, onApprove]);
 
-  if (loading) {
+  const handleRetry = useCallback(() => {
+    console.log('🔄 [STEP-DEBUG] Tentando novamente');
+    setQuantitativos([]);
+    setValorTotal(0);
+    clearError();
+    calcularQuantitativos();
+  }, [calcularQuantitativos, clearError]);
+
+  // Estados de loading
+  if (inicializando || loading || processando) {
     console.log('⏳ [StepValidarQuantitativos] Renderizando estado de loading');
+    const mensagem = inicializando 
+      ? "Inicializando cálculo de quantitativos..."
+      : processando 
+        ? "Processando materiais e calculando quantidades..."
+        : "Carregando dados...";
+    
+    const tempoDecorrido = tempoInicio > 0 ? Math.round((Date.now() - tempoInicio) / 1000) : 0;
+    
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
           <h3 className="text-lg font-semibold mb-2">Calculando Quantitativos</h3>
           <p className="text-muted-foreground text-center mb-4">
-            Processando cálculos de materiais e quantidades comerciais...
+            {mensagem}
           </p>
-          <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
+          {tempoDecorrido > 5 && (
+            <p className="text-xs text-muted-foreground">
+              Tempo decorrido: {tempoDecorrido}s
+            </p>
+          )}
+          {tempoDecorrido > 15 && (
+            <Button variant="outline" size="sm" onClick={handleRetry}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Tentar Novamente
+            </Button>
+          )}
+          <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md mt-4">
             <p>Área: {dadosCalculoShingle?.area_telhado}m²</p>
             <p>Telha: {dadosCalculoShingle?.telha_codigo || 'Não especificada'}</p>
           </div>
@@ -179,7 +239,7 @@ export function StepValidarQuantitativos({
                 Voltar e Ajustar Dados
               </Button>
               <Button
-                onClick={calcularQuantitativos}
+                onClick={handleRetry}
                 className="bg-red-600 text-white hover:bg-red-700"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
@@ -225,7 +285,7 @@ export function StepValidarQuantitativos({
                 Voltar e Ajustar Dados
               </Button>
               <Button
-                onClick={calcularQuantitativos}
+                onClick={handleRetry}
                 className="bg-primary text-white hover:bg-primary/90"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
