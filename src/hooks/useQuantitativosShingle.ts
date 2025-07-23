@@ -22,19 +22,30 @@ export function useQuantitativosShingle() {
   const calcularQuantitativosComerciais = async (
     dados: DadosCalculoShingle
   ): Promise<ItemQuantitativo[] | null> => {
-    console.log('🔄 [useQuantitativosShingle] Iniciando cálculo de quantitativos comerciais');
-    console.log('📊 [useQuantitativosShingle] Dados de entrada:', JSON.stringify(dados, null, 2));
+    console.log('🎬 [HOOK-DEBUG] === INICIANDO CÁLCULO ===');
+    console.log('📊 [HOOK-DEBUG] Dados de entrada:', JSON.stringify(dados, null, 2));
+    console.log('📊 [HOOK-DEBUG] Tipo dos dados:', typeof dados);
+    console.log('📊 [HOOK-DEBUG] Dados válidos?', !!dados);
     
     try {
       setLoading(true);
       setError(null);
 
       // Validação prévia dos dados essenciais
+      console.log('🔍 [HOOK-DEBUG] Validando dados...');
+      if (!dados) {
+        console.error('❌ [HOOK-DEBUG] Dados não fornecidos');
+        throw new Error('Dados não fornecidos para o cálculo');
+      }
+      
       if (!dados?.area_telhado || dados.area_telhado <= 0) {
         const errorMsg = 'Área do telhado é obrigatória e deve ser maior que zero';
-        console.error('❌ [useQuantitativosShingle] Validação falhou:', errorMsg);
+        console.error('❌ [HOOK-DEBUG] Validação falhou:', errorMsg);
+        console.error('❌ [HOOK-DEBUG] Área recebida:', dados.area_telhado);
         throw new Error(errorMsg);
       }
+
+      console.log('✅ [HOOK-DEBUG] Dados validados com sucesso');
 
       // CORREÇÃO: Sempre usar 'telhas-shingle' como tipo de proposta
       const tipoProposta = 'telhas-shingle';
@@ -51,11 +62,12 @@ export function useQuantitativosShingle() {
         incluir_manta: dados.incluir_manta || false
       };
 
-      console.log('🏗️ [useQuantitativosShingle] Dados extras preparados:', JSON.stringify(dadosExtras, null, 2));
-      console.log(`📋 [useQuantitativosShingle] Tipo de proposta final: ${tipoProposta}`);
-      console.log(`📐 [useQuantitativosShingle] Área base: ${dados.area_telhado}m²`);
+      console.log('🏗️ [HOOK-DEBUG] Dados extras preparados:');
+      console.table(dadosExtras);
+      console.log(`📋 [HOOK-DEBUG] Tipo de proposta: ${tipoProposta}`);
+      console.log(`📐 [HOOK-DEBUG] Área base: ${dados.area_telhado}m²`);
       
-      console.log('🚀 [useQuantitativosShingle] Chamando função calcular_por_mapeamento...');
+      console.log('🚀 [HOOK-DEBUG] Executando RPC calcular_por_mapeamento...');
 
       // Chamar função de cálculo por mapeamento com dados extras estruturados
       const { data: resultadoMapeamento, error: dbError } = await supabase.rpc('calcular_por_mapeamento', {
@@ -64,13 +76,20 @@ export function useQuantitativosShingle() {
         p_dados_extras: dadosExtras
       });
 
+      console.log('📡 [HOOK-DEBUG] Resposta da RPC recebida');
+      console.log('📡 [HOOK-DEBUG] Erro da RPC:', dbError);
+      console.log('📡 [HOOK-DEBUG] Dados da RPC:', resultadoMapeamento);
+      console.log('📡 [HOOK-DEBUG] Tipo da resposta:', typeof resultadoMapeamento);
+      console.log('📡 [HOOK-DEBUG] É array?', Array.isArray(resultadoMapeamento));
+
       if (dbError) {
-        console.error('💥 [useQuantitativosShingle] Erro na função RPC:', dbError);
+        console.error('💥 [HOOK-DEBUG] Erro na função RPC:', dbError);
         throw new Error(`Erro no cálculo: ${dbError.message}`);
       }
 
-      console.log('📦 [useQuantitativosShingle] Resultados brutos recebidos:', resultadoMapeamento);
-      console.log(`📊 [useQuantitativosShingle] Número de itens retornados: ${resultadoMapeamento?.length || 0}`);
+      console.log('📦 [HOOK-DEBUG] Resultados brutos:');
+      console.table(resultadoMapeamento);
+      console.log(`📊 [HOOK-DEBUG] Número de itens: ${resultadoMapeamento?.length || 0}`);
 
       if (!resultadoMapeamento || resultadoMapeamento.length === 0) {
         console.warn('⚠️ [useQuantitativosShingle] Nenhum resultado retornado');

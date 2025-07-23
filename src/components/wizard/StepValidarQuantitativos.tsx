@@ -26,8 +26,14 @@ export function StepValidarQuantitativos({
   onBack,
   onApprove
 }: StepValidarQuantitativosProps) {
+  console.log('🎬 [STEP-DEBUG] === COMPONENTE RENDERIZADO ===');
+  console.log('📋 [STEP-DEBUG] Props recebidas:', { dadosCalculoShingle, onBack: !!onBack, onApprove: !!onApprove });
+  console.log('📋 [STEP-DEBUG] dadosCalculoShingle:', JSON.stringify(dadosCalculoShingle, null, 2));
+  
   const [quantitativos, setQuantitativos] = useState<ItemQuantitativo[]>([]);
   const [valorTotal, setValorTotal] = useState(0);
+  const [processando, setProcessando] = useState(false);
+  
   const { 
     loading, 
     error, 
@@ -36,46 +42,75 @@ export function StepValidarQuantitativos({
     clearError
   } = useQuantitativosShingle();
 
+  console.log('🎯 [STEP-DEBUG] Estados Hook:');
+  console.log('🎯 [STEP-DEBUG] - loading:', loading);
+  console.log('🎯 [STEP-DEBUG] - error:', error);
+  console.log('🎯 [STEP-DEBUG] - processando:', processando);
+  console.log('🎯 [STEP-DEBUG] Estados Locais:');
+  console.log('🎯 [STEP-DEBUG] - quantitativos.length:', quantitativos.length);
+  console.log('🎯 [STEP-DEBUG] - valorTotal:', valorTotal);
+
   const calcularQuantitativos = async () => {
-    console.log('🚀 [StepValidarQuantitativos] Iniciando cálculo de quantitativos');
-    console.log('📋 [StepValidarQuantitativos] Dados recebidos:', JSON.stringify(dadosCalculoShingle, null, 2));
+    console.log('🚀 [STEP-DEBUG] === INICIANDO CÁLCULO LOCAL ===');
+    console.log('📋 [STEP-DEBUG] Dados para cálculo:', JSON.stringify(dadosCalculoShingle, null, 2));
     
-    // Validação inicial dos dados - o hook já faz as validações
-    if (!dadosCalculoShingle) {
-      console.error('❌ [StepValidarQuantitativos] Dados não fornecidos');
-      return;
-    }
+    setProcessando(true);
     
-    if (!dadosCalculoShingle.area_telhado || dadosCalculoShingle.area_telhado <= 0) {
-      console.error('❌ [StepValidarQuantitativos] Área inválida:', dadosCalculoShingle.area_telhado);
-      return;
-    }
-    
-    clearError();
-    console.log('🔄 [StepValidarQuantitativos] Chamando calcularQuantitativosComerciais...');
-    
-    const resultado = await calcularQuantitativosComerciais(dadosCalculoShingle);
-    
-    console.log('📊 [StepValidarQuantitativos] Resultado recebido:', resultado);
-    
-    if (resultado && resultado.length > 0) {
-      console.log('✅ [StepValidarQuantitativos] Definindo quantitativos no estado');
-      setQuantitativos(resultado);
-      
-      const total = resultado.reduce((sum, item) => sum + item.valor_total, 0);
-      setValorTotal(total);
-      console.log(`💰 [StepValidarQuantitativos] Valor total calculado: R$ ${total.toFixed(2)}`);
-      
-      // Validar quantitativos e mostrar alertas se necessário
-      const alertas = validarQuantitativos(resultado);
-      if (alertas.length > 0) {
-        console.warn('⚠️ [StepValidarQuantitativos] Alertas encontrados:', alertas);
+    try {
+      // Validação inicial dos dados - o hook já faz as validações
+      if (!dadosCalculoShingle) {
+        console.error('❌ [STEP-DEBUG] Dados não fornecidos');
+        return;
       }
       
-      console.log('🎯 [StepValidarQuantitativos] Processo concluído com sucesso');
-    } else {
-      console.warn('⚠️ [StepValidarQuantitativos] Nenhum resultado válido recebido');
-      // O hook já gerencia o estado de erro, não precisamos definir aqui
+      if (!dadosCalculoShingle.area_telhado || dadosCalculoShingle.area_telhado <= 0) {
+        console.error('❌ [STEP-DEBUG] Área inválida:', dadosCalculoShingle.area_telhado);
+        return;
+      }
+      
+      clearError();
+      console.log('🔄 [STEP-DEBUG] Executando calcularQuantitativosComerciais...');
+      
+      const resultado = await calcularQuantitativosComerciais(dadosCalculoShingle);
+      
+      console.log('📊 [STEP-DEBUG] Resultado retornado do hook:', resultado);
+      console.log('📊 [STEP-DEBUG] Tipo do resultado:', typeof resultado);
+      console.log('📊 [STEP-DEBUG] É array?', Array.isArray(resultado));
+      console.log('📊 [STEP-DEBUG] É null?', resultado === null);
+      
+      if (resultado && Array.isArray(resultado) && resultado.length > 0) {
+        console.log('✅ [STEP-DEBUG] Resultado válido! Atualizando estados...');
+        console.table(resultado);
+        
+        setQuantitativos(resultado);
+        
+        const total = resultado.reduce((sum, item) => {
+          const valor = Number(item.valor_total) || 0;
+          console.log(`💰 [STEP-DEBUG] Item ${item.codigo}: R$ ${valor}`);
+          return sum + valor;
+        }, 0);
+        
+        setValorTotal(total);
+        console.log(`💰 [STEP-DEBUG] Valor total: R$ ${total.toFixed(2)}`);
+        
+        // Validar quantitativos e mostrar alertas se necessário
+        const alertas = validarQuantitativos(resultado);
+        if (alertas.length > 0) {
+          console.warn('⚠️ [STEP-DEBUG] Alertas encontrados:', alertas);
+        }
+        
+        console.log('🎯 [STEP-DEBUG] Processo concluído com sucesso!');
+      } else {
+        console.warn('⚠️ [STEP-DEBUG] Resultado inválido ou vazio');
+        console.log('⚠️ [STEP-DEBUG] Resultado completo:', resultado);
+        setQuantitativos([]);
+        setValorTotal(0);
+      }
+    } catch (calcError) {
+      console.error('💥 [STEP-DEBUG] Erro durante cálculo:', calcError);
+    } finally {
+      setProcessando(false);
+      console.log('🏁 [STEP-DEBUG] === CÁLCULO FINALIZADO ===');
     }
   };
 
