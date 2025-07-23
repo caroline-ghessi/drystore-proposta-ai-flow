@@ -151,19 +151,20 @@ export function StepValidarQuantitativos({
 
   useEffect(() => {
     console.log('🔄 [StepValidarQuantitativos] useEffect disparado');
-    console.log('📋 [StepValidarQuantitativos] dadosCalculoShingle alterados:', dadosCalculoShingle);
+    console.log('📋 [StepValidarQuantitativos] dadosCalculoShingle alterados:', JSON.stringify(dadosCalculoShingle, null, 2));
     
     // Limpar debounce anterior
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
 
+    // CORREÇÃO: Usar apenas dadosCalculoShingle como dependência, não as funções
     if (dadosCalculoShingle?.area_telhado) {
-      // IMPLEMENTAR DEBOUNCE para evitar execuções múltiplas
+      // Aumentar debounce para 500ms para evitar múltiplas execuções
       debounceRef.current = setTimeout(() => {
-        console.log('⏰ [StepValidarQuantitativos] Executando após debounce');
+        console.log('⏰ [StepValidarQuantitativos] Executando após debounce de 500ms');
         calcularQuantitativos();
-      }, 300); // 300ms de debounce
+      }, 500);
     } else {
       console.warn('⚠️ [StepValidarQuantitativos] Dados insuficientes para calcular');
       setInicializando(false);
@@ -181,7 +182,7 @@ export function StepValidarQuantitativos({
       // Reset flag ao desmontar componente
       calculoExecutadoRef.current = false;
     };
-  }, [calcularQuantitativos]);
+  }, [dadosCalculoShingle]); // CORREÇÃO: Usar somente dadosCalculoShingle como dependência
 
   const handleApprove = useCallback(() => {
     console.log('✅ [STEP-DEBUG] Aprovando quantitativos:', quantitativos.length);

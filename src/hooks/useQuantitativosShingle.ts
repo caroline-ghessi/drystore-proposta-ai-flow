@@ -109,16 +109,16 @@ export function useQuantitativosShingle() {
       // CORREÇÃO: Sempre usar 'telhas-shingle' como tipo de proposta
       const tipoProposta = 'telhas-shingle';
 
-      // Construir dados extras com valores padrão seguros e logs detalhados
+      // Construir dados extras com tratamento robusto de undefined/null
       const dadosExtras = {
-        area_telhado: dados.area_telhado,
-        perimetro_telhado: dados.perimetro_telhado || 0,
-        comprimento_cumeeira: dados.comprimento_cumeeira || 0,
-        comprimento_espigao: dados.comprimento_espigao || 0,
-        comprimento_agua_furtada: dados.comprimento_agua_furtada || 0,
-        telha_codigo: dados.telha_codigo || '1.16',
-        cor_acessorios: dados.cor_acessorios || 'CINZA',
-        incluir_manta: dados.incluir_manta || false
+        area_telhado: Number(dados.area_telhado) || 0,
+        perimetro_telhado: Number(dados.perimetro_telhado) || 0,
+        comprimento_cumeeira: Number(dados.comprimento_cumeeira) || 0,
+        comprimento_espigao: Number(dados.comprimento_espigao) || 0,
+        comprimento_agua_furtada: Number(dados.comprimento_agua_furtada) || 0,
+        telha_codigo: String(dados.telha_codigo || '1.16'),
+        cor_acessorios: String(dados.cor_acessorios || 'CINZA'),
+        incluir_manta: Boolean(dados.incluir_manta || false)
       };
 
       console.log('🏗️ [HOOK-DEBUG] Dados extras preparados:');
