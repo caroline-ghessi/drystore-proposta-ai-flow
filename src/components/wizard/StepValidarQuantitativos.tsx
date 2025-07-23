@@ -36,6 +36,8 @@ export function StepValidarQuantitativos({
   const [inicializando, setInicializando] = useState(true);
   const [tempoInicio, setTempoInicio] = useState<number>(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const calculoExecutadoRef = useRef(false);
   
   const { 
     loading, 
@@ -54,9 +56,16 @@ export function StepValidarQuantitativos({
   console.log('🎯 [STEP-DEBUG] - valorTotal:', valorTotal);
 
   const calcularQuantitativos = useCallback(async () => {
+    // Prevenir execuções múltiplas
+    if (calculoExecutadoRef.current) {
+      console.log('🚫 [STEP-DEBUG] Cálculo já executado, ignorando');
+      return;
+    }
+
     console.log('🚀 [STEP-DEBUG] === INICIANDO CÁLCULO LOCAL ===');
     console.log('📋 [STEP-DEBUG] Dados para cálculo:', JSON.stringify(dadosCalculoShingle, null, 2));
     
+    calculoExecutadoRef.current = true;
     const inicio = Date.now();
     setTempoInicio(inicio);
     setProcessando(true);
@@ -67,6 +76,7 @@ export function StepValidarQuantitativos({
     timeoutRef.current = setTimeout(() => {
       console.error('⏰ [STEP-DEBUG] Timeout - operação muito lenta');
       setProcessando(false);
+      calculoExecutadoRef.current = false;
     }, 30000); // 30 segundos
     
     try {
@@ -134,6 +144,7 @@ export function StepValidarQuantitativos({
       console.error('💥 [STEP-DEBUG] Erro durante cálculo:', calcError);
     } finally {
       setProcessando(false);
+      calculoExecutadoRef.current = false;
       console.log('🏁 [STEP-DEBUG] === CÁLCULO FINALIZADO ===');
     }
   }, [dadosCalculoShingle, calcularQuantitativosComerciais, validarQuantitativos, clearError]);
@@ -142,8 +153,17 @@ export function StepValidarQuantitativos({
     console.log('🔄 [StepValidarQuantitativos] useEffect disparado');
     console.log('📋 [StepValidarQuantitativos] dadosCalculoShingle alterados:', dadosCalculoShingle);
     
+    // Limpar debounce anterior
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
     if (dadosCalculoShingle?.area_telhado) {
-      calcularQuantitativos();
+      // IMPLEMENTAR DEBOUNCE para evitar execuções múltiplas
+      debounceRef.current = setTimeout(() => {
+        console.log('⏰ [StepValidarQuantitativos] Executando após debounce');
+        calcularQuantitativos();
+      }, 300); // 300ms de debounce
     } else {
       console.warn('⚠️ [StepValidarQuantitativos] Dados insuficientes para calcular');
       setInicializando(false);
@@ -154,6 +174,12 @@ export function StepValidarQuantitativos({
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      // Reset flag ao desmontar componente
+      calculoExecutadoRef.current = false;
     };
   }, [calcularQuantitativos]);
 
@@ -164,10 +190,17 @@ export function StepValidarQuantitativos({
 
   const handleRetry = useCallback(() => {
     console.log('🔄 [STEP-DEBUG] Tentando novamente');
+    // Reset flags e estados
+    calculoExecutadoRef.current = false;
     setQuantitativos([]);
     setValorTotal(0);
+    setInicializando(true);
     clearError();
-    calcularQuantitativos();
+    
+    // Pequeno delay para garantir que estados foram resetados
+    setTimeout(() => {
+      calcularQuantitativos();
+    }, 100);
   }, [calcularQuantitativos, clearError]);
 
   // Estados de loading

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { ItemQuantitativo } from '@/components/wizard/PlanilhaQuantitativos';
@@ -19,14 +19,66 @@ export function useQuantitativosShingle() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const abortControllerRef = useRef<AbortController | null>(null);
+  const cacheRef = useRef<Map<string, ItemQuantitativo[]>>(new Map());
+  const isCalculatingRef = useRef(false);
+
+  // Gerar chave de cache baseada nos dados de entrada
+  const generateCacheKey = useMemo(() => (dados: DadosCalculoShingle): string => {
+    return JSON.stringify({
+      area_telhado: dados.area_telhado,
+      comprimento_cumeeira: dados.comprimento_cumeeira || 0,
+      comprimento_espigao: dados.comprimento_espigao || 0,
+      comprimento_agua_furtada: dados.comprimento_agua_furtada || 0,
+      perimetro_telhado: dados.perimetro_telhado || 0,
+      telha_codigo: dados.telha_codigo || '1.16',
+      cor_acessorios: dados.cor_acessorios || 'CINZA',
+      incluir_manta: dados.incluir_manta || false
+    });
+  }, []);
+
+  // Função para deduplicar itens no frontend
+  const deduplicarItens = useCallback((itens: any[]): any[] => {
+    const itensUnicos = new Map<string, any>();
+    
+    for (const item of itens) {
+      const chave = `${item.item_codigo}_${item.categoria}`;
+      
+      // Se já existe, manter o que tem maior valor ou melhor qualidade
+      if (itensUnicos.has(chave)) {
+        const existente = itensUnicos.get(chave);
+        // Priorizar pela ordem de cálculo (menor = maior prioridade)
+        if (item.ordem_calculo < existente.ordem_calculo) {
+          itensUnicos.set(chave, item);
+        }
+      } else {
+        itensUnicos.set(chave, item);
+      }
+    }
+    
+    return Array.from(itensUnicos.values());
+  }, []);
 
   const calcularQuantitativosComerciais = useCallback(async (
     dados: DadosCalculoShingle
   ): Promise<ItemQuantitativo[] | null> => {
+    // Verificar cache primeiro
+    const cacheKey = generateCacheKey(dados);
+    const resultadoCache = cacheRef.current.get(cacheKey);
+    if (resultadoCache) {
+      console.log('🎯 [HOOK-DEBUG] Resultado encontrado no cache');
+      return resultadoCache;
+    }
+
+    // Prevenir execuções múltiplas
+    if (isCalculatingRef.current) {
+      console.log('🚫 [HOOK-DEBUG] Cálculo já em andamento, ignorando requisição');
+      return null;
+    }
+
     console.log('🎬 [HOOK-DEBUG] === INICIANDO CÁLCULO ===');
-    console.log('📊 [HOOK-DEBUG] Dados de entrada:', JSON.stringify(dados, null, 2));
-    console.log('📊 [HOOK-DEBUG] Tipo dos dados:', typeof dados);
-    console.log('📊 [HOOK-DEBUG] Dados válidos?', !!dados);
+    console.log('📊 [HOOK-DEBUG] Cache key:', cacheKey);
+    
+    isCalculatingRef.current = true;
     
     // Cancelar operação anterior se existir
     if (abortControllerRef.current) {
@@ -109,8 +161,12 @@ export function useQuantitativosShingle() {
         throw new Error('Nenhum item foi calculado. Verifique se existem produtos configurados para telhas shingle.');
       }
 
+      // DEDUPLICAR DADOS no frontend como fallback
+      const resultadosDedupe = deduplicarItens(resultadoMapeamento);
+      console.log(`📊 [HOOK-DEBUG] Após deduplicação: ${resultadosDedupe.length} itens únicos`);
+
       // Buscar informações de embalagem dos produtos
-      const codigosProdutos = [...new Set(resultadoMapeamento.map((item: any) => item.item_codigo))];
+      const codigosProdutos = [...new Set(resultadosDedupe.map((item: any) => item.item_codigo))];
       
       const { data: produtoInfo, error: produtoError } = await supabase
         .from('produtos_mestre')
@@ -129,7 +185,7 @@ export function useQuantitativosShingle() {
       }, {}) || {};
 
       // Processar resultados e calcular quantidades comerciais
-      const itensQuantitativos: ItemQuantitativo[] = resultadoMapeamento.map((item: any, index: number) => {
+      const itensQuantitativos: ItemQuantitativo[] = resultadosDedupe.map((item: any, index: number) => {
         const infoProduto = infoProdutos[item.item_codigo] || {};
         const quantidadeEmbalagem = infoProduto.quantidade_embalagem || 1;
         const unidadeVenda = determinarUnidadeVenda(item.categoria, infoProduto.unidade_medida);
@@ -171,6 +227,9 @@ export function useQuantitativosShingle() {
         throw new Error('Nenhum item foi processado corretamente');
       }
 
+      // SALVAR NO CACHE
+      cacheRef.current.set(cacheKey, itensQuantitativos);
+
       return itensQuantitativos;
 
     } catch (err) {
@@ -192,8 +251,9 @@ export function useQuantitativosShingle() {
       return null;
     } finally {
       setLoading(false);
+      isCalculatingRef.current = false;
     }
-  }, [toast]);
+  }, [toast, generateCacheKey, deduplicarItens]);
 
   const processarQuantitativosProposta = (dadosExtraidos: any): ItemQuantitativo[] => {
     try {
