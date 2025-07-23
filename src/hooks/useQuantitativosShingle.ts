@@ -273,25 +273,25 @@ export function useQuantitativosShingle() {
       
       // Converter dados para formato ItemQuantitativo
       const itensProcessados: ItemQuantitativo[] = itens.map((item: any, index: number) => {
-        // Calcular quantidade líquida (antes da quebra)
-        const quantidadeLiquida = item.quantidade_calculada || 0;
+        // CORREÇÃO: Usar 'quantidade' que é o campo salvo pelo StepCalculoTelhasCompleto
+        const quantidadeLiquida = item.quantidade_calculada || item.quantidade || 0;
         
         // Calcular quebra percentual
         const quebraPercentual = item.quebra_aplicada || 0;
         
-        // Quantidade com quebra
-        const quantidadeComQuebra = item.quantidade_final || quantidadeLiquida;
+        // Quantidade com quebra - usar 'quantidade' se não houver quantidade_final
+        const quantidadeComQuebra = item.quantidade_final || item.quantidade || quantidadeLiquida;
         
         // Determinar unidade de venda baseada no tipo
-        const unidadeVenda = determinarUnidadeVenda(item.tipo_componente || '', item.unidade_dimensao);
+        const unidadeVenda = determinarUnidadeVenda(item.tipo_componente || item.categoria || '', item.unidade_dimensao);
         
         // Quantidade de embalagens (usar quantidade_arredondada se disponível)
         const quantidadeEmbalagens = item.quantidade_arredondada || Math.ceil(quantidadeComQuebra);
 
         return {
-          codigo: item.produto_codigo || `ITEM-${index + 1}`,
-          descricao: item.descricao || 'Produto não identificado',
-          categoria: mapearCategoria(item.tipo_componente || ''),
+          codigo: item.produto_codigo || item.codigo || `ITEM-${index + 1}`,
+          descricao: item.descricao || item.produto_nome || 'Produto não identificado',
+          categoria: mapearCategoria(item.tipo_componente || item.categoria || ''),
           quantidade_liquida: parseFloat(quantidadeLiquida.toFixed(2)),
           quebra_percentual: parseFloat(quebraPercentual.toFixed(1)),
           quantidade_com_quebra: parseFloat(quantidadeComQuebra.toFixed(2)),
