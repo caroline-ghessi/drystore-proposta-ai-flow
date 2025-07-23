@@ -106,8 +106,9 @@ export function useQuantitativosShingle() {
 
       console.log('✅ [HOOK-DEBUG] Dados validados com sucesso');
 
-      // CORREÇÃO: Sempre usar 'telhas-shingle' como tipo de proposta
-      const tipoProposta = 'telhas-shingle';
+      // CORREÇÃO: Determinar tipo específico baseado no código da telha
+      const telhaCodigoStr = String(dados.telha_codigo || '1.16');
+      const tipoProposta = telhaCodigoStr === '1.17' ? 'telhas-shingle-oakridge' : 'telhas-shingle-supreme';
 
       // Construir dados extras com tratamento robusto de undefined/null
       const dadosExtras = {
