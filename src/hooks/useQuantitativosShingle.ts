@@ -187,6 +187,17 @@ export function useQuantitativosShingle() {
 
       // Processar resultados e calcular quantidades comerciais
       const itensQuantitativos: ItemQuantitativo[] = resultadosDedupe.map((item: any, index: number) => {
+        console.log(`🔍 [HOOK-DEBUG] Processando item ${index + 1}:`, {
+          codigo: item.item_codigo,
+          descricao: item.item_descricao,
+          categoria: item.categoria,
+          quantidade_liquida: item.quantidade_liquida,
+          quantidade_com_quebra: item.quantidade_com_quebra,
+          preco_unitario: item.preco_unitario,
+          valor_total: item.valor_total,
+          rawItem: item
+        });
+
         const infoProduto = infoProdutos[item.item_codigo] || {};
         const quantidadeEmbalagem = infoProduto.quantidade_embalagem || 1;
         const unidadeVenda = determinarUnidadeVenda(item.categoria, infoProduto.unidade_medida);
@@ -202,7 +213,7 @@ export function useQuantitativosShingle() {
           ? ((item.quantidade_com_quebra - item.quantidade_liquida) / item.quantidade_liquida) * 100 
           : 0;
 
-        return {
+        const itemProcessado = {
           codigo: item.item_codigo,
           descricao: item.item_descricao,
           categoria: item.categoria,
@@ -215,6 +226,9 @@ export function useQuantitativosShingle() {
           valor_total: parseFloat(item.valor_total.toFixed(2)),
           ordem: item.ordem_calculo || index + 1
         };
+
+        console.log(`✅ [HOOK-DEBUG] Item processado ${index + 1}:`, itemProcessado);
+        return itemProcessado;
       });
 
       // Ordenar por categoria e ordem
