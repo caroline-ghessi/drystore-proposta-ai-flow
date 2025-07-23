@@ -187,48 +187,35 @@ export function useQuantitativosShingle() {
 
       // Processar resultados e calcular quantidades comerciais
       const itensQuantitativos: ItemQuantitativo[] = resultadosDedupe.map((item: any, index: number) => {
-        console.log(`🔍 [HOOK-DEBUG] Processando item ${index + 1}:`, {
-          codigo: item.item_codigo,
-          descricao: item.item_descricao,
-          categoria: item.categoria,
-          quantidade_liquida: item.quantidade_liquida,
-          quantidade_com_quebra: item.quantidade_com_quebra,
-          preco_unitario: item.preco_unitario,
-          valor_total: item.valor_total,
-          rawItem: item
-        });
-
         const infoProduto = infoProdutos[item.item_codigo] || {};
         const quantidadeEmbalagem = infoProduto.quantidade_embalagem || 1;
         const unidadeVenda = determinarUnidadeVenda(item.categoria, infoProduto.unidade_medida);
         
-        // Produtos com cálculo customizado (starter, cumeeira) já têm quantidade correta
-        const produtosCustomizados = ['10471', '10472', '5298']; // Starter, Cap de Cumeeira e Cumeeira Ventilada
-        const quantidadeEmbalagens = produtosCustomizados.includes(item.item_codigo)
-          ? item.quantidade_com_quebra // Usar diretamente a quantidade calculada
-          : Math.ceil(item.quantidade_com_quebra / quantidadeEmbalagem); // Calcular normalmente
+        // Lista de produtos com cálculo customizado (já vem o valor final da SQL)
+        const produtosCustomizados = ['10471', '10472', '5298', '15600']; // STARTER, CAP CUMEEIRA, CUMEEIRA VENT, FITA
         
-        // Calcular quebra percentual
-        const quebraPercentual = item.quantidade_liquida > 0 
+        // CORREÇÃO: Aplicar Math.ceil() para produtos customizados também
+        const quantidadeEmbalagens = produtosCustomizados.includes(item.item_codigo)
+          ? Math.ceil(item.quantidade_com_quebra) // ✅ Arredonda para cima (2.392 → 3)
+          : Math.ceil(item.quantidade_com_quebra / quantidadeEmbalagem);
+
+        const percentualQuebra = item.quantidade_liquida > 0 
           ? ((item.quantidade_com_quebra - item.quantidade_liquida) / item.quantidade_liquida) * 100 
           : 0;
 
-        const itemProcessado = {
+        return {
           codigo: item.item_codigo,
           descricao: item.item_descricao,
           categoria: item.categoria,
-          quantidade_liquida: parseFloat(item.quantidade_liquida.toFixed(2)),
-          quebra_percentual: parseFloat(quebraPercentual.toFixed(1)),
-          quantidade_com_quebra: parseFloat(item.quantidade_com_quebra.toFixed(2)),
+          quantidade_liquida: parseFloat(item.quantidade_liquida.toFixed(3)),
+          quebra_percentual: parseFloat(percentualQuebra.toFixed(1)),
+          quantidade_com_quebra: parseFloat(item.quantidade_com_quebra.toFixed(3)),
           unidade_venda: unidadeVenda,
           quantidade_embalagens: quantidadeEmbalagens,
           preco_unitario: parseFloat(item.preco_unitario.toFixed(2)),
           valor_total: parseFloat(item.valor_total.toFixed(2)),
           ordem: item.ordem_calculo || index + 1
         };
-
-        console.log(`✅ [HOOK-DEBUG] Item processado ${index + 1}:`, itemProcessado);
-        return itemProcessado;
       });
 
       // Ordenar por categoria e ordem
