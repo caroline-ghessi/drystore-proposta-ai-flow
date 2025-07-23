@@ -192,7 +192,7 @@ export function useQuantitativosShingle() {
         const unidadeVenda = determinarUnidadeVenda(item.categoria, infoProduto.unidade_medida);
         
         // Produtos com cálculo customizado (starter, cumeeira) já têm quantidade correta
-        const produtosCustomizados = ['10471', '10472']; // Starter e Cap de Cumeeira
+        const produtosCustomizados = ['10471', '10472', '5298']; // Starter, Cap de Cumeeira e Cumeeira Ventilada
         const quantidadeEmbalagens = produtosCustomizados.includes(item.item_codigo)
           ? item.quantidade_com_quebra // Usar diretamente a quantidade calculada
           : Math.ceil(item.quantidade_com_quebra / quantidadeEmbalagem); // Calcular normalmente
