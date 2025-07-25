@@ -29,7 +29,14 @@ export function StepDadosManuaisTelhas({
     areaTelhado: data.areaTelhado || 0,
     inclinacaoTelhado: data.inclinacaoTelhado || 0,
     tipoEstrutura: data.tipoEstrutura || '',
-    observacoes: data.observacoes || ''
+    observacoes: data.observacoes || '',
+    // NOVOS CAMPOS para dimensões específicas
+    perimetroTelhado: data.perimetroTelhado || 0,
+    comprimentoCumeeira: data.comprimentoCumeeira || 0,
+    comprimentoEspigao: data.comprimentoEspigao || 0,
+    comprimentoAguaFurtada: data.comprimentoAguaFurtada || 0,
+    corAcessorios: data.corAcessorios || 'CINZA',
+    incluirManta: data.incluirManta ?? true
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -47,6 +54,9 @@ export function StepDadosManuaisTelhas({
     }
     if (!formData.areaTelhado || formData.areaTelhado <= 0) {
       newErrors.areaTelhado = 'Área do telhado é obrigatória'
+    }
+    if (!formData.perimetroTelhado || formData.perimetroTelhado <= 0) {
+      newErrors.perimetroTelhado = 'Perímetro do telhado é obrigatório'
     }
     if (formData.inclinacaoTelhado > 0 && formData.inclinacaoTelhado < 18) {
       newErrors.inclinacaoTelhado = 'Inclinação mínima para telhas shingle é de 18%'
@@ -186,6 +196,26 @@ export function StepDadosManuaisTelhas({
               </div>
 
               <div>
+                <Label htmlFor="perimetro">Perímetro (m) *</Label>
+                <Input
+                  id="perimetro"
+                  type="number"
+                  value={formData.perimetroTelhado || ''}
+                  onChange={(e) => handleInputChange('perimetroTelhado', parseFloat(e.target.value) || 0)}
+                  placeholder="Ex: 232.17"
+                  min="1"
+                  step="0.01"
+                  className={errors.perimetroTelhado ? 'border-red-500' : ''}
+                />
+                {errors.perimetroTelhado && (
+                  <p className="text-sm text-red-500 mt-1">{errors.perimetroTelhado}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Perímetro total do telhado
+                </p>
+              </div>
+
+              <div>
                 <Label htmlFor="inclinacao">Inclinação (%) *</Label>
                 <Input
                   id="inclinacao"
@@ -205,24 +235,102 @@ export function StepDadosManuaisTelhas({
                   Mínimo 18% - máximo 85% para telhas shingle
                 </p>
               </div>
+            </div>
 
-              <div>
-                <Label htmlFor="estrutura">Tipo de Estrutura</Label>
-                <Select 
-                  value={formData.tipoEstrutura} 
-                  onValueChange={(value) => handleInputChange('tipoEstrutura', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="madeira">Madeira</SelectItem>
-                    <SelectItem value="metalica">Metálica</SelectItem>
-                    <SelectItem value="concreto">Concreto</SelectItem>
-                    <SelectItem value="mista">Mista</SelectItem>
-                    <SelectItem value="outro">Outro</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* NOVA SEÇÃO: Dimensões Específicas */}
+            <div className="border-t pt-4">
+              <h4 className="font-medium mb-3">Dimensões Específicas</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="cumeeira">Cumeeira (m)</Label>
+                  <Input
+                    id="cumeeira"
+                    type="number"
+                    value={formData.comprimentoCumeeira || ''}
+                    onChange={(e) => handleInputChange('comprimentoCumeeira', parseFloat(e.target.value) || 0)}
+                    placeholder="Ex: 45"
+                    min="0"
+                    step="0.01"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Comprimento da cumeeira (linha de topo)
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="espigao">Espigão (m)</Label>
+                  <Input
+                    id="espigao"
+                    type="number"
+                    value={formData.comprimentoEspigao || ''}
+                    onChange={(e) => handleInputChange('comprimentoEspigao', parseFloat(e.target.value) || 0)}
+                    placeholder="Ex: 0"
+                    min="0"
+                    step="0.01"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Comprimento do espigão (se houver)
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="aguaFurtada">Água Furtada (m)</Label>
+                  <Input
+                    id="aguaFurtada"
+                    type="number"
+                    value={formData.comprimentoAguaFurtada || ''}
+                    onChange={(e) => handleInputChange('comprimentoAguaFurtada', parseFloat(e.target.value) || 0)}
+                    placeholder="Ex: 0"
+                    min="0"
+                    step="0.01"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Comprimento de água furtada (se houver)
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Configurações Adicionais */}
+            <div className="border-t pt-4">
+              <h4 className="font-medium mb-3">Configurações</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="corAcessorios">Cor dos Acessórios</Label>
+                  <Select 
+                    value={formData.corAcessorios} 
+                    onValueChange={(value) => handleInputChange('corAcessorios', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a cor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CINZA">Cinza</SelectItem>
+                      <SelectItem value="PRETO">Preto</SelectItem>
+                      <SelectItem value="MARROM">Marrom</SelectItem>
+                      <SelectItem value="VERDE">Verde</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="estrutura">Tipo de Estrutura</Label>
+                  <Select 
+                    value={formData.tipoEstrutura} 
+                    onValueChange={(value) => handleInputChange('tipoEstrutura', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="madeira">Madeira</SelectItem>
+                      <SelectItem value="metalica">Metálica</SelectItem>
+                      <SelectItem value="concreto">Concreto</SelectItem>
+                      <SelectItem value="mista">Mista</SelectItem>
+                      <SelectItem value="outro">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 

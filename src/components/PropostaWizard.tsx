@@ -40,12 +40,19 @@ export interface PropostaData {
   areaTelhado?: number;
   inclinacaoTelhado?: number;
   tipoEstrutura?: string;
+  // Dados específicos do sistema shingle selecionado
+  tipoShingleSelecionado?: TipoShingleSelecionado;
+  // Dimensões específicas para telhas shingle (dados da etapa 3/4)
+  comprimentoCumeeira?: number;
+  comprimentoEspigao?: number;
+  comprimentoAguaFurtada?: number;
+  perimetroTelhado?: number;
+  corAcessorios?: string;
+  incluirManta?: boolean;
   // Dados para impermeabilização
   areaImpermeabilizacao?: number;
   tipoSuperficie?: string;
   sistemaImpermeabilizacao?: string;
-  // Dados específicos do sistema shingle selecionado
-  tipoShingleSelecionado?: TipoShingleSelecionado;
 }
 
 interface PropostaWizardProps {
@@ -418,18 +425,22 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
           {STEPS[currentStep]?.title === "Validar Quantitativos" && propostaData.tipoProposta === 'telhas-shingle' && propostaData.entradaManual && (
             <StepValidarQuantitativos
               dadosCalculoShingle={{
-                area_telhado: propostaData.areaTelhado || 0,
-                comprimento_cumeeira: propostaData.dadosExtraidos?.comprimento_cumeeira || 0,
-                comprimento_espigao: propostaData.dadosExtraidos?.comprimento_espigao || 0,
-                comprimento_agua_furtada: propostaData.dadosExtraidos?.comprimento_agua_furtada || 0,
-                perimetro_telhado: propostaData.dadosExtraidos?.perimetro_telhado || 0,
+                // CORREÇÃO DEFINITIVA: Usar dados reais inseridos nas etapas anteriores
+                area_telhado: propostaData.areaTelhado || propostaData.dadosExtraidos?.area_total_m2 || 0,
+                // USAR DADOS MANUAIS SALVOS - principais correções aqui
+                comprimento_cumeeira: propostaData.comprimentoCumeeira || propostaData.dadosExtraidos?.comprimento_cumeeira || 0,
+                comprimento_espigao: propostaData.comprimentoEspigao || propostaData.dadosExtraidos?.comprimento_espigao || 0,
+                comprimento_agua_furtada: propostaData.comprimentoAguaFurtada || propostaData.dadosExtraidos?.comprimento_agua_furtada || 0,
+                perimetro_telhado: propostaData.perimetroTelhado || propostaData.dadosExtraidos?.perimetro_telhado || 0,
                 // CORREÇÃO CRUCIAL: Usar o código correto baseado no tipo selecionado
                 telha_codigo: propostaData.tipoShingleSelecionado === 'oakridge' ? '1.17' : '1.16',
-                cor_acessorios: propostaData.dadosExtraidos?.cor_acessorios || 'CINZA',
-                incluir_manta: propostaData.dadosExtraidos?.incluir_manta ?? true
+                cor_acessorios: propostaData.corAcessorios || propostaData.dadosExtraidos?.cor_acessorios || 'CINZA',
+                incluir_manta: propostaData.incluirManta ?? propostaData.dadosExtraidos?.incluir_manta ?? true
               }}
               onBack={handleBack}
               onApprove={(quantitativos) => {
+                console.log('✅ Quantitativos aprovados:', quantitativos);
+                console.log('💰 Valor total calculado:', quantitativos.reduce((sum, item) => sum + item.valor_total, 0));
                 handleStepData({ 
                   quantitativosAprovados: quantitativos,
                   valorTotal: quantitativos.reduce((sum, item) => sum + item.valor_total, 0)
