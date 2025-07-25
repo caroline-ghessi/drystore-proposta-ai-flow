@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export type StatusProposta = 'processando' | 'enviada' | 'visualizada' | 'aceita' | 'expirada';
-export type TipoProposta = 'energia-solar' | 'telhas-shingle' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao' | 'tintas-texturas' | 'verga-fibra' | 'argamassa-silentfloor' | 'light-steel-frame' | 'impermeabilizacao';
+export type TipoProposta = 'energia-solar' | 'telhas-shingle' | 'telhas-shingle-supreme' | 'telhas-shingle-oakridge' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao' | 'tintas-texturas' | 'verga-fibra' | 'argamassa-silentfloor' | 'light-steel-frame' | 'impermeabilizacao';
 
 export interface Proposta {
   id: string;

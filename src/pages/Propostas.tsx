@@ -52,7 +52,7 @@ export function Propostas() {
       }
       
       // Construir dados_extraidos corretos para fluxo manual de telhas shingle
-      const dadosExtraidos = data.tipoProposta === 'telhas-shingle' && data.entradaManual
+      const dadosExtraidos = (data.tipoProposta === 'telhas-shingle-supreme' || data.tipoProposta === 'telhas-shingle-oakridge') && data.entradaManual
         ? {
             ...data.dadosExtraidos,
             quantitativos_aprovados: data.quantitativosAprovados,
@@ -73,7 +73,7 @@ export function Propostas() {
         cliente_email: data.clienteEmail,
         cliente_whatsapp: data.clienteWhatsapp || '',
         cliente_endereco: data.clienteEndereco || '',
-        tipo_proposta: data.tipoProposta, // Manter tipo base
+        tipo_proposta: data.tipoProposta === 'telhas-shingle-supreme' || data.tipoProposta === 'telhas-shingle-oakridge' ? 'telhas-shingle' : data.tipoProposta,
         arquivo_original: data.arquivoUrl || '',
         dados_extraidos: dadosExtraidos,
         valor_total: data.valorTotal,

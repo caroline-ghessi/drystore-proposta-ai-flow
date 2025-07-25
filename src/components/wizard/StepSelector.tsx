@@ -33,7 +33,7 @@ const TIPOS_PROPOSTA: TipoPropostaItem[] = [
     detalhes: 'Cálculo automático baseado no consumo'
   },
   {
-    tipo: 'telhas-shingle' as TipoProposta,
+    tipo: 'telhas-shingle-supreme' as TipoProposta,
     titulo: 'Telhas Shingle Supreme',
     descricao: 'Cobertura Shingle linha Supreme',
     icone: Building,
@@ -42,7 +42,7 @@ const TIPOS_PROPOSTA: TipoPropostaItem[] = [
     metadata: { tipoShingle: 'supreme' }
   },
   {
-    tipo: 'telhas-shingle' as TipoProposta,
+    tipo: 'telhas-shingle-oakridge' as TipoProposta,
     titulo: 'Telhas Shingle Oakridge',
     descricao: 'Cobertura Shingle linha Oakridge',
     icone: Building,
@@ -188,10 +188,8 @@ export function StepSelector({ tipoProposta, tipoShingleSelecionado, onSelect, o
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {TIPOS_PROPOSTA.map((item) => {
             const IconComponent = item.icone;
-            // Lógica de seleção corrigida para telhas shingle
-            const isSelected = item.tipo === 'telhas-shingle' 
-              ? (tipoProposta === item.tipo && tipoShingleSelecionado === item.metadata?.tipoShingle)
-              : tipoProposta === item.tipo;
+            // Lógica de seleção para telhas shingle
+            const isSelected = tipoProposta === item.tipo;
             const podeSelecionar = podeCalcular(item.tipo) || item.tipo === 'energia-solar';
             const statusMessage = obterMensagemStatus(item.tipo);
 
