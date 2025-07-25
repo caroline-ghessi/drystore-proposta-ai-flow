@@ -50,6 +50,8 @@ export interface PropostaData {
   // Dados para encontro com alvenaria
   temEncontroAlvenaria?: boolean;
   perimetroEncontroAlvenaria?: number;
+  // Dados para cumeeira ventilada
+  incluirCumeeiraVentilada?: boolean;
 }
 
 interface PropostaWizardProps {
@@ -191,6 +193,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
       telha_codigo: propostaData.tipoShingleSelecionado || '1.16',
       cor_acessorios: propostaData.corAcessorios || 'CINZA',
       incluir_manta: propostaData.incluirManta ?? true,
+      incluir_cumeeira_ventilada: propostaData.incluirCumeeiraVentilada ?? false,
       inclinacao_telhado: propostaData.inclinacaoTelhado || 18,
       tipo_estrutura: propostaData.tipoEstrutura || 'madeira'
     };

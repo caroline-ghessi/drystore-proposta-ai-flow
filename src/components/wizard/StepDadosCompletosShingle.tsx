@@ -46,6 +46,7 @@ export function StepDadosCompletosShingle({
     corAcessorios: data.corAcessorios || 'CINZA',
     tipoEstrutura: data.tipoEstrutura || '',
     incluirManta: data.incluirManta ?? true,
+    incluirCumeeiraVentilada: data.incluirCumeeiraVentilada ?? false,
     temEncontroAlvenaria: data.temEncontroAlvenaria ?? false,
     perimetroEncontroAlvenaria: data.perimetroEncontroAlvenaria || 0,
     observacoes: data.observacoes || ''
@@ -387,6 +388,20 @@ export function StepDadosCompletosShingle({
                     onCheckedChange={(checked) => handleInputChange('incluirManta', checked)}
                   />
                   <Label htmlFor="incluirManta">Incluir manta starter</Label>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="incluirCumeeiraVentilada"
+                      checked={formData.incluirCumeeiraVentilada}
+                      onCheckedChange={(checked) => handleInputChange('incluirCumeeiraVentilada', checked)}
+                    />
+                    <Label htmlFor="incluirCumeeiraVentilada">Incluir cumeeira ventilada</Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground ml-6">
+                    Sistema de ventilação para controle de umidade no sótão. Recomendado para melhor circulação de ar.
+                  </p>
                 </div>
 
                 <div className="space-y-3">

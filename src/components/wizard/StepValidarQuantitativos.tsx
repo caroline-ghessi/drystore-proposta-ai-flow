@@ -17,6 +17,7 @@ interface StepValidarQuantitativosProps {
     telha_codigo?: string;
     cor_acessorios?: string;
     incluir_manta?: boolean;
+    incluir_cumeeira_ventilada?: boolean;
   };
   onBack: () => void;
   onApprove: (quantitativos: ItemQuantitativo[]) => void;
