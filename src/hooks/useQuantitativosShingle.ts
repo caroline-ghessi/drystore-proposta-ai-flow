@@ -275,9 +275,12 @@ export function useQuantitativosShingle() {
           categoria: mapearCategoria(item.categoria),
           quantidade_liquida: item.quantidade_liquida || item.quantidade,
           quantidade_com_quebra: item.quantidade_com_quebra || item.quantidade,
+          quantidade_embalagens: item.quantidade_embalagens || 0,
+          quebra_percentual: item.quebra_percentual || 0,
           unidade_venda: item.unidade_venda || item.unidade || determinarUnidadeVenda(item.categoria),
           preco_unitario: item.preco_unitario || 0,
           valor_total: item.valor_total || 0,
+          ordem: item.ordem || 1,
           observacoes: item.observacoes || ''
         }));
       }
