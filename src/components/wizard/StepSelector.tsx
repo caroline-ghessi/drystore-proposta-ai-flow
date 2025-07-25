@@ -8,6 +8,7 @@ import { useMapeamentosStatus } from "@/hooks/useMapeamentosStatus"
 
 interface StepSelectorProps {
   tipoProposta: TipoProposta;
+  tipoShingleSelecionado?: 'supreme' | 'oakridge';
   onSelect: (tipo: TipoProposta, tipoShingle?: 'supreme' | 'oakridge') => void;
   onNext: () => void;
 }
@@ -115,7 +116,7 @@ const TIPOS_PROPOSTA: TipoPropostaItem[] = [
   }
 ]
 
-export function StepSelector({ tipoProposta, onSelect, onNext }: StepSelectorProps) {
+export function StepSelector({ tipoProposta, tipoShingleSelecionado, onSelect, onNext }: StepSelectorProps) {
   const { status, isLoading, obterMensagemStatus, podeCalcular } = useMapeamentosStatus();
 
   const getStatusIcon = (tipo: string) => {
@@ -187,7 +188,10 @@ export function StepSelector({ tipoProposta, onSelect, onNext }: StepSelectorPro
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {TIPOS_PROPOSTA.map((item) => {
             const IconComponent = item.icone;
-            const isSelected = tipoProposta === item.tipo;
+            // Lógica de seleção corrigida para telhas shingle
+            const isSelected = item.tipo === 'telhas-shingle' 
+              ? (tipoProposta === item.tipo && tipoShingleSelecionado === item.metadata?.tipoShingle)
+              : tipoProposta === item.tipo;
             const podeSelecionar = podeCalcular(item.tipo) || item.tipo === 'energia-solar';
             const statusMessage = obterMensagemStatus(item.tipo);
 

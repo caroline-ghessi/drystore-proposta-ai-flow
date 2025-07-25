@@ -236,6 +236,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
           {currentStep === 0 && (
             <StepSelector
               tipoProposta={propostaData.tipoProposta}
+              tipoShingleSelecionado={propostaData.tipoShingleSelecionado}
               onSelect={(tipo, tipoShingle) => handleStepData({ 
                 tipoProposta: tipo,
                 tipoShingleSelecionado: tipoShingle
