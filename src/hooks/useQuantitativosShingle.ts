@@ -267,7 +267,22 @@ export function useQuantitativosShingle() {
     try {
       console.log('Processando quantitativos da proposta:', dadosExtraidos);
 
-      // Verificar se temos os dados necessários
+      // Verificar primeiro o formato novo (quantitativos_aprovados)
+      if (dadosExtraidos?.quantitativos_aprovados) {
+        return dadosExtraidos.quantitativos_aprovados.map((item: any) => ({
+          codigo: item.codigo,
+          descricao: item.descricao,
+          categoria: mapearCategoria(item.categoria),
+          quantidade_liquida: item.quantidade_liquida || item.quantidade,
+          quantidade_com_quebra: item.quantidade_com_quebra || item.quantidade,
+          unidade_venda: item.unidade_venda || item.unidade || determinarUnidadeVenda(item.categoria),
+          preco_unitario: item.preco_unitario || 0,
+          valor_total: item.valor_total || 0,
+          observacoes: item.observacoes || ''
+        }));
+      }
+
+      // Formato antigo (orcamento_completo.itens)
       if (!dadosExtraidos?.orcamento_completo?.itens) {
         console.warn('Dados de orçamento não encontrados');
         return [];

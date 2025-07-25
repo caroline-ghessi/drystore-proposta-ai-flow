@@ -50,7 +50,8 @@ export function ModalQuantitativosPropostas({
         throw new Error('Proposta não encontrada');
       }
 
-      if (!proposta.dados_extraidos?.orcamento_completo?.itens) {
+      // Verificar primeiro o formato novo (quantitativos_aprovados)
+      if (!proposta.dados_extraidos?.quantitativos_aprovados && !proposta.dados_extraidos?.orcamento_completo?.itens) {
         throw new Error('Dados de quantitativos não encontrados na proposta');
       }
 
