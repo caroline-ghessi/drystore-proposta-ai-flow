@@ -197,8 +197,8 @@ export function useQuantitativosShingle() {
         const quantidadeEmbalagem = infoProduto.quantidade_embalagem || 1;
         const unidadeVenda = determinarUnidadeVenda(item.categoria, infoProduto.unidade_medida);
         
-        // Lista de produtos com cálculo customizado - removido STARTER e CAP CUMEEIRA
-        const produtosCustomizados = ['5298', '15600', '5322']; // CUMEEIRA VENT, FITA, BOBINA ALUMINIO
+        // Lista de produtos com cálculo customizado - produtos que mostram quantidade direta de unidades
+        const produtosCustomizados = ['3539', '5298', '15600', '5322']; // PREGO ROLO, CUMEEIRA VENT, FITA, BOBINA ALUMINIO
         
         // Cálculo padrão: quantidade_com_quebra / quantidade_embalagem para todos os produtos
         const quantidadeEmbalagens = produtosCustomizados.includes(item.item_codigo)
