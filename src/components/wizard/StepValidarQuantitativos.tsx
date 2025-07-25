@@ -13,6 +13,7 @@ interface StepValidarQuantitativosProps {
     comprimento_espigao?: number;
     comprimento_agua_furtada?: number;
     perimetro_telhado?: number;
+    perimetro_encontro_alvenaria?: number;
     telha_codigo?: string;
     cor_acessorios?: string;
     incluir_manta?: boolean;

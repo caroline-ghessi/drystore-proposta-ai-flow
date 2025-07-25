@@ -187,6 +187,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
       comprimento_cumeeira: propostaData.comprimentoCumeeira || 0,
       comprimento_espigao: propostaData.comprimentoEspigao || 0,
       comprimento_agua_furtada: propostaData.comprimentoAguaFurtada || 0,
+      perimetro_encontro_alvenaria: propostaData.perimetroEncontroAlvenaria || 0,
       telha_codigo: propostaData.tipoShingleSelecionado || '1.16',
       cor_acessorios: propostaData.corAcessorios || 'CINZA',
       incluir_manta: propostaData.incluirManta ?? true,

@@ -119,6 +119,7 @@ export function useQuantitativosShingle() {
         comprimento_cumeeira: Number(dados.comprimento_cumeeira) || 0,
         comprimento_espigao: Number(dados.comprimento_espigao) || 0,
         comprimento_agua_furtada: Number(dados.comprimento_agua_furtada) || 0,
+        perimetro_encontro_alvenaria: Number(dados.perimetro_encontro_alvenaria) || 0,
         telha_codigo: String(dados.telha_codigo || '1.16'),
         cor_acessorios: String(dados.cor_acessorios || 'CINZA'),
         incluir_manta: Boolean(dados.incluir_manta || false)
@@ -194,7 +195,7 @@ export function useQuantitativosShingle() {
         const unidadeVenda = determinarUnidadeVenda(item.categoria, infoProduto.unidade_medida);
         
         // Lista de produtos com cálculo customizado (já vem o valor final da SQL)
-        const produtosCustomizados = ['10471', '10472', '5298', '15600']; // STARTER, CAP CUMEEIRA, CUMEEIRA VENT, FITA
+        const produtosCustomizados = ['10471', '10472', '5298', '15600', '5322']; // STARTER, CAP CUMEEIRA, CUMEEIRA VENT, FITA, BOBINA ALUMINIO
         
         // CORREÇÃO: Aplicar Math.ceil() para produtos customizados também
         const quantidadeEmbalagens = produtosCustomizados.includes(item.item_codigo)
