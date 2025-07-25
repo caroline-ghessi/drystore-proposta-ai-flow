@@ -325,7 +325,12 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
                     regiao_climatica: 'Sul',
                     cor_preferida: 'Marrom',
                     observacoes_especiais: propostaData.observacoes,
-                    orcamento_completo: orcamento
+                    orcamento_completo: orcamento,
+                    // ✅ CORREÇÃO: Salvar dimensões editadas pelo usuário
+                    comprimento_cumeeira: orcamento.parametros?.comprimento_cumeeira || 0,
+                    comprimento_espigao: orcamento.parametros?.comprimento_espigao || 0,
+                    comprimento_agua_furtada: orcamento.parametros?.comprimento_agua_furtada || 0,
+                    perimetro_telhado: orcamento.parametros?.perimetro_telhado || 0,
                   },
                   valorTotal: orcamento.valorTotal
                 });

@@ -42,6 +42,15 @@ interface OrcamentoCompleto {
     pesoTotal: number
     economiaVsCeramica: number
   }
+  parametros?: {
+    area_telhado?: number
+    comprimento_cumeeira?: number
+    comprimento_espigao?: number
+    comprimento_agua_furtada?: number
+    perimetro_telhado?: number
+    telha_codigo?: string
+    incluir_manta?: boolean
+  }
 }
 
 interface StepCalculoTelhasCompletoProps {
@@ -134,6 +143,15 @@ export function StepCalculoTelhasCompleto({
             totalItens: resultado.itens.length,
             pesoTotal: resultado.area_telhado * 12, // 12kg/m²
             economiaVsCeramica: resultado.economia_peso_vs_ceramica || 0
+          },
+          parametros: {
+            area_telhado: dimensoes.area,
+            comprimento_cumeeira: dimensoes.comprimentoCumeeira,
+            comprimento_espigao: dimensoes.comprimentoEspigao,
+            comprimento_agua_furtada: dimensoes.comprimentoAguaFurtada,
+            perimetro_telhado: dimensoes.perimetro,
+            telha_codigo: configuracoes.sistemaShingle,
+            incluir_manta: configuracoes.incluirManta
           }
         }
 
