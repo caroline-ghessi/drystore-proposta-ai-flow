@@ -217,7 +217,6 @@ export function useQuantitativosShingle() {
           quebra_percentual: parseFloat(percentualQuebra.toFixed(1)),
           quantidade_com_quebra: parseFloat(item.quantidade_com_quebra.toFixed(3)),
           unidade_venda: unidadeVenda,
-          quantidade_embalagens: quantidadeEmbalagens,
           preco_unitario: parseFloat(item.preco_unitario.toFixed(2)),
           valor_total: parseFloat(item.valor_total.toFixed(2)),
           ordem: item.ordem_calculo || index + 1
@@ -278,13 +277,11 @@ export function useQuantitativosShingle() {
           categoria: mapearCategoria(item.categoria),
           quantidade_liquida: item.quantidade_liquida || item.quantidade,
           quantidade_com_quebra: item.quantidade_com_quebra || item.quantidade,
-          quantidade_embalagens: item.quantidade_embalagens || 0,
           quebra_percentual: item.quebra_percentual || 0,
           unidade_venda: item.unidade_venda || item.unidade || determinarUnidadeVenda(item.categoria),
           preco_unitario: item.preco_unitario || 0,
           valor_total: item.valor_total || 0,
-          ordem: item.ordem || 1,
-          observacoes: item.observacoes || ''
+          ordem: item.ordem || 1
         }));
       }
 
@@ -310,9 +307,6 @@ export function useQuantitativosShingle() {
         // Determinar unidade de venda baseada no tipo
         const unidadeVenda = determinarUnidadeVenda(item.tipo_componente || item.categoria || '', item.unidade_dimensao);
         
-        // Quantidade de embalagens (usar quantidade_arredondada se disponível)
-        const quantidadeEmbalagens = item.quantidade_arredondada || Math.ceil(quantidadeComQuebra);
-
         return {
           codigo: item.produto_codigo || item.codigo || `ITEM-${index + 1}`,
           descricao: item.descricao || item.produto_nome || 'Produto não identificado',
@@ -321,7 +315,6 @@ export function useQuantitativosShingle() {
           quebra_percentual: parseFloat(quebraPercentual.toFixed(1)),
           quantidade_com_quebra: parseFloat(quantidadeComQuebra.toFixed(2)),
           unidade_venda: unidadeVenda,
-          quantidade_embalagens: quantidadeEmbalagens,
           preco_unitario: parseFloat((item.preco_unitario || 0).toFixed(2)),
           valor_total: parseFloat((item.valor_total || 0).toFixed(2)),
           ordem: index + 1
@@ -384,7 +377,7 @@ export function useQuantitativosShingle() {
     }
 
     // Verificar se há itens sem quantidade
-    const itensSemQuantidade = itens.filter(item => item.quantidade_embalagens === 0);
+    const itensSemQuantidade = itens.filter(item => item.quantidade_com_quebra === 0);
     if (itensSemQuantidade.length > 0) {
       alertas.push(`${itensSemQuantidade.length} itens com quantidade zero`);
     }

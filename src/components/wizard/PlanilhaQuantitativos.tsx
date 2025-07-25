@@ -15,7 +15,6 @@ export interface ItemQuantitativo {
   quebra_percentual: number;
   quantidade_com_quebra: number;
   unidade_venda: string;
-  quantidade_embalagens: number;
   preco_unitario: number;
   valor_total: number;
   ordem: number;
@@ -67,7 +66,7 @@ export function PlanilhaQuantitativos({
   const handleExportarPlanilha = () => {
     // Preparar dados para exportação
     const csvContent = [
-      ['Código', 'Descrição', 'Categoria', 'Qtd Líquida', 'Quebra %', 'Qtd c/ Quebra', 'Unidade', 'Embalagens', 'Preço Unit.', 'Valor Total'].join(','),
+      ['Código', 'Descrição', 'Categoria', 'Qtd Líquida', 'Quebra %', 'Qtd c/ Quebra', 'Unidade', 'Preço Unit.', 'Valor Total'].join(','),
       ...itens.map(item => [
         item.codigo,
         `"${item.descricao}"`,
@@ -76,7 +75,6 @@ export function PlanilhaQuantitativos({
         item.quebra_percentual.toFixed(1),
         item.quantidade_com_quebra.toFixed(2),
         item.unidade_venda,
-        item.quantidade_embalagens,
         item.preco_unitario.toFixed(2),
         item.valor_total.toFixed(2)
       ].join(','))
@@ -190,9 +188,8 @@ export function PlanilhaQuantitativos({
                   <TableHead>Descrição</TableHead>
                   <TableHead className="text-right">Qtd Líquida</TableHead>
                   <TableHead className="text-right">Quebra %</TableHead>
-                  <TableHead className="text-right">Qtd c/ Quebra</TableHead>
+                  <TableHead className="text-right bg-orange-100 dark:bg-orange-900/20 font-medium">Qtd c/ Quebra</TableHead>
                   <TableHead>Unidade</TableHead>
-                  <TableHead className="text-right">Embalagens</TableHead>
                   <TableHead className="text-right">Preço Unit.</TableHead>
                   <TableHead className="text-right">Valor Total</TableHead>
                 </TableRow>
@@ -212,13 +209,10 @@ export function PlanilhaQuantitativos({
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {item.quantidade_com_quebra.toFixed(2)}
+                    <TableCell className="text-right font-bold bg-orange-50 dark:bg-orange-900/10 text-orange-700 dark:text-orange-300">
+                      {item.codigo === '7427' ? item.quantidade_com_quebra.toFixed(2) : Math.ceil(item.quantidade_com_quebra)}
                     </TableCell>
                     <TableCell>{item.unidade_venda}</TableCell>
-                    <TableCell className="text-right font-bold text-primary">
-                      {item.quantidade_embalagens}
-                    </TableCell>
                     <TableCell className="text-right">
                       {item.preco_unitario.toLocaleString('pt-BR', {
                         style: 'currency',
