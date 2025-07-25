@@ -197,12 +197,12 @@ export function useQuantitativosShingle() {
         const quantidadeEmbalagem = infoProduto.quantidade_embalagem || 1;
         const unidadeVenda = determinarUnidadeVenda(item.categoria, infoProduto.unidade_medida);
         
-        // Lista de produtos com cálculo customizado (já vem o valor final da SQL)
-        const produtosCustomizados = ['10471', '10472', '5298', '15600', '5322']; // STARTER, CAP CUMEEIRA, CUMEEIRA VENT, FITA, BOBINA ALUMINIO
+        // Lista de produtos com cálculo customizado - removido STARTER e CAP CUMEEIRA
+        const produtosCustomizados = ['5298', '15600', '5322']; // CUMEEIRA VENT, FITA, BOBINA ALUMINIO
         
-        // CORREÇÃO: Aplicar Math.ceil() para produtos customizados também
+        // Cálculo padrão: quantidade_com_quebra / quantidade_embalagem para todos os produtos
         const quantidadeEmbalagens = produtosCustomizados.includes(item.item_codigo)
-          ? Math.ceil(item.quantidade_com_quebra) // ✅ Arredonda para cima (2.392 → 3)
+          ? Math.ceil(item.quantidade_com_quebra) // Para produtos realmente customizados
           : Math.ceil(item.quantidade_com_quebra / quantidadeEmbalagem);
 
         const percentualQuebra = item.quantidade_liquida > 0 
