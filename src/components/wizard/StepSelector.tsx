@@ -8,11 +8,21 @@ import { useMapeamentosStatus } from "@/hooks/useMapeamentosStatus"
 
 interface StepSelectorProps {
   tipoProposta: TipoProposta;
-  onSelect: (tipo: TipoProposta) => void;
+  onSelect: (tipo: TipoProposta, tipoShingle?: 'supreme' | 'oakridge') => void;
   onNext: () => void;
 }
 
-const TIPOS_PROPOSTA = [
+interface TipoPropostaItem {
+  tipo: TipoProposta;
+  titulo: string;
+  descricao: string;
+  icone: any;
+  documento: string;
+  detalhes: string;
+  metadata?: { tipoShingle?: string };
+}
+
+const TIPOS_PROPOSTA: TipoPropostaItem[] = [
   {
     tipo: 'energia-solar' as TipoProposta,
     titulo: 'Energia Solar',
@@ -23,11 +33,21 @@ const TIPOS_PROPOSTA = [
   },
   {
     tipo: 'telhas-shingle' as TipoProposta,
-    titulo: 'Telhas Shingle',
-    descricao: 'Cobertura e telhas para telhados',
+    titulo: 'Telhas Shingle Supreme',
+    descricao: 'Cobertura Shingle linha Supreme',
     icone: Building,
     documento: 'Projeto ou especificações (PDF)',
-    detalhes: 'Área, inclinação e especificações'
+    detalhes: 'Área, perímetro e especificações',
+    metadata: { tipoShingle: 'supreme' }
+  },
+  {
+    tipo: 'telhas-shingle' as TipoProposta,
+    titulo: 'Telhas Shingle Oakridge',
+    descricao: 'Cobertura Shingle linha Oakridge',
+    icone: Building,
+    documento: 'Projeto ou especificações (PDF)',
+    detalhes: 'Área, perímetro e especificações',
+    metadata: { tipoShingle: 'oakridge' }
   },
   {
     tipo: 'divisorias' as TipoProposta,
@@ -178,7 +198,13 @@ export function StepSelector({ tipoProposta, onSelect, onNext }: StepSelectorPro
                     className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
                       isSelected ? 'ring-2 ring-primary border-primary' : ''
                     } ${!podeSelecionar ? 'opacity-75' : ''}`}
-                    onClick={() => onSelect(item.tipo)}
+                    onClick={() => {
+                      if (item.metadata?.tipoShingle) {
+                        onSelect(item.tipo, item.metadata.tipoShingle as 'supreme' | 'oakridge');
+                      } else {
+                        onSelect(item.tipo);
+                      }
+                    }}
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-center gap-3">

@@ -17,6 +17,8 @@ import { StepValidarQuantitativos } from "./wizard/StepValidarQuantitativos"
 
 export type TipoProposta = 'energia-solar' | 'telhas-shingle' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao' | 'tintas-texturas' | 'verga-fibra' | 'argamassa-silentfloor' | 'light-steel-frame' | 'impermeabilizacao'
 
+export type TipoShingleSelecionado = 'supreme' | 'oakridge';
+
 export interface PropostaData {
   tipoProposta: TipoProposta;
   clienteNome: string;
@@ -42,6 +44,8 @@ export interface PropostaData {
   areaImpermeabilizacao?: number;
   tipoSuperficie?: string;
   sistemaImpermeabilizacao?: string;
+  // Dados específicos do sistema shingle selecionado
+  tipoShingleSelecionado?: TipoShingleSelecionado;
 }
 
 interface PropostaWizardProps {
@@ -232,7 +236,10 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
           {currentStep === 0 && (
             <StepSelector
               tipoProposta={propostaData.tipoProposta}
-              onSelect={(tipo) => handleStepData({ tipoProposta: tipo })}
+              onSelect={(tipo, tipoShingle) => handleStepData({ 
+                tipoProposta: tipo,
+                tipoShingleSelecionado: tipoShingle
+              })}
               onNext={handleNext}
             />
           )}
@@ -365,11 +372,22 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
             <StepCalculoTelhasCompleto
               dadosExtraidos={propostaData.dadosExtraidos}
               onCalculoComplete={(orcamento) => {
+                // CORREÇÃO: Salvar todos os dados da etapa 4 incluindo os parâmetros
+                const dadosCompletos = {
+                  ...propostaData.dadosExtraidos,
+                  // Dados da etapa 4 (os valores que o usuário inseriu)
+                  area_total_m2: orcamento.parametros?.area_telhado,
+                  comprimento_cumeeira: orcamento.parametros?.comprimento_cumeeira,
+                  comprimento_espigao: orcamento.parametros?.comprimento_espigao,
+                  comprimento_agua_furtada: orcamento.parametros?.comprimento_agua_furtada,
+                  perimetro_telhado: orcamento.parametros?.perimetro_telhado,
+                  telha_codigo: orcamento.parametros?.telha_codigo,
+                  incluir_manta: orcamento.parametros?.incluir_manta,
+                  orcamento_completo: orcamento
+                };
+                
                 handleStepData({
-                  dadosExtraidos: {
-                    ...propostaData.dadosExtraidos,
-                    orcamento_completo: orcamento
-                  },
+                  dadosExtraidos: dadosCompletos,
                   valorTotal: orcamento.valorTotal
                 });
               }}
@@ -404,7 +422,8 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
                 comprimento_espigao: propostaData.dadosExtraidos?.comprimento_espigao || 0,
                 comprimento_agua_furtada: propostaData.dadosExtraidos?.comprimento_agua_furtada || 0,
                 perimetro_telhado: propostaData.dadosExtraidos?.perimetro_telhado || 0,
-                telha_codigo: propostaData.dadosExtraidos?.telha_codigo || '1.16',
+                // CORREÇÃO CRUCIAL: Usar o código correto baseado no tipo selecionado
+                telha_codigo: propostaData.tipoShingleSelecionado === 'oakridge' ? '1.17' : '1.16',
                 cor_acessorios: propostaData.dadosExtraidos?.cor_acessorios || 'CINZA',
                 incluir_manta: propostaData.dadosExtraidos?.incluir_manta ?? true
               }}

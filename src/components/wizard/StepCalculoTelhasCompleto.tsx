@@ -155,6 +155,19 @@ export function StepCalculoTelhasCompleto({
           }
         }
 
+        // CORREÇÃO CRUCIAL: Salvar os dados da etapa 4 no dadosExtraidos
+        const dadosParaSalvar = {
+          ...dadosExtraidos,
+          area_total_m2: dimensoes.area,
+          comprimento_cumeeira: dimensoes.comprimentoCumeeira,
+          comprimento_espigao: dimensoes.comprimentoEspigao,
+          comprimento_agua_furtada: dimensoes.comprimentoAguaFurtada,
+          perimetro_telhado: dimensoes.perimetro,
+          telha_codigo: configuracoes.sistemaShingle,
+          incluir_manta: configuracoes.incluirManta,
+          orcamento_completo: orcamentoCompleto
+        }
+
         onCalculoComplete(orcamentoCompleto)
         
         toast({
