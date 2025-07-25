@@ -72,6 +72,7 @@ export interface ParametrosCalculoShingle {
   telha_codigo?: string;
   cor_acessorios?: string;
   incluir_manta?: boolean;
+  incluir_cumeeira_ventilada?: boolean;
 }
 
 export interface SistemaShingle {

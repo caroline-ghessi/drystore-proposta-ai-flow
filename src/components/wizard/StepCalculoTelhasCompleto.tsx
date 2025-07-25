@@ -85,6 +85,7 @@ export function StepCalculoTelhasCompleto({
 
   const [configuracoes, setConfiguracoes] = useState({
     incluirManta: true,
+    incluirCumeeiraVentilada: false, // Novo campo opcional
     sistemaShingle: '1.16' // Default para Supreme
   })
 
@@ -118,7 +119,8 @@ export function StepCalculoTelhasCompleto({
         comprimento_agua_furtada: dimensoes.comprimentoAguaFurtada,
         perimetro_telhado: dimensoes.perimetro,
         telha_codigo: configuracoes.sistemaShingle,
-        incluir_manta: configuracoes.incluirManta
+        incluir_manta: configuracoes.incluirManta,
+        incluir_cumeeira_ventilada: configuracoes.incluirCumeeiraVentilada
       }
 
       setProgresso(70)

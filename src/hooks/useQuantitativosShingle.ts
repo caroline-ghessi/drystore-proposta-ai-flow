@@ -13,6 +13,7 @@ interface DadosCalculoShingle {
   telha_codigo?: string;
   cor_acessorios?: string;
   incluir_manta?: boolean;
+  incluir_cumeeira_ventilada?: boolean;
 }
 
 export function useQuantitativosShingle() {
@@ -34,7 +35,8 @@ export function useQuantitativosShingle() {
       perimetro_encontro_alvenaria: dados.perimetro_encontro_alvenaria || 0,
       telha_codigo: dados.telha_codigo || '1.16',
       cor_acessorios: dados.cor_acessorios || 'CINZA',
-      incluir_manta: dados.incluir_manta || false
+      incluir_manta: dados.incluir_manta || false,
+      incluir_cumeeira_ventilada: dados.incluir_cumeeira_ventilada || false
     });
   }, []);
 
@@ -122,7 +124,8 @@ export function useQuantitativosShingle() {
         perimetro_encontro_alvenaria: Number(dados.perimetro_encontro_alvenaria) || 0,
         telha_codigo: String(dados.telha_codigo || '1.16'),
         cor_acessorios: String(dados.cor_acessorios || 'CINZA'),
-        incluir_manta: Boolean(dados.incluir_manta || false)
+        incluir_manta: Boolean(dados.incluir_manta || false),
+        incluir_cumeeira_ventilada: Boolean(dados.incluir_cumeeira_ventilada || false)
       };
 
       console.log('🏗️ [HOOK-DEBUG] Dados extras preparados:');
