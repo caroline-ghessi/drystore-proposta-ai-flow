@@ -238,7 +238,8 @@ export function useTelhasShingleCompleto() {
           perimetro_telhado: parametros.perimetro_telhado || 0,
           telha_codigo: parametros.telha_codigo || '1.16',
           cor_acessorios: parametros.cor_acessorios || 'CINZA',
-          incluir_manta: parametros.incluir_manta ?? true
+          incluir_manta: parametros.incluir_manta ?? true,
+          incluir_cumeeira_ventilada: parametros.incluir_cumeeira_ventilada ?? false
         }
       });
 

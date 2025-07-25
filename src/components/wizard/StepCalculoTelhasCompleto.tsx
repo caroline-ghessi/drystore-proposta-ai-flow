@@ -326,13 +326,29 @@ export function StepCalculoTelhasCompleto({
           {/* Configurações Adicionais */}
           <div>
             <h4 className="font-medium mb-3 text-green-700">Configurações Adicionais</h4>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="incluirManta"
-                checked={configuracoes.incluirManta}
-                onCheckedChange={(checked) => setConfiguracoes({...configuracoes, incluirManta: checked})}
-              />
-              <Label htmlFor="incluirManta">Incluir manta starter</Label>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="incluirManta"
+                  checked={configuracoes.incluirManta}
+                  onCheckedChange={(checked) => setConfiguracoes({...configuracoes, incluirManta: checked})}
+                />
+                <Label htmlFor="incluirManta">Incluir manta starter</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="incluirCumeeiraVentilada"
+                  checked={configuracoes.incluirCumeeiraVentilada}
+                  onCheckedChange={(checked) => setConfiguracoes({...configuracoes, incluirCumeeiraVentilada: checked})}
+                />
+                <div className="flex flex-col">
+                  <Label htmlFor="incluirCumeeiraVentilada">Incluir Cumeeira Ventilada</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Recomendada para ventilação do sótão e controle de umidade
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>
