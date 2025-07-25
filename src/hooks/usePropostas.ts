@@ -116,9 +116,17 @@ export function usePropostas() {
 
   const atualizarProposta = useCallback(async (id: string, dados: Partial<Proposta>): Promise<boolean> => {
     try {
+      // Convert tipo_proposta for database compatibility
+      const dadosAtualizados = {
+        ...dados,
+        tipo_proposta: dados.tipo_proposta === 'telhas-shingle-supreme' || dados.tipo_proposta === 'telhas-shingle-oakridge' 
+          ? 'telhas-shingle' 
+          : dados.tipo_proposta
+      };
+      
       const { error } = await supabase
         .from('propostas')
-        .update(dados)
+        .update(dadosAtualizados)
         .eq('id', id);
 
       if (error) {

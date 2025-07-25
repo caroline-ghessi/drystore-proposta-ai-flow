@@ -318,17 +318,10 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
 
               {currentStep === 3 && (
                 <StepCalculoSolar
-                  data={propostaData.dadosExtraidos}
-                  onCalculoComplete={(resultado) => {
-                    handleStepData({ 
-                      dadosExtraidos: {
-                        ...propostaData.dadosExtraidos,
-                        calculo_solar: resultado
-                      }
-                    });
-                    handleNext();
-                  }}
+                  propostaData={propostaData}
+                  onDataChange={handleStepData}
                   onBack={handleBack}
+                  onNext={handleNext}
                 />
               )}
 
@@ -337,8 +330,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
                   propostaData={propostaData}
                   onDataChange={handleStepData}
                   onBack={handleBack}
-                  onNext={handleNext}
-                  onGenerate={handleComplete}
+                  onComplete={handleComplete}
                 />
               )}
 
@@ -389,8 +381,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
                   propostaData={propostaData}
                   onDataChange={handleStepData}
                   onBack={handleBack}
-                  onNext={handleNext}
-                  onGenerate={handleComplete}
+                  onComplete={handleComplete}
                 />
               )}
 
@@ -433,8 +424,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
                   propostaData={propostaData}
                   onDataChange={handleStepData}
                   onBack={handleBack}
-                  onNext={handleNext}
-                  onGenerate={handleComplete}
+                  onComplete={handleComplete}
                 />
               )}
 
