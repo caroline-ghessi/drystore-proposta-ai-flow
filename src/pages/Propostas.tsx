@@ -51,14 +51,31 @@ export function Propostas() {
         throw new Error('Nome do cliente é obrigatório');
       }
       
+      // Construir dados_extraidos corretos para fluxo manual de telhas shingle
+      const dadosExtraidos = data.tipoProposta === 'telhas-shingle' && data.entradaManual
+        ? {
+            ...data.dadosExtraidos,
+            quantitativos_aprovados: data.quantitativosAprovados,
+            tipo_sistema: data.tipoShingleSelecionado,
+            entrada_manual: true,
+            // Incluir dados específicos de telhas shingle
+            area_telhado: data.areaTelhado,
+            inclinacao_telhado: data.inclinacaoTelhado,
+            tipo_estrutura: data.tipoEstrutura
+          }
+        : data.dadosExtraidos;
+      
+      console.log('Dados extraídos construídos:', dadosExtraidos);
+      console.log('Tipo de proposta:', data.tipoProposta);
+      
       const novaProposta = await criarProposta({
         cliente_nome: data.clienteNome,
         cliente_email: data.clienteEmail,
         cliente_whatsapp: data.clienteWhatsapp || '',
         cliente_endereco: data.clienteEndereco || '',
-        tipo_proposta: data.tipoProposta,
+        tipo_proposta: data.tipoProposta, // Manter tipo base
         arquivo_original: data.arquivoUrl || '',
-        dados_extraidos: data.dadosExtraidos,
+        dados_extraidos: dadosExtraidos,
         valor_total: data.valorTotal,
         observacoes: data.observacoes || '',
         ocultar_precos_unitarios: data.ocultar_precos_unitarios || false
@@ -97,10 +114,14 @@ export function Propostas() {
     }
   }
 
-  const formatTipoProposta = (tipo: TipoProposta) => {
+  const formatTipoProposta = (tipo: TipoProposta, dadosExtraidos?: any) => {
     switch (tipo) {
       case "energia-solar": return "Energia Solar"
-      case "telhas-shingle": return "Telhas Shingle"
+      case "telhas-shingle": 
+        // Mostrar tipo específico se disponível nos dados extraídos
+        if (dadosExtraidos?.tipo_sistema === 'supreme') return "Telhas Shingle Supreme"
+        if (dadosExtraidos?.tipo_sistema === 'oakridge') return "Telhas Shingle Oakridge"
+        return "Telhas Shingle"
       case "divisorias": return "Divisórias"
       case "pisos": return "Pisos"
       case "forros": return "Forros"
@@ -110,7 +131,7 @@ export function Propostas() {
 
   const filteredPropostas = propostas.filter(proposta =>
     proposta.cliente_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    formatTipoProposta(proposta.tipo_proposta).toLowerCase().includes(searchTerm.toLowerCase())
+    formatTipoProposta(proposta.tipo_proposta, proposta.dados_extraidos).toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (
@@ -160,7 +181,7 @@ export function Propostas() {
                     ? p.valor_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
                     : 'Calculando...',
                   status: p.status,
-                  tipo: formatTipoProposta(p.tipo_proposta),
+                  tipo: formatTipoProposta(p.tipo_proposta, p.dados_extraidos),
                   data: new Date(p.created_at).toLocaleDateString('pt-BR'),
                   url_unica: p.url_unica
                 }))}
