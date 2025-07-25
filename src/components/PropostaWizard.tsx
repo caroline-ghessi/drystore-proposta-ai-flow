@@ -47,6 +47,9 @@ export interface PropostaData {
   areaImpermeabilizacao?: number;
   tipoSuperficie?: string;
   sistemaImpermeabilizacao?: string;
+  // Dados para encontro com alvenaria
+  temEncontroAlvenaria?: boolean;
+  perimetroEncontroAlvenaria?: number;
 }
 
 interface PropostaWizardProps {

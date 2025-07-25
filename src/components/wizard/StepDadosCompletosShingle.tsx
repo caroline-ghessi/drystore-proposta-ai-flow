@@ -46,6 +46,8 @@ export function StepDadosCompletosShingle({
     corAcessorios: data.corAcessorios || 'CINZA',
     tipoEstrutura: data.tipoEstrutura || '',
     incluirManta: data.incluirManta ?? true,
+    temEncontroAlvenaria: data.temEncontroAlvenaria ?? false,
+    perimetroEncontroAlvenaria: data.perimetroEncontroAlvenaria || 0,
     observacoes: data.observacoes || ''
   })
 
@@ -76,6 +78,9 @@ export function StepDadosCompletosShingle({
     }
     if (!formData.tipoShingleSelecionado) {
       newErrors.tipoShingleSelecionado = 'Selecione o sistema de telhas'
+    }
+    if (formData.temEncontroAlvenaria && (!formData.perimetroEncontroAlvenaria || formData.perimetroEncontroAlvenaria <= 0)) {
+      newErrors.perimetroEncontroAlvenaria = 'Perímetro de encontro com alvenaria é obrigatório quando habilitado'
     }
 
     setErrors(newErrors)
@@ -374,7 +379,7 @@ export function StepDadosCompletosShingle({
                 </div>
               </div>
 
-              <div className="mt-4">
+              <div className="mt-4 space-y-4">
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="incluirManta"
@@ -382,6 +387,39 @@ export function StepDadosCompletosShingle({
                     onCheckedChange={(checked) => handleInputChange('incluirManta', checked)}
                   />
                   <Label htmlFor="incluirManta">Incluir manta starter</Label>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="temEncontroAlvenaria"
+                      checked={formData.temEncontroAlvenaria}
+                      onCheckedChange={(checked) => handleInputChange('temEncontroAlvenaria', checked)}
+                    />
+                    <Label htmlFor="temEncontroAlvenaria">Há encontro com alvenaria?</Label>
+                  </div>
+                  
+                  {formData.temEncontroAlvenaria && (
+                    <div>
+                      <Label htmlFor="perimetroEncontroAlvenaria">Perímetro de encontro com alvenaria (m) *</Label>
+                      <Input
+                        id="perimetroEncontroAlvenaria"
+                        type="number"
+                        value={formData.perimetroEncontroAlvenaria || ''}
+                        onChange={(e) => handleInputChange('perimetroEncontroAlvenaria', parseFloat(e.target.value) || 0)}
+                        placeholder="Ex: 15.5"
+                        min="0"
+                        step="0.01"
+                        className={errors.perimetroEncontroAlvenaria ? 'border-red-500' : ''}
+                      />
+                      {errors.perimetroEncontroAlvenaria && (
+                        <p className="text-sm text-red-500 mt-1">{errors.perimetroEncontroAlvenaria}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Medida linear onde o telhado encontra com paredes, muros ou outras alvenarias
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -412,6 +450,7 @@ export function StepDadosCompletosShingle({
                   <li>• <strong>Obrigatório:</strong> As telhas shingle exigem inclinação mínima de 18%</li>
                   <li>• O cálculo incluirá automaticamente margem de segurança de 5%</li>
                   <li>• Cumeeira, espigão e água furtada são opcionais mas melhoram a precisão</li>
+                  <li>• <strong>Encontro com alvenaria:</strong> Necessário para calcular bobina de step flash</li>
                 </ul>
               </div>
             </div>

@@ -9,6 +9,7 @@ interface DadosCalculoShingle {
   comprimento_espigao?: number;
   comprimento_agua_furtada?: number;
   perimetro_telhado?: number;
+  perimetro_encontro_alvenaria?: number;
   telha_codigo?: string;
   cor_acessorios?: string;
   incluir_manta?: boolean;
@@ -30,6 +31,7 @@ export function useQuantitativosShingle() {
       comprimento_espigao: dados.comprimento_espigao || 0,
       comprimento_agua_furtada: dados.comprimento_agua_furtada || 0,
       perimetro_telhado: dados.perimetro_telhado || 0,
+      perimetro_encontro_alvenaria: dados.perimetro_encontro_alvenaria || 0,
       telha_codigo: dados.telha_codigo || '1.16',
       cor_acessorios: dados.cor_acessorios || 'CINZA',
       incluir_manta: dados.incluir_manta || false
