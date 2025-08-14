@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -1925,20 +1925,20 @@ export type Database = {
       auditar_precos_suspeitos: {
         Args: Record<PropertyKey, never>
         Returns: {
-          produto_id: string
+          categoria: string
           codigo: string
           descricao: string
-          categoria: string
-          preco_unitario: number
           motivo: string
+          preco_unitario: number
+          produto_id: string
         }[]
       }
       calcular_orcamento: {
         Args: {
-          p_painel_id: string
-          p_quantidade_paineis: number
           p_inversor_id: string
+          p_painel_id: string
           p_potencia_sistema: number
+          p_quantidade_paineis: number
         }
         Returns: Json
       }
@@ -1946,109 +1946,144 @@ export type Database = {
         Args: {
           p_area_parede: number
           p_composicao_nome: string
-          p_pe_direito?: number
           p_incluir_porta?: boolean
+          p_pe_direito?: number
           p_quantidade_portas?: number
         }
         Returns: {
           categoria: string
-          descricao: string
           consumo_base: number
-          quebra_percentual: number
           consumo_com_quebra: number
-          unidade: string
-          quantidade_final: number
-          preco_unitario: number
-          valor_total: number
+          descricao: string
           ordem: number
+          preco_unitario: number
+          quantidade_final: number
+          quebra_percentual: number
+          unidade: string
+          valor_total: number
+        }[]
+      }
+      calcular_orcamento_drywall_completo: {
+        Args: {
+          p_altura: number
+          p_altura_janela?: number
+          p_altura_porta?: number
+          p_com_isolamento?: boolean
+          p_espacamento_montantes?: number
+          p_espessura_isolamento?: number
+          p_incluir_janelas?: boolean
+          p_incluir_portas?: boolean
+          p_largura: number
+          p_largura_janela?: number
+          p_largura_porta?: number
+          p_quantidade_janelas?: number
+          p_quantidade_portas?: number
+          p_quebra_customizada?: number
+          p_tipo_parede?: string
+        }
+        Returns: {
+          categoria: string
+          especificacao: string
+          item_codigo: string
+          item_descricao: string
+          observacoes: string
+          ordem_categoria: number
+          peso_total_kg: number
+          preco_unitario: number
+          quantidade_com_quebra: number
+          quantidade_comercial: number
+          quantidade_liquida: number
+          quebra_percentual: number
+          unidade_comercial: string
+          valor_total: number
         }[]
       }
       calcular_orcamento_impermeabilizacao: {
         Args: {
-          p_area_total: number
-          p_tipo_aplicacao?: string
-          p_perimetro?: number
           p_altura_subida?: number
-          p_com_tela?: boolean
+          p_area_total: number
           p_com_primer?: boolean
-          p_quebra?: number
+          p_com_tela?: boolean
+          p_perimetro?: number
           p_produto_principal_id?: string
+          p_quebra?: number
+          p_tipo_aplicacao?: string
         }
         Returns: {
-          produto_id: string
-          produto_codigo: string
-          produto_nome: string
-          tipo: string
-          funcao: string
-          consumo_m2: number
           area_aplicacao: number
-          quantidade_necessaria: number
-          quantidade_com_quebra: number
-          unidades_compra: number
-          unidade_venda: string
-          preco_unitario: number
-          valor_total: number
+          consumo_m2: number
+          funcao: string
           ordem: number
+          preco_unitario: number
+          produto_codigo: string
+          produto_id: string
+          produto_nome: string
+          quantidade_com_quebra: number
+          quantidade_necessaria: number
+          tipo: string
+          unidade_venda: string
+          unidades_compra: number
+          valor_total: number
         }[]
       }
       calcular_orcamento_shingle: {
         Args: {
           p_area_telhado: number
-          p_telha_id: string
-          p_quebra_percentual?: number
           p_inclinacao?: number
+          p_quebra_percentual?: number
+          p_telha_id: string
         }
         Returns: Json
       }
       calcular_payback: {
         Args: {
-          p_valor_investimento: number
           p_economia_mensal: number
           p_tarifa_energia?: number
           p_taxa_desconto?: number
+          p_valor_investimento: number
         }
         Returns: Json
       }
       calcular_por_mapeamento: {
         Args: {
-          p_tipo_proposta: string
           p_area_base: number
           p_dados_extras?: Json
+          p_tipo_proposta: string
         }
         Returns: {
+          area_aplicacao: number
+          categoria: string
+          composicao_codigo: string
           composicao_id: string
           composicao_nome: string
-          composicao_codigo: string
-          categoria: string
-          item_id: string
+          consumo_por_m2: number
+          fator_aplicacao: number
           item_codigo: string
           item_descricao: string
-          consumo_por_m2: number
-          area_aplicacao: number
-          fator_aplicacao: number
-          quantidade_liquida: number
-          quantidade_com_quebra: number
-          preco_unitario: number
-          valor_total: number
-          ordem_calculo: number
+          item_id: string
           obrigatorio: boolean
+          ordem_calculo: number
+          preco_unitario: number
+          quantidade_com_quebra: number
+          quantidade_liquida: number
+          valor_total: number
         }[]
       }
       composicoes_sem_itens: {
         Args: Record<PropertyKey, never>
         Returns: {
-          composicao_id: string
-          codigo: string
-          nome: string
           categoria: string
-          valor_total_m2: number
+          codigo: string
+          composicao_id: string
+          nome: string
           total_itens: number
+          valor_total_m2: number
         }[]
       }
       dimensionar_sistema: {
         Args: {
-          p_consumo_kwh: number
           p_cidade: string
+          p_consumo_kwh: number
           p_estado: string
           p_tipo_instalacao?: string
         }
@@ -2060,30 +2095,30 @@ export type Database = {
       }
       resumo_orcamento_mapeamento: {
         Args: {
-          p_tipo_proposta: string
           p_area_base: number
           p_dados_extras?: Json
+          p_tipo_proposta: string
         }
         Returns: Json
       }
       selecionar_equipamentos: {
         Args: {
+          p_area_disponivel?: number
           p_potencia_kwp: number
           p_tipo_telha?: string
-          p_area_disponivel?: number
         }
         Returns: Json
       }
       validar_composicoes: {
         Args: Record<PropertyKey, never>
         Returns: {
-          composicao_id: string
           codigo: string
-          nome: string
-          valor_registrado: number
-          valor_calculado: number
+          composicao_id: string
           diferenca: number
+          nome: string
           status_validacao: string
+          valor_calculado: number
+          valor_registrado: number
         }[]
       }
     }

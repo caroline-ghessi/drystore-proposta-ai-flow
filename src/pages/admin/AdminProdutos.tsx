@@ -1,6 +1,9 @@
 import { DryStoreSidebar } from "@/components/DryStoreSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProdutosMestreManager } from "@/components/admin/ProdutosMestreManager";
+import { DrywallManager } from "@/components/admin/DrywallManager";
+import { DivisoriasCompleteManager } from "@/components/admin/DivisoriasCompleteManager";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const AdminProdutos = () => {
@@ -20,7 +23,25 @@ const AdminProdutos = () => {
             </header>
 
             <main className="p-6">
-              <ProdutosMestreManager />
+              <Tabs defaultValue="produtos-mestre" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="produtos-mestre">Produtos Gerais</TabsTrigger>
+                  <TabsTrigger value="drywall">Produtos Drywall</TabsTrigger>
+                  <TabsTrigger value="calculadora">Calculadora Completa</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="produtos-mestre">
+                  <ProdutosMestreManager />
+                </TabsContent>
+                
+                <TabsContent value="drywall">
+                  <DrywallManager />
+                </TabsContent>
+                
+                <TabsContent value="calculadora">
+                  <DivisoriasCompleteManager />
+                </TabsContent>
+              </Tabs>
             </main>
           </div>
         </div>

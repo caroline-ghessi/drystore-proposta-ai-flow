@@ -8,9 +8,8 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Calculator, Home, Ruler, Layers, FileText, DoorOpen, Zap, Settings } from 'lucide-react';
-import { useCalculoMapeamento } from '@/hooks/useCalculoMapeamento';
 import { useToast } from '@/hooks/use-toast';
-import { useMapeamentosStatus } from '@/hooks/useMapeamentosStatus';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ItemCalculado {
   categoria: string;
@@ -78,8 +77,6 @@ const TIPOS_PAREDE = [
 
 export function StepCalculoDivisorias({ onDataChange, onNext, onBack }: StepCalculoDivisoriasProps) {
   const { toast } = useToast();
-  const { calcularPorMapeamento, obterResumoOrcamento, isLoading, error } = useCalculoMapeamento();
-  const { status, isLoading: statusLoading, podeCalcular, obterMensagemStatus } = useMapeamentosStatus();
   const [loading, setLoading] = useState(false);
   
   // Inputs principais
@@ -88,11 +85,18 @@ export function StepCalculoDivisorias({ onDataChange, onNext, onBack }: StepCalc
   const [peDireito, setPeDireito] = useState<number>(2.80);
   const [comprimentoLinear, setComprimentoLinear] = useState<number>(0);
   
-  // Opções
-  const [incluirPorta, setIncluirPorta] = useState(false);
+  // Opções de esquadrias
+  const [incluirPortas, setIncluirPortas] = useState(false);
   const [quantidadePortas, setQuantidadePortas] = useState(1);
-  const [incluirTomadas, setIncluirTomadas] = useState(true);
-  const [quantidadeTomadas, setQuantidadeTomadas] = useState(4);
+  const [larguraPorta, setLarguraPorta] = useState<number>(0.80);
+  const [alturaPorta, setAlturaPorta] = useState<number>(2.10);
+  const [incluirJanelas, setIncluirJanelas] = useState(false);
+  const [quantidadeJanelas, setQuantidadeJanelas] = useState(1);
+  const [larguraJanela, setLarguraJanela] = useState<number>(1.20);
+  const [alturaJanela, setAlturaJanela] = useState<number>(1.20);
+  const [espacamentoMontantes, setEspacamentoMontantes] = useState<number>(0.60);
+  const [comIsolamento, setComIsolamento] = useState(true);
+  const [espessuraIsolamento, setEspessuraIsolamento] = useState<number>(50);
   
   // Resultados
   const [itensCalculados, setItensCalculados] = useState<ItemCalculado[]>([]);
@@ -110,39 +114,45 @@ export function StepCalculoDivisorias({ onDataChange, onNext, onBack }: StepCalc
     if (areaParede > 0 && tipoParedeSelecionado) {
       calcular();
     }
-  }, [areaParede, tipoParedeSelecionado, peDireito, incluirPorta, quantidadePortas]);
+  }, [areaParede, tipoParedeSelecionado, peDireito, incluirPortas, quantidadePortas, incluirJanelas, quantidadeJanelas, espacamentoMontantes, comIsolamento]);
 
   async function calcular() {
     setLoading(true);
     
     try {
-      // Usar sistema de mapeamento
-      const itens = await calcularPorMapeamento('divisorias', areaParede, {
-        pe_direito: peDireito,
-        incluir_porta: incluirPorta,
-        quantidade_portas: quantidadePortas,
-        tipo_parede: tipoParedeSelecionado
+      // Usar nova função completa de drywall
+      const { data, error } = await supabase.rpc('calcular_orcamento_drywall_completo', {
+        p_largura: comprimentoLinear,
+        p_altura: peDireito,
+        p_tipo_parede: tipoParedeSelecionado,
+        p_incluir_portas: incluirPortas,
+        p_quantidade_portas: quantidadePortas,
+        p_incluir_janelas: incluirJanelas,
+        p_quantidade_janelas: quantidadeJanelas,
+        p_largura_porta: larguraPorta,
+        p_altura_porta: alturaPorta,
+        p_largura_janela: larguraJanela,
+        p_altura_janela: alturaJanela,
+        p_espessura_isolamento: espessuraIsolamento,
+        p_espacamento_montantes: espacamentoMontantes,
+        p_com_isolamento: comIsolamento
       });
       
-      const resumo = await obterResumoOrcamento('divisorias', areaParede, {
-        pe_direito: peDireito,
-        incluir_porta: incluirPorta,
-        quantidade_portas: quantidadePortas
-      });
+      if (error) throw error;
       
-      if (itens) {
-        // Converter dados do mapeamento para formato esperado
-        const itensConvertidos = itens.map((item, index) => ({
-          categoria: item.composicao_nome.toUpperCase(),
+      if (data) {
+        // Converter dados para formato esperado
+        const itensConvertidos = data.map((item: any) => ({
+          categoria: item.categoria,
           descricao: item.item_descricao,
           consumo_base: item.quantidade_liquida,
-          quebra_percentual: ((item.quantidade_com_quebra / item.quantidade_liquida) - 1) * 100,
+          quebra_percentual: item.quebra_percentual,
           consumo_com_quebra: item.quantidade_com_quebra,
-          unidade: 'un',
-          quantidade_final: Math.ceil(item.quantidade_com_quebra),
+          unidade: item.unidade_comercial,
+          quantidade_final: item.quantidade_comercial,
           preco_unitario: item.preco_unitario,
           valor_total: item.valor_total,
-          ordem: item.ordem_calculo
+          ordem: item.ordem_categoria
         }));
         
         setItensCalculados(itensConvertidos);
@@ -153,22 +163,25 @@ export function StepCalculoDivisorias({ onDataChange, onNext, onBack }: StepCalc
         onDataChange({
           tipoProposta: 'divisorias',
           dadosCalculados: {
+            largura: comprimentoLinear,
+            altura: peDireito,
             area_parede: areaParede,
             tipo_parede: tipoParedeSelecionado,
-            pe_direito: peDireito,
-            incluir_porta: incluirPorta,
+            incluir_portas: incluirPortas,
             quantidade_portas: quantidadePortas,
+            incluir_janelas: incluirJanelas,
+            quantidade_janelas: quantidadeJanelas,
             itens: itensConvertidos,
             resumo: resumoCalculado
           },
-          valor_total: resumo?.valor_total || resumoCalculado.valorTotal
+          valor_total: resumoCalculado.valorTotal
         });
       }
     } catch (error) {
       console.error('Erro ao calcular:', error);
       toast({
         title: "Erro no cálculo",
-        description: error || "Não foi possível calcular o orçamento. Tente novamente.",
+        description: "Não foi possível calcular o orçamento. Verifique os parâmetros.",
         variant: "destructive"
       });
     } finally {
@@ -186,22 +199,22 @@ export function StepCalculoDivisorias({ onDataChange, onNext, onBack }: StepCalc
       valorTotal: 0,
       valorPorM2: 0,
       pesoTotal: 0,
-      areaLiquida: areaParede - (incluirPorta ? quantidadePortas * 2.1 : 0)
+      areaLiquida: areaParede - (incluirPortas ? quantidadePortas * larguraPorta * alturaPorta * 0.5 : 0) - (incluirJanelas ? quantidadeJanelas * larguraJanela * alturaJanela * 0.5 : 0)
     };
     
     itens.forEach(item => {
       switch(item.categoria) {
-        case 'PLACA':
+        case 'VEDAÇÃO':
           resumo.valorPlacas += item.valor_total;
           resumo.pesoTotal += item.quantidade_final * 9; // ~9kg/m² placa
           break;
-        case 'PERFIL':
+        case 'ESTRUTURA':
           resumo.valorPerfis += item.valor_total;
           break;
         case 'ISOLAMENTO':
           resumo.valorIsolamento += item.valor_total;
           break;
-        case 'ACESSORIO':
+        case 'FIXAÇÃO':
           resumo.valorAcessorios += item.valor_total;
           break;
         case 'ACABAMENTO':
@@ -223,9 +236,6 @@ export function StepCalculoDivisorias({ onDataChange, onNext, onBack }: StepCalc
   }
 
   const tipoParedeSelecionadoInfo = TIPOS_PAREDE.find(t => t.value === tipoParedeSelecionado);
-  
-  // Verificar se há produtos configurados
-  const podeFazerCalculo = podeCalcular('divisorias');
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -240,21 +250,6 @@ export function StepCalculoDivisorias({ onDataChange, onNext, onBack }: StepCalc
         </p>
       </Card>
 
-      {/* Aviso quando não há produtos configurados */}
-      {!statusLoading && !podeFazerCalculo && (
-        <Alert>
-          <Settings className="h-4 w-4" />
-          <AlertTitle>Produtos de divisórias não configurados</AlertTitle>
-          <AlertDescription>
-            Os produtos e composições para divisórias em drywall ainda não foram totalmente configurados no sistema. 
-            Você pode continuar o processo, mas os cálculos automáticos de custos podem não estar disponíveis.
-            <br />
-            <span className="text-sm text-muted-foreground mt-2 block">
-              Status atual: {obterMensagemStatus('divisorias')}
-            </span>
-          </AlertDescription>
-        </Alert>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Coluna 1: Dimensões */}
@@ -313,12 +308,12 @@ export function StepCalculoDivisorias({ onDataChange, onNext, onBack }: StepCalc
                 </Label>
                 <Switch
                   id="porta-switch"
-                  checked={incluirPorta}
-                  onCheckedChange={setIncluirPorta}
+                  checked={incluirPortas}
+                  onCheckedChange={setIncluirPortas}
                 />
               </div>
               
-              {incluirPorta && (
+              {incluirPortas && (
                 <div>
                   <Label htmlFor="qtd-portas">Quantidade de portas</Label>
                   <Input
@@ -329,31 +324,31 @@ export function StepCalculoDivisorias({ onDataChange, onNext, onBack }: StepCalc
                     min="1"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Desconto de 2,1m² por porta
+                    Desconto de 50% da área da porta
                   </p>
                 </div>
               )}
               
               <div className="flex items-center justify-between">
-                <Label htmlFor="tomada-switch" className="flex items-center gap-2">
+                <Label htmlFor="janela-switch" className="flex items-center gap-2">
                   <Zap className="w-4 h-4" />
-                  Incluir caixas elétricas
+                  Incluir janelas
                 </Label>
                 <Switch
-                  id="tomada-switch"
-                  checked={incluirTomadas}
-                  onCheckedChange={setIncluirTomadas}
+                  id="janela-switch"
+                  checked={incluirJanelas}
+                  onCheckedChange={setIncluirJanelas}
                 />
               </div>
               
-              {incluirTomadas && (
+              {incluirJanelas && (
                 <div>
-                  <Label htmlFor="qtd-tomadas">Quantidade de pontos elétricos</Label>
+                  <Label htmlFor="qtd-janelas">Quantidade de janelas</Label>
                   <Input
-                    id="qtd-tomadas"
+                    id="qtd-janelas"
                     type="number"
-                    value={quantidadeTomadas}
-                    onChange={(e) => setQuantidadeTomadas(parseInt(e.target.value) || 0)}
+                    value={quantidadeJanelas}
+                    onChange={(e) => setQuantidadeJanelas(parseInt(e.target.value) || 0)}
                     min="0"
                   />
                 </div>
@@ -461,8 +456,11 @@ export function StepCalculoDivisorias({ onDataChange, onNext, onBack }: StepCalc
               <div className="text-xs text-muted-foreground space-y-1 pt-2">
                 <p>Peso estimado: {resumo.pesoTotal.toFixed(0)} kg</p>
                 <p>Área líquida: {resumo.areaLiquida.toFixed(2)} m²</p>
-                {incluirPorta && (
-                  <p>Desconto de {quantidadePortas} porta(s): -{(quantidadePortas * 2.1).toFixed(1)} m²</p>
+                {incluirPortas && (
+                  <p>Desconto de {quantidadePortas} porta(s): -{(quantidadePortas * larguraPorta * alturaPorta * 0.5).toFixed(1)} m²</p>
+                )}
+                {incluirJanelas && (
+                  <p>Desconto de {quantidadeJanelas} janela(s): -{(quantidadeJanelas * larguraJanela * alturaJanela * 0.5).toFixed(1)} m²</p>
                 )}
               </div>
             </div>
