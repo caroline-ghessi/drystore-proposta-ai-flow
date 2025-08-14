@@ -10,6 +10,7 @@ import { StepProcessing } from "./wizard/StepProcessing"
 import { StepReview } from "./wizard/StepReview"
 import { StepCalculoSolar } from "./wizard/StepCalculoSolar"
 import { StepCalculoDivisorias } from "./wizard/StepCalculoDivisorias"
+import { StepDadosCompletosDivisorias } from "./wizard/StepDadosCompletosDivisorias"
 
 export type TipoProposta = 'energia-solar' | 'telhas-shingle-supreme' | 'telhas-shingle-oakridge' | 'divisorias' | 'pisos' | 'forros' | 'materiais-construcao' | 'tintas-texturas' | 'verga-fibra' | 'argamassa-silentfloor' | 'light-steel-frame' | 'impermeabilizacao'
 
@@ -83,6 +84,14 @@ const STEPS_DIVISORIAS = [
   { title: "Upload", description: "Envie projeto ou especificação" },
   { title: "Processamento", description: "Análise do documento" },
   { title: "Cálculo Divisórias", description: "Cálculo de materiais" },
+  { title: "Revisão", description: "Confirme as informações" },
+  { title: "Geração", description: "Criar proposta" }
+]
+
+// NOVO: Fluxo manual para divisórias
+const STEPS_DIVISORIAS_MANUAL = [
+  { title: "Sistema Divisórias", description: "Selecione divisórias" },
+  { title: "Dados Completos", description: "Cliente e especificações técnicas" },
   { title: "Revisão", description: "Confirme as informações" },
   { title: "Geração", description: "Criar proposta" }
 ]
@@ -170,7 +179,7 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
       case 'telhas-shingle-oakridge':
         return STEPS_TELHAS_SHINGLE;
       case 'divisorias':
-        return STEPS_DIVISORIAS;
+        return propostaData.entradaManual ? STEPS_DIVISORIAS_MANUAL : STEPS_DIVISORIAS;
       default:
         return STEPS_DEFAULT;
     }
@@ -354,50 +363,89 @@ export function PropostaWizard({ open, onOpenChange, onComplete }: PropostaWizar
           {/* FLUXO DIVISÓRIAS */}
           {propostaData.tipoProposta === 'divisorias' && (
             <>
-              {currentStep === 1 && (
-                <StepUpload
-                  tipoProposta={propostaData.tipoProposta}
-                  onDataChange={handleStepData}
-                  onNext={handleNext}
-                  onBack={handleBack}
-                />
+              {/* Fluxo Manual Divisórias */}
+              {propostaData.entradaManual && (
+                <>
+                  {/* ETAPA 1: Dados Completos */}
+                  {currentStep === 1 && (
+                    <StepDadosCompletosDivisorias
+                      data={propostaData}
+                      onDataChange={handleStepData}
+                      onBack={handleBack}
+                      onNext={handleNext}
+                    />
+                  )}
+
+                  {/* ETAPA 2: Revisão */}
+                  {currentStep === 2 && (
+                    <StepReview
+                      propostaData={propostaData}
+                      onDataChange={handleStepData}
+                      onBack={handleBack}
+                      onComplete={handleComplete}
+                    />
+                  )}
+
+                  {/* ETAPA 3: Geração */}
+                  {currentStep === 3 && (
+                    <StepGenerate
+                      propostaData={propostaData}
+                      onComplete={handleComplete}
+                      onBack={handleBack}
+                    />
+                  )}
+                </>
               )}
 
-              {currentStep === 2 && (
-                <StepProcessing
-                  propostaData={propostaData}
-                  isProcessing={isProcessing}
-                  onProcessingChange={setIsProcessing}
-                  onDataChange={handleStepData}
-                  onNext={handleNext}
-                  onBack={handleBack}
-                  onError={setError}
-                />
-              )}
+              {/* Fluxo Upload Divisórias */}
+              {!propostaData.entradaManual && (
+                <>
+                  {currentStep === 1 && (
+                    <StepUpload
+                      tipoProposta={propostaData.tipoProposta}
+                      onDataChange={handleStepData}
+                      onNext={handleNext}
+                      onBack={handleBack}
+                    />
+                  )}
 
-              {currentStep === 3 && (
-                <StepCalculoDivisorias
-                  onDataChange={handleStepData}
-                  onBack={handleBack}
-                  onNext={handleNext}
-                />
-              )}
+                  {currentStep === 2 && (
+                    <StepProcessing
+                      propostaData={propostaData}
+                      isProcessing={isProcessing}
+                      onProcessingChange={setIsProcessing}
+                      onDataChange={handleStepData}
+                      onNext={handleNext}
+                      onBack={handleBack}
+                      onError={setError}
+                    />
+                  )}
 
-              {currentStep === 4 && (
-                <StepReview
-                  propostaData={propostaData}
-                  onDataChange={handleStepData}
-                  onBack={handleBack}
-                  onComplete={handleComplete}
-                />
-              )}
+                  {currentStep === 3 && (
+                    <StepCalculoDivisorias
+                      onDataChange={handleStepData}
+                      onBack={handleBack}
+                      onNext={handleNext}
+                    />
+                  )}
 
-              {currentStep === 5 && (
-                <StepGenerate
-                  propostaData={propostaData}
-                  onComplete={handleComplete}
-                  onBack={handleBack}
-                />
+                  {currentStep === 4 && (
+                    <StepReview
+                      propostaData={propostaData}
+                      onDataChange={handleStepData}
+                      onBack={handleBack}
+                      onComplete={handleComplete}
+                    />
+                  )}
+
+                  {currentStep === 5 && (
+                    <StepGenerate
+                      propostaData={propostaData}
+                      onComplete={handleComplete}
+                      onBack={handleBack}
+                    />
+                  )}
+                </>
               )}
             </>
           )}
