@@ -17,7 +17,8 @@ export interface StatusGeral {
 
 const TIPOS_SUPORTADOS = [
   'energia-solar',
-  'telhas-shingle', 
+  'telhas-shingle-supreme',
+  'telhas-shingle-oakridge', 
   'impermeabilizacao',
   'divisorias',
   'forros'
