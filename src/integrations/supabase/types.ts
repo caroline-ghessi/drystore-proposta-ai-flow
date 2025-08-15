@@ -713,13 +713,6 @@ export type Database = {
             referencedRelation: "orcamentos_drywall"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "itens_calculo_drywall_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "produtos_drywall"
-            referencedColumns: ["id"]
-          },
         ]
       }
       itens_calculo_impermeabilizacao: {
@@ -1375,51 +1368,6 @@ export type Database = {
           tensao_v?: number | null
           unidade?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      produtos_drywall: {
-        Row: {
-          ativo: boolean | null
-          categoria: string
-          codigo: string
-          created_at: string | null
-          descricao: string
-          espessura: number | null
-          id: string
-          peso_unitario: number | null
-          preco_unitario: number | null
-          tipo_placa: string | null
-          unidade_medida: string
-          updated_at: string | null
-        }
-        Insert: {
-          ativo?: boolean | null
-          categoria: string
-          codigo: string
-          created_at?: string | null
-          descricao: string
-          espessura?: number | null
-          id?: string
-          peso_unitario?: number | null
-          preco_unitario?: number | null
-          tipo_placa?: string | null
-          unidade_medida: string
-          updated_at?: string | null
-        }
-        Update: {
-          ativo?: boolean | null
-          categoria?: string
-          codigo?: string
-          created_at?: string | null
-          descricao?: string
-          espessura?: number | null
-          id?: string
-          peso_unitario?: number | null
-          preco_unitario?: number | null
-          tipo_placa?: string | null
-          unidade_medida?: string
-          updated_at?: string | null
         }
         Relationships: []
       }
