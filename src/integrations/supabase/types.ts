@@ -286,7 +286,7 @@ export type Database = {
             foreignKeyName: "composicoes_drywall_produto_id_fkey"
             columns: ["produto_id"]
             isOneToOne: false
-            referencedRelation: "produtos_drywall"
+            referencedRelation: "produtos_drywall_mestre"
             referencedColumns: ["id"]
           },
         ]
