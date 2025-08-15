@@ -201,20 +201,6 @@ export type Database = {
             referencedRelation: "propostas"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "calculos_telhado_shingle_telha_shingle_id_fkey"
-            columns: ["telha_shingle_id"]
-            isOneToOne: false
-            referencedRelation: "telhas_shingle"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "calculos_telhado_shingle_telha_shingle_id_fkey"
-            columns: ["telha_shingle_id"]
-            isOneToOne: false
-            referencedRelation: "v_telhas_shingle_resumo"
-            referencedColumns: ["id"]
-          },
         ]
       }
       clientes: {
@@ -1545,114 +1531,6 @@ export type Database = {
         }
         Relationships: []
       }
-      produtos_shingle_completos: {
-        Row: {
-          ativo: boolean | null
-          codigo: string
-          conteudo_unidade: number
-          cor: string | null
-          created_at: string | null
-          descricao: string
-          especificacoes_tecnicas: Json | null
-          id: string
-          linha: string | null
-          peso_unitario: number | null
-          preco_unitario: number
-          quebra_padrao: number | null
-          tipo_componente: string
-          unidade_medida: string
-          updated_at: string | null
-        }
-        Insert: {
-          ativo?: boolean | null
-          codigo: string
-          conteudo_unidade: number
-          cor?: string | null
-          created_at?: string | null
-          descricao: string
-          especificacoes_tecnicas?: Json | null
-          id?: string
-          linha?: string | null
-          peso_unitario?: number | null
-          preco_unitario: number
-          quebra_padrao?: number | null
-          tipo_componente: string
-          unidade_medida: string
-          updated_at?: string | null
-        }
-        Update: {
-          ativo?: boolean | null
-          codigo?: string
-          conteudo_unidade?: number
-          cor?: string | null
-          created_at?: string | null
-          descricao?: string
-          especificacoes_tecnicas?: Json | null
-          id?: string
-          linha?: string | null
-          peso_unitario?: number | null
-          preco_unitario?: number
-          quebra_padrao?: number | null
-          tipo_componente?: string
-          unidade_medida?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      produtos_shingle_novo: {
-        Row: {
-          ativo: boolean | null
-          codigo: string
-          conteudo_unidade: number
-          cor: string | null
-          created_at: string | null
-          descricao: string
-          especificacoes_tecnicas: Json | null
-          id: string
-          linha: string | null
-          peso_unitario: number | null
-          preco_unitario: number
-          quebra_padrao: number | null
-          tipo_componente: string
-          unidade_medida: string
-          updated_at: string | null
-        }
-        Insert: {
-          ativo?: boolean | null
-          codigo: string
-          conteudo_unidade: number
-          cor?: string | null
-          created_at?: string | null
-          descricao: string
-          especificacoes_tecnicas?: Json | null
-          id?: string
-          linha?: string | null
-          peso_unitario?: number | null
-          preco_unitario: number
-          quebra_padrao?: number | null
-          tipo_componente: string
-          unidade_medida: string
-          updated_at?: string | null
-        }
-        Update: {
-          ativo?: boolean | null
-          codigo?: string
-          conteudo_unidade?: number
-          cor?: string | null
-          created_at?: string | null
-          descricao?: string
-          especificacoes_tecnicas?: Json | null
-          id?: string
-          linha?: string | null
-          peso_unitario?: number | null
-          preco_unitario?: number
-          quebra_padrao?: number | null
-          tipo_componente?: string
-          unidade_medida?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       propostas: {
         Row: {
           arquivo_original: string | null
@@ -1732,63 +1610,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      telhas_shingle: {
-        Row: {
-          ativo: boolean | null
-          codigo: string
-          consumo_m2: number | null
-          cor: string | null
-          created_at: string | null
-          descricao: string
-          fator_multiplicador: number | null
-          garantia_anos: number | null
-          id: string
-          linha: string
-          peso_kg_m2: number | null
-          preco_unitario: number | null
-          qtd_unidade_venda: number | null
-          quebra_padrao: number | null
-          resistencia_vento_kmh: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          ativo?: boolean | null
-          codigo: string
-          consumo_m2?: number | null
-          cor?: string | null
-          created_at?: string | null
-          descricao: string
-          fator_multiplicador?: number | null
-          garantia_anos?: number | null
-          id?: string
-          linha: string
-          peso_kg_m2?: number | null
-          preco_unitario?: number | null
-          qtd_unidade_venda?: number | null
-          quebra_padrao?: number | null
-          resistencia_vento_kmh?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          ativo?: boolean | null
-          codigo?: string
-          consumo_m2?: number | null
-          cor?: string | null
-          created_at?: string | null
-          descricao?: string
-          fator_multiplicador?: number | null
-          garantia_anos?: number | null
-          id?: string
-          linha?: string
-          peso_kg_m2?: number | null
-          preco_unitario?: number | null
-          qtd_unidade_venda?: number | null
-          quebra_padrao?: number | null
-          resistencia_vento_kmh?: number | null
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       tipo_proposta_composicoes: {
         Row: {
@@ -1872,54 +1693,7 @@ export type Database = {
       }
     }
     Views: {
-      v_telhas_shingle_resumo: {
-        Row: {
-          ativo: boolean | null
-          codigo: string | null
-          cor: string | null
-          descricao: string | null
-          fator_multiplicador: number | null
-          garantia_anos: number | null
-          id: string | null
-          linha: string | null
-          peso_kg_m2: number | null
-          preco_unitario: number | null
-          qtd_unidade_venda: number | null
-          resistencia_vento_kmh: number | null
-          valor_por_m2_com_quebra: number | null
-        }
-        Insert: {
-          ativo?: boolean | null
-          codigo?: string | null
-          cor?: string | null
-          descricao?: string | null
-          fator_multiplicador?: number | null
-          garantia_anos?: number | null
-          id?: string | null
-          linha?: string | null
-          peso_kg_m2?: number | null
-          preco_unitario?: number | null
-          qtd_unidade_venda?: number | null
-          resistencia_vento_kmh?: number | null
-          valor_por_m2_com_quebra?: never
-        }
-        Update: {
-          ativo?: boolean | null
-          codigo?: string | null
-          cor?: string | null
-          descricao?: string | null
-          fator_multiplicador?: number | null
-          garantia_anos?: number | null
-          id?: string | null
-          linha?: string | null
-          peso_kg_m2?: number | null
-          preco_unitario?: number | null
-          qtd_unidade_venda?: number | null
-          resistencia_vento_kmh?: number | null
-          valor_por_m2_com_quebra?: never
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       auditar_precos_suspeitos: {

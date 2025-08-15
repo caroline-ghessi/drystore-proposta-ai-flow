@@ -49,27 +49,27 @@ export const useVentilacao = () => {
     setError(null);
     
     try {
+      // Produtos de ventilação agora são gerenciados via produtos_mestre com categoria VENTILACAO
       const { data, error } = await supabase
-        .from('produtos_shingle_novo')
+        .from('produtos_mestre')
         .select('*')
-        .eq('tipo_componente', 'VENTILACAO')
+        .eq('categoria', 'VENTILACAO')
         .eq('ativo', true)
         .order('codigo');
 
       if (error) throw error;
 
       const produtosFormatados: ProdutoVentilacao[] = data.map(produto => {
-        const specs = produto.especificacoes_tecnicas as any;
         return {
           id: produto.id,
           codigo: produto.codigo,
           nome: produto.descricao,
-          nfva: specs?.nfva_m2 ? parseFloat(specs.nfva_m2) : 0,
+          nfva: 0, // Will need to be configured in produtos_mestre
           unidade: produto.unidade_medida,
           tipo: produto.codigo.includes('INFLOW') || produto.codigo.includes('BEIRAL') ? 'intake' : 'exhaust',
           linear: produto.codigo.includes('CUMEEIRA'),
           preco_unitario: produto.preco_unitario,
-          especificacoes: produto.especificacoes_tecnicas
+          especificacoes: null
         };
       });
 
