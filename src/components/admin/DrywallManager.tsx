@@ -12,43 +12,44 @@ import { supabase } from "@/integrations/supabase/client";
 import { Edit, Plus, Search, Wrench } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-interface ProdutoDrywall {
+interface ProdutoDrywallMestre {
   id: string;
-  categoria: string;
-  codigo: string;
+  codigo_funcao: string;
+  categoria_funcao: string;
   descricao: string;
-  tipo_placa: string | null;
-  espessura: number | null;
-  unidade_medida: string;
-  peso_unitario: number | null;
-  preco_unitario: number | null;
-  ativo: boolean | null;
+  especificacao: string;
+  preco_unitario: number;
+  peso_unitario: number;
+  unidade_comercial: string;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 const CATEGORIAS = [
-  { value: 'PLACA', label: 'Placas' },
-  { value: 'PERFIL', label: 'Perfis' },
+  { value: 'VEDAÇÃO', label: 'Vedação' },
+  { value: 'ESTRUTURA', label: 'Estrutura' },
+  { value: 'FIXAÇÃO', label: 'Fixação' },
+  { value: 'ACABAMENTO', label: 'Acabamento' },
   { value: 'ISOLAMENTO', label: 'Isolamento' },
-  { value: 'ACESSORIO', label: 'Acessórios' },
-  { value: 'ACABAMENTO', label: 'Acabamento' }
 ];
 
-const TIPOS_PLACA = [
-  { value: 'ST', label: 'Standard (ST)' },
-  { value: 'RU', label: 'Resistente à Umidade (RU)' },
-  { value: 'RF', label: 'Resistente ao Fogo (RF)' },
-  { value: 'PERFORMA', label: 'Performa (Acústica)' },
-  { value: 'GLASROC', label: 'Glasroc X' }
+const UNIDADES_COMERCIAIS = [
+  { value: 'un', label: 'Unidade' },
+  { value: 'barra', label: 'Barra' },
+  { value: 'cx-1000', label: 'Caixa (1000 un)' },
+  { value: 'rolo', label: 'Rolo' },
+  { value: 'saco-20kg', label: 'Saco (20kg)' },
 ];
 
 export const DrywallManager = () => {
-  const [produtos, setProdutos] = useState<ProdutoDrywall[]>([]);
-  const [filteredProdutos, setFilteredProdutos] = useState<ProdutoDrywall[]>([]);
+  const [produtos, setProdutos] = useState<ProdutoDrywallMestre[]>([]);
+  const [filteredProdutos, setFilteredProdutos] = useState<ProdutoDrywallMestre[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoriaFilter, setCategoriaFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [editingProduto, setEditingProduto] = useState<ProdutoDrywall | null>(null);
+  const [editingProduto, setEditingProduto] = useState<ProdutoDrywallMestre | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
@@ -63,10 +64,10 @@ export const DrywallManager = () => {
   const fetchProdutos = async () => {
     try {
       const { data, error } = await supabase
-        .from('produtos_drywall')
+        .from('produtos_drywall_mestre')
         .select('*')
-        .order('categoria', { ascending: true })
-        .order('codigo', { ascending: true });
+        .order('categoria_funcao', { ascending: true })
+        .order('codigo_funcao', { ascending: true });
       
       if (error) throw error;
       setProdutos(data || []);
@@ -86,13 +87,13 @@ export const DrywallManager = () => {
     
     if (searchTerm) {
       filtered = filtered.filter(produto =>
-        produto.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        produto.codigo_funcao.toLowerCase().includes(searchTerm.toLowerCase()) ||
         produto.descricao.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
     if (categoriaFilter !== "all") {
-      filtered = filtered.filter(produto => produto.categoria === categoriaFilter);
+      filtered = filtered.filter(produto => produto.categoria_funcao === categoriaFilter);
     }
     
     if (statusFilter !== "all") {
@@ -104,11 +105,11 @@ export const DrywallManager = () => {
     setFilteredProdutos(filtered);
   };
 
-  const handleSave = async (produtoData: Partial<ProdutoDrywall>) => {
+  const handleSave = async (produtoData: Partial<ProdutoDrywallMestre>) => {
     try {
       if (editingProduto) {
         const { error } = await supabase
-          .from('produtos_drywall')
+          .from('produtos_drywall_mestre')
           .update(produtoData)
           .eq('id', editingProduto.id);
         
@@ -116,7 +117,7 @@ export const DrywallManager = () => {
         toast({ title: "Sucesso", description: "Produto atualizado com sucesso" });
       } else {
         const { error } = await supabase
-          .from('produtos_drywall')
+          .from('produtos_drywall_mestre')
           .insert([produtoData as any]);
         
         if (error) throw error;
@@ -135,10 +136,10 @@ export const DrywallManager = () => {
     }
   };
 
-  const toggleStatus = async (produto: ProdutoDrywall) => {
+  const toggleStatus = async (produto: ProdutoDrywallMestre) => {
     try {
       const { error } = await supabase
-        .from('produtos_drywall')
+        .from('produtos_drywall_mestre')
         .update({ ativo: !produto.ativo })
         .eq('id', produto.id);
       
@@ -157,20 +158,20 @@ export const DrywallManager = () => {
     }
   };
 
-  const openEditDialog = (produto?: ProdutoDrywall) => {
+  const openEditDialog = (produto?: ProdutoDrywallMestre) => {
     setEditingProduto(produto || null);
     setIsDialogOpen(true);
   };
 
   const getCategoriaColor = (categoria: string) => {
-    switch (categoria) {
-      case 'PLACA': return 'default';
-      case 'PERFIL': return 'secondary';
-      case 'ISOLAMENTO': return 'outline';
-      case 'ACESSORIO': return 'destructive';
-      case 'ACABAMENTO': return 'default';
-      default: return 'secondary';
-    }
+    const colors = {
+      'VEDAÇÃO': 'bg-blue-100 text-blue-800',
+      'ESTRUTURA': 'bg-green-100 text-green-800',
+      'FIXAÇÃO': 'bg-yellow-100 text-yellow-800',
+      'ACABAMENTO': 'bg-purple-100 text-purple-800',
+      'ISOLAMENTO': 'bg-orange-100 text-orange-800',
+    };
+    return colors[categoria as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
   if (loading) {
@@ -183,10 +184,10 @@ export const DrywallManager = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wrench className="h-5 w-5" />
-            Produtos Drywall
+            Produtos Drywall Mestre
           </CardTitle>
           <CardDescription>
-            Gerencie placas, perfis, isolamentos e acessórios para drywall
+            Gerencie produtos para cálculos de orçamento drywall (integração com função SQL)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -232,11 +233,12 @@ export const DrywallManager = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Código</TableHead>
-                  <TableHead>Categoria</TableHead>
                   <TableHead>Descrição</TableHead>
-                  <TableHead>Tipo Placa</TableHead>
-                  <TableHead>Espessura</TableHead>
-                  <TableHead>Preço</TableHead>
+                  <TableHead>Especificação</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Unidade</TableHead>
+                  <TableHead>Preço Unit.</TableHead>
+                  <TableHead>Peso Unit.</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
@@ -244,24 +246,21 @@ export const DrywallManager = () => {
               <TableBody>
                 {filteredProdutos.map((produto) => (
                   <TableRow key={produto.id}>
-                    <TableCell className="font-medium">{produto.codigo}</TableCell>
+                    <TableCell className="font-medium">{produto.codigo_funcao}</TableCell>
+                    <TableCell>{produto.descricao}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{produto.especificacao}</TableCell>
                     <TableCell>
-                      <Badge variant={getCategoriaColor(produto.categoria)}>
-                        {produto.categoria}
+                      <Badge className={getCategoriaColor(produto.categoria_funcao)}>
+                        {produto.categoria_funcao}
                       </Badge>
                     </TableCell>
-                    <TableCell>{produto.descricao}</TableCell>
-                    <TableCell>{produto.tipo_placa || '-'}</TableCell>
-                    <TableCell>
-                      {produto.espessura ? `${produto.espessura}mm` : '-'}
-                    </TableCell>
-                    <TableCell>
-                      {produto.preco_unitario ? `R$ ${produto.preco_unitario.toFixed(2)}` : '-'}
-                    </TableCell>
+                    <TableCell>{produto.unidade_comercial}</TableCell>
+                    <TableCell>R$ {produto.preco_unitario.toFixed(2)}</TableCell>
+                    <TableCell>{produto.peso_unitario.toFixed(2)} kg</TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <Switch
-                          checked={produto.ativo || false}
+                          checked={produto.ativo}
                           onCheckedChange={() => toggleStatus(produto)}
                         />
                         <span className="text-sm">
@@ -297,28 +296,27 @@ export const DrywallManager = () => {
 };
 
 interface ProdutoEditDialogProps {
-  produto: ProdutoDrywall | null;
+  produto: ProdutoDrywallMestre | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (data: Partial<ProdutoDrywall>) => void;
+  onSave: (data: Partial<ProdutoDrywallMestre>) => void;
 }
 
 const ProdutoEditDialog = ({ produto, open, onOpenChange, onSave }: ProdutoEditDialogProps) => {
-  const [formData, setFormData] = useState<Partial<ProdutoDrywall>>({});
+  const [formData, setFormData] = useState<Partial<ProdutoDrywallMestre>>({});
 
   useEffect(() => {
     if (produto) {
       setFormData(produto);
     } else {
       setFormData({
-        categoria: 'PLACA',
-        codigo: '',
+        codigo_funcao: '',
         descricao: '',
-        tipo_placa: null,
-        espessura: null,
-        unidade_medida: 'm²',
-        peso_unitario: null,
+        especificacao: '',
+        categoria_funcao: 'VEDAÇÃO',
+        unidade_comercial: 'un',
         preco_unitario: 0,
+        peso_unitario: 0,
         ativo: true
       });
     }
@@ -340,19 +338,20 @@ const ProdutoEditDialog = ({ produto, open, onOpenChange, onSave }: ProdutoEditD
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="codigo">Código *</Label>
+              <Label htmlFor="codigo_funcao">Código Função *</Label>
               <Input
-                id="codigo"
-                value={formData.codigo || ''}
-                onChange={(e) => setFormData({...formData, codigo: e.target.value})}
+                id="codigo_funcao"
+                value={formData.codigo_funcao || ''}
+                onChange={(e) => setFormData({...formData, codigo_funcao: e.target.value})}
+                placeholder="Ex: DRY-ST-12.5"
                 required
               />
             </div>
             <div>
-              <Label htmlFor="categoria">Categoria *</Label>
+              <Label htmlFor="categoria_funcao">Categoria *</Label>
               <Select 
-                value={formData.categoria || 'PLACA'} 
-                onValueChange={(value) => setFormData({...formData, categoria: value})}
+                value={formData.categoria_funcao || 'VEDAÇÃO'} 
+                onValueChange={(value) => setFormData({...formData, categoria_funcao: value})}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -372,78 +371,59 @@ const ProdutoEditDialog = ({ produto, open, onOpenChange, onSave }: ProdutoEditD
               id="descricao"
               value={formData.descricao || ''}
               onChange={(e) => setFormData({...formData, descricao: e.target.value})}
+              placeholder="Descrição do produto"
               required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="tipo_placa">Tipo Placa</Label>
-              <Select 
-                value={formData.tipo_placa || ''} 
-                onValueChange={(value) => setFormData({...formData, tipo_placa: value || null})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nao-aplica">Não se aplica</SelectItem>
-                  {TIPOS_PLACA.map(tipo => (
-                    <SelectItem key={tipo.value} value={tipo.value}>{tipo.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="espessura">Espessura (mm)</Label>
-              <Input
-                id="espessura"
-                type="number"
-                step="0.1"
-                value={formData.espessura || ''}
-                onChange={(e) => setFormData({...formData, espessura: e.target.value ? parseFloat(e.target.value) : null})}
-              />
-            </div>
+          <div>
+            <Label htmlFor="especificacao">Especificação *</Label>
+            <Input
+              id="especificacao"
+              value={formData.especificacao || ''}
+              onChange={(e) => setFormData({...formData, especificacao: e.target.value})}
+              placeholder="Especificação técnica detalhada"
+              required
+            />
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="unidade_medida">Unidade *</Label>
+              <Label htmlFor="unidade_comercial">Unidade *</Label>
               <Select 
-                value={formData.unidade_medida || 'm²'} 
-                onValueChange={(value) => setFormData({...formData, unidade_medida: value})}
+                value={formData.unidade_comercial || 'un'} 
+                onValueChange={(value) => setFormData({...formData, unidade_comercial: value})}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="m²">m²</SelectItem>
-                  <SelectItem value="m">m</SelectItem>
-                  <SelectItem value="un">un</SelectItem>
-                  <SelectItem value="kg">kg</SelectItem>
-                  <SelectItem value="cto">cto</SelectItem>
-                  <SelectItem value="rl">rl</SelectItem>
+                  {UNIDADES_COMERCIAIS.map(unidade => (
+                    <SelectItem key={unidade.value} value={unidade.value}>{unidade.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="peso_unitario">Peso Unitário (kg)</Label>
-              <Input
-                id="peso_unitario"
-                type="number"
-                step="0.01"
-                value={formData.peso_unitario || ''}
-                onChange={(e) => setFormData({...formData, peso_unitario: e.target.value ? parseFloat(e.target.value) : null})}
-              />
-            </div>
-            <div>
-              <Label htmlFor="preco_unitario">Preço Unitário</Label>
+              <Label htmlFor="preco_unitario">Preço Unitário *</Label>
               <Input
                 id="preco_unitario"
                 type="number"
                 step="0.01"
                 value={formData.preco_unitario || ''}
-                onChange={(e) => setFormData({...formData, preco_unitario: e.target.value ? parseFloat(e.target.value) : null})}
+                onChange={(e) => setFormData({...formData, preco_unitario: e.target.value ? parseFloat(e.target.value) : 0})}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="peso_unitario">Peso Unitário (kg) *</Label>
+              <Input
+                id="peso_unitario"
+                type="number"
+                step="0.001"
+                value={formData.peso_unitario || ''}
+                onChange={(e) => setFormData({...formData, peso_unitario: e.target.value ? parseFloat(e.target.value) : 0})}
+                required
               />
             </div>
           </div>
