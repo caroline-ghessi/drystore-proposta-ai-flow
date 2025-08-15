@@ -1423,6 +1423,48 @@ export type Database = {
         }
         Relationships: []
       }
+      produtos_drywall_mestre: {
+        Row: {
+          ativo: boolean
+          categoria_funcao: string
+          codigo_funcao: string
+          created_at: string
+          descricao: string
+          especificacao: string
+          id: string
+          peso_unitario: number
+          preco_unitario: number
+          unidade_comercial: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria_funcao: string
+          codigo_funcao: string
+          created_at?: string
+          descricao: string
+          especificacao: string
+          id?: string
+          peso_unitario?: number
+          preco_unitario?: number
+          unidade_comercial?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria_funcao?: string
+          codigo_funcao?: string
+          created_at?: string
+          descricao?: string
+          especificacao?: string
+          id?: string
+          peso_unitario?: number
+          preco_unitario?: number
+          unidade_comercial?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       produtos_impermeabilizacao: {
         Row: {
           aplicacoes: string[] | null
