@@ -1728,23 +1728,42 @@ export type Database = {
         }[]
       }
       calcular_orcamento_drywall_completo: {
-        Args: {
-          p_altura: number
-          p_altura_janela?: number
-          p_altura_porta?: number
-          p_com_isolamento?: boolean
-          p_espacamento_montantes?: number
-          p_espessura_isolamento?: number
-          p_incluir_janelas?: boolean
-          p_incluir_portas?: boolean
-          p_largura: number
-          p_largura_janela?: number
-          p_largura_porta?: number
-          p_quantidade_janelas?: number
-          p_quantidade_portas?: number
-          p_quebra_customizada?: number
-          p_tipo_parede?: string
-        }
+        Args:
+          | {
+              p_altura: number
+              p_altura_janela?: number
+              p_altura_porta?: number
+              p_com_isolamento?: boolean
+              p_espacamento_montantes?: number
+              p_espessura_isolamento?: number
+              p_incluir_janelas?: boolean
+              p_incluir_portas?: boolean
+              p_largura: number
+              p_largura_janela?: number
+              p_largura_porta?: number
+              p_quantidade_janelas?: number
+              p_quantidade_portas?: number
+              p_quebra_customizada?: number
+              p_tipo_parede?: string
+            }
+          | {
+              p_altura: number
+              p_altura_janela?: number
+              p_altura_porta?: number
+              p_com_isolamento?: boolean
+              p_espacamento_montantes?: number
+              p_espessura_isolamento?: number
+              p_incluir_janelas?: boolean
+              p_incluir_portas?: boolean
+              p_largura: number
+              p_largura_janela?: number
+              p_largura_porta?: number
+              p_quantidade_janelas?: number
+              p_quantidade_portas?: number
+              p_quebra_customizada?: number
+              p_tipo_parede?: string
+              p_tipo_placa?: string
+            }
         Returns: {
           categoria: string
           especificacao: string

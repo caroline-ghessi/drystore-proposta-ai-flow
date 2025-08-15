@@ -43,6 +43,7 @@ export function StepDadosCompletosDivisorias({
     
     // Tipo de Parede
     tipoParede: 'ST90_2F_EI30',
+    tipoPlaca: 'DRY-ST-12.5', // NOVO: tipo de placa selecionada
     
     // Esquadrias
     temPortas: false,
@@ -74,6 +75,38 @@ export function StepDadosCompletosDivisorias({
     { value: 'ST70_1F_EI30', label: 'ST70 1F EI30', description: 'Parede simples face EI30 - espessura 70mm' },
     { value: 'ST48_2F_EI30', label: 'ST48 2F EI30', description: 'Parede dupla face EI30 - espessura 48mm' },
     { value: 'ST48_1F_EI30', label: 'ST48 1F EI30', description: 'Parede simples face EI30 - espessura 48mm' }
+  ]
+
+  // Tipos de placas disponíveis
+  const TIPOS_PLACA = [
+    { 
+      value: 'DRY-ST-12.5', 
+      label: 'ST - Standard', 
+      description: 'Placa padrão para áreas secas (branca)',
+      cor: 'Branca',
+      caracteristicas: ['Áreas secas', 'Uso geral', 'Econômica']
+    },
+    { 
+      value: 'DRY-RU-12.5', 
+      label: 'RU - Resistente à Umidade', 
+      description: 'Placa verde para áreas úmidas',
+      cor: 'Verde',
+      caracteristicas: ['Banheiros', 'Cozinhas', 'Lavanderias', 'Resistente à umidade']
+    },
+    { 
+      value: 'DRY-RF-12.5', 
+      label: 'RF - Resistente ao Fogo', 
+      description: 'Placa rosa com resistência ao fogo',
+      cor: 'Rosa',
+      caracteristicas: ['Rotas de fuga', 'Resistência ao fogo', 'NBR compliant']
+    },
+    { 
+      value: 'DRY-PERF-12.5', 
+      label: 'PERFORMA - Alta Performance', 
+      description: 'Placa de alta resistência e isolamento acústico',
+      cor: 'Branca',
+      caracteristicas: ['Suporte até 50kg', '+3dB isolamento', 'Substitui OSB+ST', 'Alta resistência']
+    }
   ]
 
   const validateForm = () => {
@@ -114,7 +147,7 @@ export function StepDadosCompletosDivisorias({
     }
 
     // Se mudou dimensões ou tipo, limpar cálculo
-    if (['largura', 'altura', 'tipoParede'].includes(field)) {
+    if (['largura', 'altura', 'tipoParede', 'tipoPlaca'].includes(field)) {
       setCalculoRealizado(false)
       setResumoCalculo(null)
       setItensCalculados([])
@@ -153,7 +186,8 @@ export function StepDadosCompletosDivisorias({
         largura_janela: formData.temJanelas ? formData.larguraJanela : 0,
         altura_janela: formData.temJanelas ? formData.alturaJanela : 0,
         com_isolamento: formData.isolamentoAcustico,
-        espacamento_montantes: formData.espacamentoMontantes
+        espacamento_montantes: formData.espacamentoMontantes,
+        tipo_placa: formData.tipoPlaca // NOVO: tipo de placa selecionada
       }
 
       const resultado = await calcularOrcamentoDrywall(parametros)
@@ -369,7 +403,7 @@ export function StepDadosCompletosDivisorias({
               Tipo de Parede
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div>
               <Label htmlFor="tipoParede">Sistema de Parede *</Label>
               <Select 
@@ -394,6 +428,62 @@ export function StepDadosCompletosDivisorias({
                 <p className="text-sm text-red-500 mt-1">{errors.tipoParede}</p>
               )}
             </div>
+
+            <div>
+              <Label htmlFor="tipoPlaca">Tipo de Placa Drywall</Label>
+              <Select 
+                value={formData.tipoPlaca} 
+                onValueChange={(value) => handleInputChange('tipoPlaca', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo de placa" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIPOS_PLACA.map((placa) => (
+                    <SelectItem key={placa.value} value={placa.value}>
+                      <div className="w-full">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{placa.label}</span>
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                            {placa.cor}
+                          </span>
+                        </div>
+                        <div className="text-sm text-muted-foreground">{placa.description}</div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {placa.caracteristicas.map((caracteristica, idx) => (
+                            <span key={idx} className="text-xs bg-muted px-2 py-0.5 rounded">
+                              {caracteristica}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Detalhes da placa selecionada */}
+            {formData.tipoPlaca && (
+              (() => {
+                const placaSelecionada = TIPOS_PLACA.find(p => p.value === formData.tipoPlaca);
+                return placaSelecionada ? (
+                  <Card className="p-4 bg-primary/5 border-primary/20">
+                    <h4 className="font-medium text-sm mb-2">Placa Selecionada:</h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {placaSelecionada.description}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {placaSelecionada.caracteristicas.map((caracteristica, idx) => (
+                        <span key={idx} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                          {caracteristica}
+                        </span>
+                      ))}
+                    </div>
+                  </Card>
+                ) : null;
+              })()
+            )}
           </CardContent>
         </Card>
 

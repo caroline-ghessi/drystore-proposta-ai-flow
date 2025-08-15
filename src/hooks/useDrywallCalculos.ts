@@ -18,6 +18,7 @@ export interface ParametrosDrywall {
   espacamento_montantes?: number;
   com_isolamento?: boolean;
   quebra_customizada?: number | null;
+  tipo_placa?: string; // NOVO: para selecionar ST, RU, RF ou PERFORMA
 }
 
 export interface ItemCalculoDrywall {
@@ -78,7 +79,8 @@ export const useDrywallCalculos = () => {
         p_espessura_isolamento: parametros.espessura_isolamento || 50,
         p_espacamento_montantes: parametros.espacamento_montantes || 0.60,
         p_com_isolamento: parametros.com_isolamento !== false,
-        p_quebra_customizada: parametros.quebra_customizada
+        p_quebra_customizada: parametros.quebra_customizada,
+        p_tipo_placa: parametros.tipo_placa || 'DRY-ST-12.5' // NOVO PARÂMETRO
       });
 
       if (rpcError) throw rpcError;
